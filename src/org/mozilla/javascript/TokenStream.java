@@ -61,14 +61,6 @@ import java.io.*;
 
 class TokenStream
 {
-    /*
-     * For chars - because we need something out-of-range
-     * to check.  (And checking EOF by exception is annoying.)
-     * Note distinction from EOF token type!
-     */
-    private final static int
-        EOF_CHAR = -1;
-
     TokenStream(Parser parser, Reader sourceReader, String sourceString,
                 int lineno)
     {
@@ -123,7 +115,12 @@ class TokenStream
     
     final int getToken() throws IOException
     {
-        return englishTokenizer.getToken();
+        int token = Token.LANGMODE;
+        while (token == Token.LANGMODE)
+        {
+           token = languageTokenizer.getToken();
+        }
+        return token; 
     }
 
     private static boolean isAlpha(int c)
@@ -172,7 +169,7 @@ class TokenStream
         boolean inCharSet = false; // true if inside a '['..']' pair
         int c;
         while ((c = in.getChar()) != '/' || inCharSet) {
-            if (c == '\n' || c == EOF_CHAR) {
+            if (c == '\n' || c == TokenCharStream.EOF_CHAR) {
                 in.ungetChar(c);
                 throw parser.reportError("msg.unterminated.re.lit");
             }

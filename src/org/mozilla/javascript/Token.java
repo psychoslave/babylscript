@@ -260,6 +260,14 @@ public class Token
         DEBUGGER       = 159,
         LAST_TOKEN     = 159;
 
+    public final static int
+        REF_TRANSNAME  = 160,  // Used in the IR to represent a reference to a translated name
+        SET_TRANSNAME  = 161,  // Used in the IR to represent an assignment to a translated name
+        DEL_TRANSNAME  = 162,  // Used in the IR to represent the deletion of a translated name
+        NOLANG         = 163,  // Used to represent an unknown/empty language
+        LANGREG        = 164,  // Sets the language register with a string or null (used by the parser in the intermediate code)
+        LANGMODE       = 165;  // Used internally by the scanner to indicate a change in language mode
+
     public static String name(int token)
     {
         if (!printNames) {
