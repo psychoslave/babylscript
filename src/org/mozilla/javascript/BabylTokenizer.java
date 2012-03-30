@@ -85,6 +85,7 @@ public class BabylTokenizer
     // The value of a string/number that was tokenized
     protected void setString(String str) {ts.string = str;}
     protected void setNumber(double num) {ts.number = num;}
+    protected void setLanguage(TokenStream.LanguageMode lang) {ts.setLanguage(lang);}
 
     // Input stream management
     TokenCharStream in;
@@ -554,7 +555,13 @@ public class BabylTokenizer
                         return Token.EMPTY;
                     }
                 }
-                c = Token.DEC;
+                if (in.matchChar('-'))
+                {
+                    // Change of language mode
+                    c = scanLanguageMode();
+                }
+                else
+                    c = Token.DEC;
             } else {
                 c = Token.SUB;
             }
@@ -566,7 +573,68 @@ public class BabylTokenizer
             return Token.ERROR;
         }
     }
- 
+    
+    private int scanLanguageMode() throws IOException
+    {
+        int c = in.getChar();
+        switch(c)
+        {
+        case '\u0639':
+            if (in.matchChar('\u0631') && in.matchChar('\u0628') && in.matchChar('\u064a') && in.matchChar('-') && in.matchChar('-') && in.matchChar('-'))
+            {
+                setLanguage(TokenStream.LanguageMode.ar);
+                return Token.LANGMODE;
+            }
+            break;
+        case 'a':
+            if (in.matchChar('r') && in.matchChar('-') && in.matchChar('-') && in.matchChar('-'))
+            {
+                setLanguage(TokenStream.LanguageMode.ar);
+                return Token.LANGMODE;
+            }
+            break;
+        case 'e':
+            if (in.matchChar('n') && in.matchChar('-') && in.matchChar('-') && in.matchChar('-'))
+            {
+                setLanguage(TokenStream.LanguageMode.en);
+                return Token.LANGMODE;
+            }
+            break;
+        case 'f':
+            if (in.matchChar('r') && in.matchChar('-') && in.matchChar('-') && in.matchChar('-'))
+            {
+                setLanguage(TokenStream.LanguageMode.fr);
+                return Token.LANGMODE;
+            }
+            break;
+        case 'p':
+            if (in.matchChar('t') && in.matchChar('-') && in.matchChar('-') && in.matchChar('-'))
+            {
+                setLanguage(TokenStream.LanguageMode.pt);
+                return Token.LANGMODE;
+            }
+            break;
+        case 't':
+            if (in.matchChar('e') && in.matchChar('s') && in.matchChar('t') && in.matchChar('-') && in.matchChar('-') && in.matchChar('-'))
+            {
+                setLanguage(TokenStream.LanguageMode.test);
+                return Token.LANGMODE;
+            }
+            break;
+        case 'r':
+            if (in.matchChar('o') && in.matchChar('-') && in.matchChar('-') && in.matchChar('-'))
+            {
+                setLanguage(TokenStream.LanguageMode.ro);
+                return Token.LANGMODE;
+            }
+            break;
+        default:
+            break;
+        }
+        parser.addError("msg.unknown.language.mode"); // TODO: Localize this
+        return Token.ERROR;
+    }
+
     public static class DecimalNumberReader
     {
         protected double readValue;
