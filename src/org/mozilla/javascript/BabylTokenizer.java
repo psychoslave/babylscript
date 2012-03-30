@@ -152,7 +152,7 @@ public class BabylTokenizer
                     c = '\\';
                 }
             } else {
-                identifierStart = Character.isJavaIdentifierStart((char)c);
+                    identifierStart = isIdentifierStart(c);
                 if (identifierStart) {
                     setStringBufferTop(0);
                     addToString(c);
@@ -195,7 +195,7 @@ public class BabylTokenizer
                             }
                         } else {
                             if (c == TokenCharStream.EOF_CHAR
-                                || !Character.isJavaIdentifierPart((char)c))
+                                || !isIdentifierPart(c))
                             {
                                 break;
                             }
@@ -249,13 +249,13 @@ public class BabylTokenizer
             }
 
             // is it a string?
-            if (c == '"' || c == '\'') {
+            if (isStringDelimiter(c)) {
                 // We attempt to accumulate a string the fast way, by
                 // building it directly out of the reader.  But if there
                 // are any escaped characters in the string, we revert to
                 // building it out of a StringBuffer.
 
-                int quoteChar = c;
+                int quoteChar = getMatchingStringDelimiter(c);
                 setStringBufferTop(0);
 
                 c = in.getChar();
@@ -631,7 +631,7 @@ public class BabylTokenizer
         default:
             break;
         }
-        parser.addError("msg.unknown.language.mode"); // TODO: Localize this
+        parser.addError("msg.unknown.language.mode");
         return Token.ERROR;
     }
 
@@ -756,6 +756,24 @@ public class BabylTokenizer
         {
             return c == decimalSeparator;
         }
+    }
+ 
+    protected boolean isStringDelimiter(int ch)
+    {
+        return (ch == '\'' || ch == '\"');
+    }
+    protected int getMatchingStringDelimiter(int ch)
+    {
+        if (ch == '\'') return '\'';
+        return '\"';
+    }
+    protected boolean isIdentifierStart(int ch)
+    {
+        return Character.isJavaIdentifierStart((char)ch);
+    }
+    protected boolean isIdentifierPart(int ch)
+    {
+        return Character.isJavaIdentifierPart((char)ch);
     }
     
     /* As defined in ECMA.  jsscan.c uses C isspace() (which allows
