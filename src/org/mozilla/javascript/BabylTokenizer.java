@@ -91,15 +91,17 @@ public class BabylTokenizer
 
     Parser parser;
     TokenStream ts;
+    DecimalNumberReader numberReader;
     BabylTokenizer(Parser p, TokenCharStream in, TokenStream ts)
     {
         this.parser = p;
         this.ts = ts;
         this.in = in;
+        numberReader = new DecimalNumberReader();
     }
 
     
-    static int stringToKeyword(String name)
+    static int englishStringToKeyword(String name)
     {
         if (englishKeywordLookup.containsKey(name))
             return englishKeywordLookup.get(name) & 0xff;
@@ -110,7 +112,6 @@ public class BabylTokenizer
     {
         int c;
 
-    retry:
         for (;;) {
             // Eat whitespace, possibly sensitive to newlines.
             for (;;) {
@@ -205,7 +206,7 @@ public class BabylTokenizer
                     // check if it's a keyword.
 
                     // Return the corresponding token if it's a keyword
-                    int result = stringToKeyword(str);
+                    int result = englishStringToKeyword(str);
                     if (result != Token.EOF) {
                         if ((result == Token.LET || result == Token.YIELD) && 
                             parser.compilerEnv.getLanguageVersion() 
@@ -234,92 +235,12 @@ public class BabylTokenizer
             }
 
             // is it a number?
-            if (isDigit(c) || (c == '.' && isDigit(in.peekChar()))) {
-
-                stringBufferTop = 0;
-                int base = 10;
-
-                if (c == '0') {
-                    c = in.getChar();
-                    if (c == 'x' || c == 'X') {
-                        base = 16;
-                        c = in.getChar();
-                    } else if (isDigit(c)) {
-                        base = 8;
-                    } else {
-                        addToString('0');
-                    }
-                }
-
-                if (base == 16) {
-                    while (0 <= Kit.xDigitToInt(c, 0)) {
-                        addToString(c);
-                        c = in.getChar();
-                    }
-                } else {
-                    while ('0' <= c && c <= '9') {
-                        /*
-                         * We permit 08 and 09 as decimal numbers, which
-                         * makes our behavior a superset of the ECMA
-                         * numeric grammar.  We might not always be so
-                         * permissive, so we warn about it.
-                         */
-                        if (base == 8 && c >= '8') {
-                            parser.addWarning("msg.bad.octal.literal",
-                                              c == '8' ? "8" : "9");
-                            base = 10;
-                        }
-                        addToString(c);
-                        c = in.getChar();
-                    }
-                }
-
-                boolean isInteger = true;
-
-                if (base == 10 && (c == '.' || c == 'e' || c == 'E')) {
-                    isInteger = false;
-                    if (c == '.') {
-                        do {
-                            addToString(c);
-                            c = in.getChar();
-                        } while (isDigit(c));
-                    }
-                    if (c == 'e' || c == 'E') {
-                        addToString(c);
-                        c = in.getChar();
-                        if (c == '+' || c == '-') {
-                            addToString(c);
-                            c = in.getChar();
-                        }
-                        if (!isDigit(c)) {
-                            parser.addError("msg.missing.exponent");
-                            return Token.ERROR;
-                        }
-                        do {
-                            addToString(c);
-                            c = in.getChar();
-                        } while (isDigit(c));
-                    }
-                }
-                in.ungetChar(c);
-                String numString = getStringFromBuffer();
-
-                double dval;
-                if (base == 10 && !isInteger) {
-                    try {
-                        // Use Java conversion to number from string...
-                        dval = Double.valueOf(numString).doubleValue();
-                    }
-                    catch (NumberFormatException ex) {
-                        parser.addError("msg.caught.nfe");
-                        return Token.ERROR;
-                    }
-                } else {
-                    dval = ScriptRuntime.stringToNumber(numString, 0, base);
-                }
-
-                setNumber(dval);
-                return Token.NUMBER;
+            int match = numberReader.matchNumber(c, in, parser);
+            if (match != Token.EMPTY)
+            {
+                if (match == Token.NUMBER)
+                    setNumber(numberReader.readValue);
+                return match;
             }
 
             // is it a string?
@@ -642,11 +563,129 @@ public class BabylTokenizer
         }
     }
  
-    static boolean isDigit(int c)
+    public static class DecimalNumberReader
     {
-        return '0' <= c && c <= '9';
-    }
+        protected double readValue;
+        protected StringBuilder stringBuffer = new StringBuilder(128);
+        protected char decimalSeparator = '.';
+        
+        public DecimalNumberReader(char decimalSeparator)
+        {
+            this.decimalSeparator = decimalSeparator;
+        }
+        public DecimalNumberReader()
+        {
+            this('.');
+        }
+        
+        // Checks if the next token in the stream is a number (where c is the next
+        // character in the stream). Returns Token.EMPTY (for no match), Token.ERROR,
+        // or Token.NUMBER. If it returns Token.EMPTY, then the state of the stream
+        // will not be modified, but it will be modified in the other cases.
+        public int matchNumber(int c, TokenCharStream in, Parser parser) throws IOException {
+            // is it a number?
+            if (!isDigit(c) && !(isDecimalSeparator(c) && isDigit(in.peekChar()))) 
+                return Token.EMPTY;
 
+            stringBuffer.setLength(0);
+            int base = 10;
+
+            if (c == '0') {
+                c = in.getChar();
+                if (c == 'x' || c == 'X') {
+                    base = 16;
+                    c = in.getChar();
+                } else if (isDigit(c)) {
+                    base = 8;
+                } else {
+                    stringBuffer.append((char)'0');
+                }
+            }
+
+            if (base == 16) {
+                while (0 <= Kit.xDigitToInt(c, 0)) {
+                    stringBuffer.append((char)c);
+                    c = in.getChar();
+                }
+            } else {
+                while ('0' <= c && c <= '9') {
+                    /*
+                     * We permit 08 and 09 as decimal numbers, which
+                     * makes our behavior a superset of the ECMA
+                     * numeric grammar.  We might not always be so
+                     * permissive, so we warn about it.
+                     */
+                    if (base == 8 && c >= '8') {
+                        parser.addWarning("msg.bad.octal.literal",
+                                c == '8' ? "8" : "9");
+                        base = 10;
+                    }
+                    stringBuffer.append((char)c);
+                    c = in.getChar();
+                }
+            }
+
+            boolean isInteger = true;
+
+            if (base == 10 && (isDecimalSeparator(c) || c == 'e' || c == 'E')) {
+                isInteger = false;
+                if (isDecimalSeparator(c)) {
+                    stringBuffer.append((char)'.');
+                    c = in.getChar();
+                    while (isDigit(c)) {
+                        stringBuffer.append((char)c);
+                        c = in.getChar();
+                    } ;
+                }
+                if (c == 'e' || c == 'E') {
+                    stringBuffer.append((char)c);
+                    c = in.getChar();
+                    if (c == '+' || c == '-') {
+                        stringBuffer.append((char)c);
+                        c = in.getChar();
+                    }
+                    if (!isDigit(c)) {
+                        parser.addError("msg.missing.exponent");
+                        return Token.ERROR;
+                    }
+                    do {
+                        stringBuffer.append((char)c);
+                        c = in.getChar();
+                    } while (isDigit(c));
+                }
+            }
+            in.ungetChar(c);
+            String numString = stringBuffer.toString();
+
+            double dval;
+            if (base == 10 && !isInteger) {
+                try {
+                    // Use Java conversion to number from string...
+                    dval = Double.valueOf(numString).doubleValue();
+                }
+                catch (NumberFormatException ex) {
+                    parser.addError("msg.caught.nfe");
+                    return Token.ERROR;
+                }
+            } else {
+                dval = ScriptRuntime.stringToNumber(numString, 0, base);
+            }
+
+            readValue = dval;
+            return Token.NUMBER;
+        }
+        
+        protected boolean isDigit(int c)
+        {
+            return '0' <= c && c <= '9';
+        }
+        
+        protected boolean isDecimalSeparator(int c)
+        {
+            return c == decimalSeparator;
+        }
+    }
+    
     /* As defined in ECMA.  jsscan.c uses C isspace() (which allows
      * \v, I think.)  note that code in getChar() implicitly accepts
      * '\r' == \u000D as well.
