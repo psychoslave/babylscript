@@ -73,6 +73,7 @@ class TokenStream
     {
         this.parser = parser;
         this.in = new TokenCharStream(sourceReader, sourceString, lineno);
+        xmlTokenizer = new XMLTokenizer(parser, in, this);
     }
 
     /* This function uses the cached op, string and number fields in
@@ -909,283 +910,19 @@ class TokenStream
                                       stringBufferTop - reEnd);
     }
 
-    boolean isXMLAttribute()
+    boolean isXMLAttribute() 
     {
-        return xmlIsAttribute;
+        return xmlTokenizer.isXMLAttribute();
     }
 
     int getFirstXMLToken() throws IOException
     {
-        xmlOpenTagsCount = 0;
-        xmlIsAttribute = false;
-        xmlIsTagContent = false;
-        in.ungetChar('<');
-        return getNextXMLToken();
+        return xmlTokenizer.getFirstXMLToken();
     }
 
     int getNextXMLToken() throws IOException
     {
-        stringBufferTop = 0; // remember the XML
-
-        for (int c = in.getChar(); c != EOF_CHAR; c = in.getChar()) {
-            if (xmlIsTagContent) {
-                switch (c) {
-                case '>':
-                    addToString(c);
-                    xmlIsTagContent = false;
-                    xmlIsAttribute = false;
-                    break;
-                case '/':
-                    addToString(c);
-                    if (in.peekChar() == '>') {
-                        c = in.getChar();
-                        addToString(c);
-                        xmlIsTagContent = false;
-                        xmlOpenTagsCount--;
-                    }
-                    break;
-                case '{':
-                    in.ungetChar(c);
-                    this.string = getStringFromBuffer();
-                    return Token.XML;
-                case '\'':
-                case '"':
-                    addToString(c);
-                    if (!readQuotedString(c)) return Token.ERROR;
-                    break;
-                case '=':
-                    addToString(c);
-                    xmlIsAttribute = true;
-                    break;
-                case ' ':
-                case '\t':
-                case '\r':
-                case '\n':
-                    addToString(c);
-                    break;
-                default:
-                    addToString(c);
-                    xmlIsAttribute = false;
-                    break;
-                }
-
-                if (!xmlIsTagContent && xmlOpenTagsCount == 0) {
-                    this.string = getStringFromBuffer();
-                    return Token.XMLEND;
-                }
-            } else {
-                switch (c) {
-                case '<':
-                    addToString(c);
-                    c = in.peekChar();
-                    switch (c) {
-                    case '!':
-                        c = in.getChar(); // Skip !
-                        addToString(c);
-                        c = in.peekChar();
-                        switch (c) {
-                        case '-':
-                            c = in.getChar(); // Skip -
-                            addToString(c);
-                            c = in.getChar();
-                            if (c == '-') {
-                                addToString(c);
-                                if(!readXmlComment()) return Token.ERROR;
-                            } else {
-                                // throw away the string in progress
-                                stringBufferTop = 0;
-                                this.string = null;
-                                parser.addError("msg.XML.bad.form");
-                                return Token.ERROR;
-                            }
-                            break;
-                        case '[':
-                            c = in.getChar(); // Skip [
-                            addToString(c);
-                            if (in.getChar() == 'C' &&
-                                in.getChar() == 'D' &&
-                                in.getChar() == 'A' &&
-                                in.getChar() == 'T' &&
-                                in.getChar() == 'A' &&
-                                in.getChar() == '[')
-                            {
-                                addToString('C');
-                                addToString('D');
-                                addToString('A');
-                                addToString('T');
-                                addToString('A');
-                                addToString('[');
-                                if (!readCDATA()) return Token.ERROR;
-
-                            } else {
-                                // throw away the string in progress
-                                stringBufferTop = 0;
-                                this.string = null;
-                                parser.addError("msg.XML.bad.form");
-                                return Token.ERROR;
-                            }
-                            break;
-                        default:
-                            if(!readEntity()) return Token.ERROR;
-                            break;
-                        }
-                        break;
-                    case '?':
-                        c = in.getChar(); // Skip ?
-                        addToString(c);
-                        if (!readPI()) return Token.ERROR;
-                        break;
-                    case '/':
-                        // End tag
-                        c = in.getChar(); // Skip /
-                        addToString(c);
-                        if (xmlOpenTagsCount == 0) {
-                            // throw away the string in progress
-                            stringBufferTop = 0;
-                            this.string = null;
-                            parser.addError("msg.XML.bad.form");
-                            return Token.ERROR;
-                        }
-                        xmlIsTagContent = true;
-                        xmlOpenTagsCount--;
-                        break;
-                    default:
-                        // Start tag
-                        xmlIsTagContent = true;
-                        xmlOpenTagsCount++;
-                        break;
-                    }
-                    break;
-                case '{':
-                    in.ungetChar(c);
-                    this.string = getStringFromBuffer();
-                    return Token.XML;
-                default:
-                    addToString(c);
-                    break;
-                }
-            }
-        }
-
-        stringBufferTop = 0; // throw away the string in progress
-        this.string = null;
-        parser.addError("msg.XML.bad.form");
-        return Token.ERROR;
-    }
-
-    /**
-     *
-     */
-    private boolean readQuotedString(int quote) throws IOException
-    {
-        for (int c = in.getChar(); c != EOF_CHAR; c = in.getChar()) {
-            addToString(c);
-            if (c == quote) return true;
-        }
-
-        stringBufferTop = 0; // throw away the string in progress
-        this.string = null;
-        parser.addError("msg.XML.bad.form");
-        return false;
-    }
-
-    /**
-     *
-     */
-    private boolean readXmlComment() throws IOException
-    {
-        for (int c = in.getChar(); c != EOF_CHAR;) {
-            addToString(c);
-            if (c == '-' && in.peekChar() == '-') {
-                c = in.getChar();
-                addToString(c);
-                if (in.peekChar() == '>') {
-                    c = in.getChar(); // Skip >
-                    addToString(c);
-                    return true;
-                } else {
-                    continue;
-                }
-            }
-            c = in.getChar();
-        }
-
-        stringBufferTop = 0; // throw away the string in progress
-        this.string = null;
-        parser.addError("msg.XML.bad.form");
-        return false;
-    }
-
-    /**
-     *
-     */
-    private boolean readCDATA() throws IOException
-    {
-        for (int c = in.getChar(); c != EOF_CHAR;) {
-            addToString(c);
-            if (c == ']' && in.peekChar() == ']') {
-                c = in.getChar();
-                addToString(c);
-                if (in.peekChar() == '>') {
-                    c = in.getChar(); // Skip >
-                    addToString(c);
-                    return true;
-                } else {
-                    continue;
-                }
-            }
-            c = in.getChar();
-        }
-
-        stringBufferTop = 0; // throw away the string in progress
-        this.string = null;
-        parser.addError("msg.XML.bad.form");
-        return false;
-    }
-
-    /**
-     *
-     */
-    private boolean readEntity() throws IOException
-    {
-        int declTags = 1;
-        for (int c = in.getChar(); c != EOF_CHAR; c = in.getChar()) {
-            addToString(c);
-            switch (c) {
-            case '<':
-                declTags++;
-                break;
-            case '>':
-                declTags--;
-                if (declTags == 0) return true;
-                break;
-            }
-        }
-
-        stringBufferTop = 0; // throw away the string in progress
-        this.string = null;
-        parser.addError("msg.XML.bad.form");
-        return false;
-    }
-
-    /**
-     *
-     */
-    private boolean readPI() throws IOException
-    {
-        for (int c = in.getChar(); c != EOF_CHAR; c = in.getChar()) {
-            addToString(c);
-            if (c == '?' && in.peekChar() == '>') {
-                c = in.getChar(); // Skip >
-                addToString(c);
-                return true;
-            }
-        }
-
-        stringBufferTop = 0; // throw away the string in progress
-        this.string = null;
-        parser.addError("msg.XML.bad.form");
-        return false;
+        return xmlTokenizer.getNextXMLToken();
     }
 
     private String getStringFromBuffer()
@@ -1211,19 +948,16 @@ class TokenStream
     // something to retrieve even if an error has occurred and no
     // string is found.  Fosters one class of error, but saves lots of
     // code.
-    private String string = "";
-    private double number;
+    String string = "";
+    double number;
 
     private char[] stringBuffer = new char[128];
     private int stringBufferTop;
     private ObjToIntMap allStrings = new ObjToIntMap(50);
 
     private TokenCharStream in;
-    
-    // for xml tokenizer
-    private boolean xmlIsAttribute;
-    private boolean xmlIsTagContent;
-    private int xmlOpenTagsCount;
 
+    private XMLTokenizer xmlTokenizer;
+    
     private Parser parser;
 }
