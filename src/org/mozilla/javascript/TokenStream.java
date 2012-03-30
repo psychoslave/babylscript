@@ -46,6 +46,7 @@ package org.mozilla.javascript;
 
 import java.io.*;
 
+
 /**
  * This class implements the JavaScript scanner.
  *
@@ -75,6 +76,7 @@ class TokenStream
         this.in = new TokenCharStream(sourceReader, sourceString, lineno);
         this.englishTokenizer = new BabylTokenizer(parser, in, this);
         xmlTokenizer = new XMLTokenizer(parser, in, this);
+        setLanguage(LanguageMode.en);
     }
 
     /* This function uses the cached op, string and number fields in
@@ -103,7 +105,7 @@ class TokenStream
 
     static boolean isKeyword(String s)
     {
-        return Token.EOF != BabylTokenizer.stringToKeyword(s);
+        return Token.EOF != BabylTokenizer.englishStringToKeyword(s);
     }
 
     final int getLineno() { return in.lineno; }
@@ -237,7 +239,85 @@ class TokenStream
         stringBuffer[N] = (char)c;
         stringBufferTop = N + 1;
     }
-    
+
+    public static enum LanguageMode
+    {
+        ar,
+        en,
+        fr,
+        pt,
+        test,
+        ro
+    }
+    public static LanguageMode stringToLanguageMode(String str)
+    {
+        if (str == null)
+            return LanguageMode.en;
+        if ("ar".equals(str))
+            return LanguageMode.ar;
+        else if ("en".equals(str))
+            return LanguageMode.en;
+        else if ("fr".equals(str))
+            return LanguageMode.fr;
+        else if ("pt".equals(str))
+            return LanguageMode.pt;
+        else if ("ro".equals(str))
+            return LanguageMode.ro;
+        else if ("test".equals(str))
+            return LanguageMode.test;
+        return LanguageMode.en;
+    }
+    public void setLanguage(LanguageMode language)
+    {
+       switch(language)
+       {
+       case ar:
+           languageMode = LanguageMode.ar;
+//           this.languageTokenizer = new ArabicTokenizer(parser, in, this);
+           break;
+       case en:
+          languageMode = LanguageMode.en;
+          this.languageTokenizer = this.englishTokenizer;
+          break;
+       case fr:
+          languageMode = LanguageMode.fr;
+//          this.languageTokenizer = new FrenchTokenizer(parser, in, this);
+          break;
+       case pt:
+           languageMode = LanguageMode.pt;
+//           this.languageTokenizer = new PortugueseTokenizer(parser, in, this);
+           break;
+       case ro:
+           languageMode = LanguageMode.ro;
+//           this.languageTokenizer = new RomanianTokenizer(parser, in, this);
+           break;
+       case test:
+           languageMode = LanguageMode.test;
+//           this.languageTokenizer = CustomTokenizer.createFromKeywordProperties(parser, in, this, customLanguageConfig);
+           break;
+       }
+    }
+
+    public String getLastLanguageString()
+    {
+       switch(languageMode)
+       {
+       case ar:
+           return "ar";
+       case en:
+          return "en";
+       case fr:
+          return "fr";
+       case pt:
+           return "pt";
+       case ro:
+           return "ro";
+       case test:
+           return "test";
+       }
+       return null;
+    }
+
     String regExpFlags;
 
     // Set this to an initial non-null value so that the Parser has
@@ -253,6 +333,8 @@ class TokenStream
 
     private TokenCharStream in;
 
+    private LanguageMode languageMode = LanguageMode.en;
+    private BabylTokenizer languageTokenizer;
     private BabylTokenizer englishTokenizer;
     private XMLTokenizer xmlTokenizer;
     

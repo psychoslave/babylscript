@@ -60,14 +60,14 @@ public class BabylTokenizer
     // For managing a string buffer
     private char[] stringBuffer = new char[128];
     private int stringBufferTop;
-    private void setStringBufferTop(int top) { stringBufferTop = top; }
-    private int getStringBufferTop() { return stringBufferTop;}
-    private String getStringFromBuffer()
+    protected void setStringBufferTop(int top) { stringBufferTop = top; }
+    protected int getStringBufferTop() { return stringBufferTop;}
+    protected String getStringFromBuffer()
     {
         return new String(stringBuffer, 0, stringBufferTop);
     }
 
-    private void addToString(int c)
+    protected void addToString(int c)
     {
         int N = stringBufferTop;
         if (N == stringBuffer.length) {
@@ -80,11 +80,11 @@ public class BabylTokenizer
     }
 
     // Interns a string
-    private String internString(String str) {return (String)ts.allStrings.intern(str); }
+    protected String internString(String str) {return (String)ts.allStrings.intern(str); }
 
     // The value of a string/number that was tokenized
-    private void setString(String str) {ts.string = str;}
-    private void setNumber(double num) {ts.number = num;}
+    protected void setString(String str) {ts.string = str;}
+    protected void setNumber(double num) {ts.number = num;}
 
     // Input stream management
     TokenCharStream in;
@@ -100,6 +100,10 @@ public class BabylTokenizer
         numberReader = new DecimalNumberReader();
     }
 
+    protected int stringToKeyword(String name)
+    {
+        return englishStringToKeyword(name);
+    }
     
     static int englishStringToKeyword(String name)
     {
@@ -140,7 +144,7 @@ public class BabylTokenizer
                 if (c == 'u') {
                     identifierStart = true;
                     isUnicodeEscapeStart = true;
-                    stringBufferTop = 0;
+                    setStringBufferTop(0);
                 } else {
                     identifierStart = false;
                     in.ungetChar(c);
@@ -149,7 +153,7 @@ public class BabylTokenizer
             } else {
                 identifierStart = Character.isJavaIdentifierStart((char)c);
                 if (identifierStart) {
-                    stringBufferTop = 0;
+                    setStringBufferTop(0);
                     addToString(c);
                 }
             }
@@ -206,7 +210,7 @@ public class BabylTokenizer
                     // check if it's a keyword.
 
                     // Return the corresponding token if it's a keyword
-                    int result = englishStringToKeyword(str);
+                    int result = stringToKeyword(str);
                     if (result != Token.EOF) {
                         if ((result == Token.LET || result == Token.YIELD) && 
                             parser.compilerEnv.getLanguageVersion() 
@@ -251,7 +255,7 @@ public class BabylTokenizer
                 // building it out of a StringBuffer.
 
                 int quoteChar = c;
-                stringBufferTop = 0;
+                setStringBufferTop(0);
 
                 c = in.getChar();
             strLoop: while (c != quoteChar) {
@@ -281,7 +285,7 @@ public class BabylTokenizer
                             // Get 4 hex digits; if the u escape is not
                             // followed by 4 hex digits, use 'u' + the
                             // literal character sequence that follows.
-                            int escapeStart = stringBufferTop;
+                            int escapeStart = getStringBufferTop();
                             addToString('u');
                             escapeVal = 0;
                             for (int i = 0; i != 4; ++i) {
@@ -294,7 +298,7 @@ public class BabylTokenizer
                             }
                             // prepare for replace of stored 'u' sequence
                             // by escape value
-                            stringBufferTop = escapeStart;
+                            setStringBufferTop(escapeStart);
                             c = escapeVal;
                             break;
                         case 'x':
@@ -836,5 +840,4 @@ public class BabylTokenizer
         englishKeywordLookup.put("instanceof", Id_instanceof);
         englishKeywordLookup.put("synchronized", Id_synchronized);
     }
-
 }
