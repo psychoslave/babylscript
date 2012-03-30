@@ -369,7 +369,7 @@ public class BabylTokenizer
         }
     }
 
-    private int matchSymbol(int c) throws IOException
+    protected int matchSymbol(int c) throws IOException
     {
         switch (c) {
         case ';': return Token.SEMI;

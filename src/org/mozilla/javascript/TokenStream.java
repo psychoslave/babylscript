@@ -46,7 +46,11 @@ package org.mozilla.javascript;
 
 import java.io.*;
 
+import org.mozilla.javascript.babylscript.ArabicTokenizer;
 import org.mozilla.javascript.babylscript.EnglishTokenizer;
+import org.mozilla.javascript.babylscript.FrenchTokenizer;
+import org.mozilla.javascript.babylscript.PortugueseTokenizer;
+import org.mozilla.javascript.babylscript.RomanianTokenizer;
 
 
 /**
@@ -272,7 +276,7 @@ public class TokenStream
        {
        case ar:
            languageMode = LanguageMode.ar;
-//           this.languageTokenizer = new ArabicTokenizer(parser, in, this);
+           this.languageTokenizer = new ArabicTokenizer(parser, in, this);
            break;
        case en:
           languageMode = LanguageMode.en;
@@ -280,15 +284,15 @@ public class TokenStream
           break;
        case fr:
           languageMode = LanguageMode.fr;
-//          this.languageTokenizer = new FrenchTokenizer(parser, in, this);
+          this.languageTokenizer = new FrenchTokenizer(parser, in, this);
           break;
        case pt:
            languageMode = LanguageMode.pt;
-//           this.languageTokenizer = new PortugueseTokenizer(parser, in, this);
+           this.languageTokenizer = new PortugueseTokenizer(parser, in, this);
            break;
        case ro:
            languageMode = LanguageMode.ro;
-//           this.languageTokenizer = new RomanianTokenizer(parser, in, this);
+           this.languageTokenizer = new RomanianTokenizer(parser, in, this);
            break;
        case test:
            languageMode = LanguageMode.test;

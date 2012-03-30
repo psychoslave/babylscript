@@ -44,6 +44,7 @@
 
 package org.mozilla.javascript.babylscript;
 
+import java.io.IOException;
 import java.util.Locale;
 import java.util.ResourceBundle;
 
@@ -52,15 +53,38 @@ import org.mozilla.javascript.Parser;
 import org.mozilla.javascript.TokenCharStream;
 import org.mozilla.javascript.TokenStream;
 
-public class EnglishTokenizer extends BabylGenericTokenizer
+public class ArabicTokenizer extends BabylGenericTokenizer
 {
-    public EnglishTokenizer(Parser p, TokenCharStream in, TokenStream ts)
+    public ArabicTokenizer(Parser p, TokenCharStream in, TokenStream ts)
     {
         super(p, 
                 in, 
                 ts, 
-                new BabylTokenizer.DecimalNumberReader(),
-                ResourceBundle.getBundle("org.mozilla.javascript.babylscript.resources.Keywords", new Locale("en")));
+                new BabylTokenizer.DecimalNumberReader('.'),
+                ResourceBundle.getBundle("org.mozilla.javascript.babylscript.resources.Keywords", new Locale("ar")));
     }
 
+    protected int matchSymbol(int c) throws IOException
+    {
+        // perform some simple substitutions of single character symbols
+        if (c == '\u060c')
+            c = ',';
+        else if (c == '\u061b')
+            c = ';';
+        else if (c == '\u061f')
+            c = '?';
+        
+        return super.matchSymbol(c);
+    }
+
+    protected boolean isStringDelimiter(int ch)
+    {
+        return (ch == '\'' || ch == '\"' || ch == '\u00AB');
+    }
+    protected int getMatchingStringDelimiter(int ch)
+    {
+        if (ch == '\'') return '\'';
+        if (ch == '\u00AB') return '\u00BB';
+        return '\"';
+    }
 }

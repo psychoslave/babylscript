@@ -52,15 +52,26 @@ import org.mozilla.javascript.Parser;
 import org.mozilla.javascript.TokenCharStream;
 import org.mozilla.javascript.TokenStream;
 
-public class EnglishTokenizer extends BabylGenericTokenizer
+public class RomanianTokenizer extends BabylGenericTokenizer
 {
-    public EnglishTokenizer(Parser p, TokenCharStream in, TokenStream ts)
+    public RomanianTokenizer(Parser p, TokenCharStream in, TokenStream ts)
     {
         super(p, 
                 in, 
                 ts, 
-                new BabylTokenizer.DecimalNumberReader(),
-                ResourceBundle.getBundle("org.mozilla.javascript.babylscript.resources.Keywords", new Locale("en")));
+                new BabylTokenizer.DecimalNumberReader(','),
+                ResourceBundle.getBundle("org.mozilla.javascript.babylscript.resources.Keywords", new Locale("ro")));
     }
 
+    protected boolean isStringDelimiter(int ch)
+    {
+        return (ch == '\'' || ch == '\"' || ch == '\u00AB' || ch == '\u201e');
+    }
+    protected int getMatchingStringDelimiter(int ch)
+    {
+        if (ch == '\'') return '\'';
+        if (ch == '\u00AB') return '\u00BB';
+        if (ch == '\u201e') return '\u201d';
+        return '\"';
+    }
 }
