@@ -93,17 +93,21 @@ public class BabylTokenizer
     Parser parser;
     TokenStream ts;
     DecimalNumberReader numberReader;
-    BabylTokenizer(Parser p, TokenCharStream in, TokenStream ts)
+    public BabylTokenizer(Parser p, TokenCharStream in, TokenStream ts, DecimalNumberReader numberReader)
     {
         this.parser = p;
         this.ts = ts;
         this.in = in;
-        numberReader = new DecimalNumberReader();
+        this.numberReader = numberReader;
     }
+
+    protected Map<String, Integer> keywordLookup = new HashMap<String, Integer>();
 
     protected int stringToKeyword(String name)
     {
-        return englishStringToKeyword(name);
+        if (keywordLookup.containsKey(name))
+            return keywordLookup.get(name) & 0xff;
+        return Token.EOF;
     }
     
     static int englishStringToKeyword(String name)
@@ -796,7 +800,7 @@ public class BabylTokenizer
     
     // #string_id_map#
     // The following assumes that Token.EOF == 0
-    static final int
+    protected static final int
          Id_break         = Token.BREAK,
          Id_case          = Token.CASE,
          Id_continue      = Token.CONTINUE,

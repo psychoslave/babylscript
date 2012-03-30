@@ -46,6 +46,8 @@ package org.mozilla.javascript;
 
 import java.io.*;
 
+import org.mozilla.javascript.babylscript.EnglishTokenizer;
+
 
 /**
  * This class implements the JavaScript scanner.
@@ -59,14 +61,14 @@ import java.io.*;
  * @author Brendan Eich
  */
 
-class TokenStream
+public class TokenStream
 {
     TokenStream(Parser parser, Reader sourceReader, String sourceString,
                 int lineno)
     {
         this.parser = parser;
         this.in = new TokenCharStream(sourceReader, sourceString, lineno);
-        this.englishTokenizer = new BabylTokenizer(parser, in, this);
+        this.englishTokenizer = new EnglishTokenizer(parser, in, this);
         xmlTokenizer = new XMLTokenizer(parser, in, this);
         setLanguage(LanguageMode.en);
     }
