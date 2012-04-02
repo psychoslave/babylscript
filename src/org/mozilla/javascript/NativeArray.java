@@ -610,7 +610,7 @@ public class NativeArray extends IdScriptableObject
                                             long length)
     {
         return ScriptRuntime.setObjectProp(
-                   target, "length", ScriptRuntime.wrapNumber(length), cx);
+                   target, ScriptRuntime.TOFILL, "length", ScriptRuntime.wrapNumber(length), cx);
     }
 
     /* Utility functions to encapsulate index > Integer.MAX_VALUE
@@ -639,7 +639,7 @@ public class NativeArray extends IdScriptableObject
     {
         if (index > Integer.MAX_VALUE) {
             String id = Long.toString(index);
-            ScriptRuntime.setObjectProp(target, id, value, cx);
+            ScriptRuntime.setObjectProp(target, ScriptRuntime.TOFILL, id, value, cx);
         } else {
             ScriptRuntime.setObjectIndex(target, (int)index, value, cx);
         }
@@ -713,7 +713,7 @@ public class NativeArray extends IdScriptableObject
                             Callable fun;
                             Scriptable funThis;
                             fun = ScriptRuntime.getPropFunctionAndThis(
-                                      elem, "toLocaleString", cx);
+                                      elem, ScriptRuntime.TOFILL, "toLocaleString", cx);
                             funThis = ScriptRuntime.lastStoredScriptable(cx);
                             elem = fun.call(cx, scope, funThis,
                                             ScriptRuntime.emptyArgs);
@@ -1571,7 +1571,7 @@ public class NativeArray extends IdScriptableObject
         for (long i=0; i < length; i++) {
             Object[] innerArgs = new Object[3];
             Object elem = (i > Integer.MAX_VALUE)
-                ? ScriptableObject.getProperty(thisObj, Long.toString(i))
+                ? ScriptableObject.getProperty(thisObj, null, Long.toString(i))
                 : ScriptableObject.getProperty(thisObj, (int)i);
             if (elem == Scriptable.NOT_FOUND) {
                 continue;

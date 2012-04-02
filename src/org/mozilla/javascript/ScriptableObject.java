@@ -865,7 +865,7 @@ public abstract class ScriptableObject implements Scriptable, Serializable,
                 }
                 args[0] = hint;
             }
-            Object v = getProperty(object, methodName);
+            Object v = getProperty(object, null, methodName);
             if (!(v instanceof Function))
                 continue;
             Function fun = (Function) v;
@@ -1626,7 +1626,7 @@ public abstract class ScriptableObject implements Scriptable, Serializable,
                                                String className)
     {
         scope = getTopLevelScope(scope);
-        Object ctor = getProperty(scope, className);
+        Object ctor = getProperty(scope, null, className);
         Object proto;
         if (ctor instanceof BaseFunction) {
             proto = ((BaseFunction)ctor).getPrototypeProperty();
@@ -1788,8 +1788,12 @@ public abstract class ScriptableObject implements Scriptable, Serializable,
      *         <code>Scriptable.NOT_FOUND</code> if not found
      * @since 1.5R2
      */
-    public static Object getProperty(Scriptable obj, String name)
+    public static Object getProperty(Scriptable obj, String lang, String name)
     {
+       String trans = getTranslatedNameWithPrototype(obj, lang, name); 
+       if (trans != null)
+          name = trans;
+
         Scriptable start = obj;
         Object result;
         do {
@@ -1801,6 +1805,21 @@ public abstract class ScriptableObject implements Scriptable, Serializable,
         return result;
     }
 
+    // Stuff required for backwards compatibility with the Rhino debugger
+    @Deprecated public static Object getProperty(Scriptable obj, String name)
+    {
+        return getProperty(obj, ScriptRuntime.TOFILL, name);
+    }
+    @Deprecated public static boolean hasProperty(Scriptable obj, String name)
+    {
+        return hasProperty(obj, ScriptRuntime.TOFILL, name);
+    }
+    @Deprecated public static void putProperty(Scriptable obj, String name, Object value)
+    {
+        putProperty(obj, ScriptRuntime.TOFILL, name, value);
+    }
+
+    
     /**
      * Gets an indexed property from an object or any object in its prototype chain.
      * <p>
@@ -1840,8 +1859,12 @@ public abstract class ScriptableObject implements Scriptable, Serializable,
      * @return the true if property was found
      * @since 1.5R2
      */
-    public static boolean hasProperty(Scriptable obj, String name)
+    public static boolean hasProperty(Scriptable obj, String lang, String name)
     {
+       String trans = getTranslatedNameWithPrototype(obj, lang, name); 
+       if (trans != null)
+          name = trans;
+
         return null != getBase(obj, name);
     }
 
@@ -1900,8 +1923,12 @@ public abstract class ScriptableObject implements Scriptable, Serializable,
      * @param value any JavaScript value accepted by Scriptable.put
      * @since 1.5R2
      */
-    public static void putProperty(Scriptable obj, String name, Object value)
+    public static void putProperty(Scriptable obj, String lang, String name, Object value)
     {
+        String trans = getTranslatedNameWithPrototype(obj, lang, name); 
+        if (trans != null)
+           name = trans;
+       
         Scriptable base = getBase(obj, name);
         if (base == null)
             base = obj;
@@ -1966,8 +1993,12 @@ public abstract class ScriptableObject implements Scriptable, Serializable,
      * @return true if the property doesn't exist or was successfully removed
      * @since 1.5R2
      */
-    public static boolean deleteProperty(Scriptable obj, String name)
+    public static boolean deleteProperty(Scriptable obj, String lang, String name)
     {
+        String trans = getTranslatedNameWithPrototype(obj, lang, name); 
+        if (trans != null)
+           name = trans;
+
         Scriptable base = getBase(obj, name);
         if (base == null)
             return true;
@@ -2066,7 +2097,7 @@ public abstract class ScriptableObject implements Scriptable, Serializable,
                                     String methodName,
                                     Object[] args)
     {
-        Object funObj = getProperty(obj, methodName);
+        Object funObj = getProperty(obj, null, methodName);
         if (!(funObj instanceof Function)) {
             throw ScriptRuntime.notFunctionError(obj, methodName);
         }

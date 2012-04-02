@@ -92,7 +92,7 @@ public final class OptRuntime extends ScriptRuntime
     public static Object callName(Object[] args, String name,
                                   Context cx, Scriptable scope)
     {
-        Callable f = getNameFunctionAndThis(name, cx, scope);
+        Callable f = getNameFunctionAndThis(ScriptRuntime.TOFILL, name, cx, scope);
         Scriptable thisObj = lastStoredScriptable(cx);
         return f.call(cx, scope, thisObj, args);
     }
@@ -103,7 +103,7 @@ public final class OptRuntime extends ScriptRuntime
     public static Object callName0(String name,
                                    Context cx, Scriptable scope)
     {
-        Callable f = getNameFunctionAndThis(name, cx, scope);
+        Callable f = getNameFunctionAndThis(ScriptRuntime.TOFILL, name, cx, scope);
         Scriptable thisObj = lastStoredScriptable(cx);
         return f.call(cx, scope, thisObj, ScriptRuntime.emptyArgs);
     }
@@ -114,7 +114,7 @@ public final class OptRuntime extends ScriptRuntime
     public static Object callProp0(Object value, String property,
                                    Context cx, Scriptable scope)
     {
-        Callable f = getPropFunctionAndThis(value, property, cx, scope);
+        Callable f = getPropFunctionAndThis(value, ScriptRuntime.TOFILL, property, cx, scope);
         Scriptable thisObj = lastStoredScriptable(cx);
         return f.call(cx, scope, thisObj, ScriptRuntime.emptyArgs);
     }
@@ -140,7 +140,7 @@ public final class OptRuntime extends ScriptRuntime
     public static Object elemIncrDecr(Object obj, double index,
                                       Context cx, int incrDecrMask)
     {
-        return ScriptRuntime.elemIncrDecr(obj, new Double(index), cx,
+        return ScriptRuntime.elemIncrDecr(obj, ScriptRuntime.TOFILL, new Double(index), cx,
                                           incrDecrMask);
     }
 

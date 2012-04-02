@@ -211,7 +211,7 @@ public final class NativeIterator extends IdScriptableObject {
             throw new JavaScriptException(
                 NativeIterator.getStopIterationObject(scope), null, 0);
         }
-        return ScriptRuntime.enumId(this.objectIterator, cx);
+        return ScriptRuntime.enumId(ScriptRuntime.TOFILL, this.objectIterator, cx);
     }
     
     static public class WrappedJavaIterator

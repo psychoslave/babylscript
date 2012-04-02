@@ -101,7 +101,7 @@ class SpecialRef extends Ref
     {
         switch (type) {
           case SPECIAL_NONE:
-            return ScriptRuntime.setObjectProp(target, name, value, cx);
+            return ScriptRuntime.setObjectProp(target, ScriptRuntime.TOFILL, name, value, cx);
           case SPECIAL_PROTO:
           case SPECIAL_PARENT:
             {
@@ -138,7 +138,7 @@ class SpecialRef extends Ref
     public boolean has(Context cx)
     {
         if (type == SPECIAL_NONE) {
-            return ScriptRuntime.hasObjectElem(target, name, cx);
+            return ScriptRuntime.hasObjectElem(target, ScriptRuntime.TOFILL, name, cx);
         }
         return true;
     }
@@ -147,7 +147,7 @@ class SpecialRef extends Ref
     public boolean delete(Context cx)
     {
         if (type == SPECIAL_NONE) {
-            return ScriptRuntime.deleteObjectElem(target, name, cx);
+            return ScriptRuntime.deleteObjectElem(target, ScriptRuntime.TOFILL, name, cx);
         }
         return false;
     }
