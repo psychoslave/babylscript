@@ -79,6 +79,33 @@ public class NativeWith implements Scriptable, IdFunctionCall, Serializable {
         return "With";
     }
 
+    public boolean hasTranslatedName(String lang, String name, Scriptable start)
+    {
+        return prototype.hasTranslatedName(lang, name, start);
+    }
+    public String getTranslatedName(String lang, String name, Scriptable start)
+    {
+        if (start == this)
+            start = prototype;
+        return prototype.getTranslatedName(lang, name, start);
+    }
+    public String getReverseTranslatedName(String lang, String name, Scriptable start)
+    {
+        if (start == this)
+            start = prototype;
+        return prototype.getReverseTranslatedName(lang, name, start);
+    }
+    public void deleteTranslatedName(String lang, String name)
+    {
+        prototype.deleteTranslatedName(lang, name);
+    }
+    public void putTranslatedName(String lang, String name, Scriptable start, String value)
+    {
+        if (start == this)
+            start = prototype;
+        prototype.putTranslatedName(lang, name, start, value);
+    }
+    
     public boolean has(String id, Scriptable start)
     {
         return prototype.has(id, prototype);

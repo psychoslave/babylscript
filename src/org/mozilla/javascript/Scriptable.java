@@ -75,6 +75,16 @@ public interface Scriptable {
      */
     public static final Object NOT_FOUND = UniqueTag.NOT_FOUND;
 
+
+    /**
+     * New methods for handling translated names
+     */
+    public boolean hasTranslatedName(String lang, String name, Scriptable start);
+    public String getTranslatedName(String lang, String name, Scriptable start);
+    public String getReverseTranslatedName(String lang, String name, Scriptable start);
+    public void deleteTranslatedName(String lang, String name);
+    public void putTranslatedName(String lang, String name, Scriptable start, String value);
+    
     /**
      * Get a named property from the object.
      *

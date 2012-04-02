@@ -36,6 +36,7 @@
  * ***** END LICENSE BLOCK ***** */
 
 import org.mozilla.javascript.*;
+
 import java.util.List;
 import java.util.ArrayList;
 
@@ -277,4 +278,13 @@ public class Matrix implements Scriptable {
     private int dim;
     private List<Object> list;
     private Scriptable prototype, parent;
+
+    /**
+     * Stubs of support for translated names
+     */
+    public boolean hasTranslatedName(String lang, String name, Scriptable start) { return false; }
+    public String getTranslatedName(String lang, String name, Scriptable start) { return null; }
+    public String getReverseTranslatedName(String lang, String name, Scriptable start) { return null; }
+    public void deleteTranslatedName(String lang, String name) { }
+    public void putTranslatedName(String lang, String name, Scriptable start, String value) { }
 }

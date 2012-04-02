@@ -50,7 +50,10 @@ import java.lang.reflect.*;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.io.*;
+
+import org.mozilla.javascript.babylscript.TranslatedNameBindings;
 import org.mozilla.javascript.debug.DebuggableObject;
 
 /**
@@ -248,6 +251,117 @@ public abstract class ScriptableObject implements Scriptable, Serializable,
      */
     public abstract String getClassName();
 
+    /**
+     * Data structures for holding the mappings of translated
+     * names to default name and the inverse mapping.
+     */
+    ConcurrentHashMap<String, ConcurrentHashMap<String, String>> translations
+        = new ConcurrentHashMap<String, ConcurrentHashMap<String, String>>();
+    ConcurrentHashMap<String, ConcurrentHashMap<String, String>> reverseTranslations
+        = new ConcurrentHashMap<String, ConcurrentHashMap<String, String>>();
+
+    /**
+     * Implementations of the methods for directly accessing
+     * and modifying the translated names.
+     */
+    public boolean hasTranslatedName(String lang, String name, Scriptable start)
+    {
+        if (lang == null) return false;
+        ConcurrentHashMap<String, String> trans = translations.get(lang);
+        if (trans == null) return false;
+        return trans.containsKey(name);
+    }
+    public String getTranslatedName(String lang, String name, Scriptable start)
+    {
+        if (lang == null) return null;
+        ConcurrentHashMap<String, String> trans = translations.get(lang);
+        if (trans == null) return null;
+        return trans.get(name);
+    }
+    public String getReverseTranslatedName(String lang, String name, Scriptable start)
+    {
+        if (lang == null) return null;
+        ConcurrentHashMap<String, String> trans = reverseTranslations.get(lang);
+        if (trans == null) return null;
+        return trans.get(name);
+    }
+    public void deleteTranslatedName(String lang, String name)
+    {
+        if (lang == null) return;
+        
+        ConcurrentHashMap<String, String> trans = translations.get(lang);
+        if (trans == null) return;
+        String val = trans.get(name);
+        trans.remove(name);
+        
+        if (val != null)
+        {
+            trans = reverseTranslations.get(lang);
+            if (trans == null) return;
+            // TODO: not quite right if mappings are not 1:1
+            trans.remove(val);
+        }
+    }
+    public void putTranslatedName(String lang, String name, Scriptable start, String value)
+    {
+        if (lang == null) return;
+        if (start instanceof ScriptableObject)
+        {
+            // Put mapping in one direction
+            ConcurrentHashMap<String, String> trans = ((ScriptableObject)start).translations.get(lang);
+            if (trans == null) 
+            {
+                ConcurrentHashMap<String, String> newLanguageMapping = new ConcurrentHashMap<String, String>();
+                if (TranslatedNameBindings.EquivalentLanguageNames.containsKey(lang))
+                {
+                    // Different strings refer to the same language, so we map these different strings
+                    // to the same mapping
+                    String [] equivs = TranslatedNameBindings.EquivalentLanguageNames.get(lang);
+
+                    // To prevent race conditions, we need to do the substitutions
+                    // in order (the order is described in TranslatedNameBindings.EquivalentLanguageNames
+                    for (String equivLang: equivs)
+                    {
+                        ConcurrentHashMap<String, String> old = ((ScriptableObject)start).translations.putIfAbsent(equivLang, newLanguageMapping);
+                        if (old != null)
+                            newLanguageMapping = old;
+                    }
+                }
+                else
+                    ((ScriptableObject)start).translations.putIfAbsent(lang, newLanguageMapping);
+                trans = ((ScriptableObject)start).translations.get(lang);
+            }
+            trans.put(name, value);
+
+            // Put in reverse mapping
+            trans = ((ScriptableObject)start).reverseTranslations.get(lang);
+            if (trans == null) 
+            {
+                ConcurrentHashMap<String, String> newLanguageMapping = new ConcurrentHashMap<String, String>();
+                if (TranslatedNameBindings.EquivalentLanguageNames.containsKey(lang))
+                {
+                    // Different strings refer to the same language, so we map these different strings
+                    // to the same mapping
+                    String [] equivs = TranslatedNameBindings.EquivalentLanguageNames.get(lang);
+
+                    // To prevent race conditions, we need to do the substitutions
+                    // in order (the order is described in TranslatedNameBindings.EquivalentLanguageNames
+                    for (String equivLang: equivs)
+                    {
+                        ConcurrentHashMap<String, String> old = ((ScriptableObject)start).reverseTranslations.putIfAbsent(equivLang, newLanguageMapping);
+                        if (old != null)
+                            newLanguageMapping = old;
+                    }
+                }
+                else
+                    ((ScriptableObject)start).reverseTranslations.putIfAbsent(lang, newLanguageMapping);
+                trans = ((ScriptableObject)start).reverseTranslations.get(lang);
+            }
+            trans.put(value, name);
+        }
+    }
+
+    
     /**
      * Returns true if the named property is defined.
      *

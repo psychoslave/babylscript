@@ -118,6 +118,28 @@ public class Delegator implements Function {
     public String getClassName() {
         return obj.getClassName();
     }
+
+    public boolean hasTranslatedName(String lang, String name, Scriptable start)
+    {
+       return obj.hasTranslatedName(lang, name, start);
+    }
+    public String getTranslatedName(String lang, String name, Scriptable start)
+    {
+       return obj.getTranslatedName(lang, name, start);
+    }
+    public String getReverseTranslatedName(String lang, String name, Scriptable start)
+    {
+        return obj.getReverseTranslatedName(lang, name, start);
+    }
+    public void deleteTranslatedName(String lang, String name)
+    {
+        obj.deleteTranslatedName(lang, name);
+    }
+    public void putTranslatedName(String lang, String name, Scriptable start, String value)
+    {
+       obj.putTranslatedName(lang, name, start, value);
+    }
+
     /**
      * @see org.mozilla.javascript.Scriptable#get(String, Scriptable)
      */

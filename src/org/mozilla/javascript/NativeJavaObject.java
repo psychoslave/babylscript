@@ -93,6 +93,27 @@ public class NativeJavaObject implements Scriptable, Wrapper, Serializable
             = members.getFieldAndMethodsObjects(this, javaObject, false);
     }
 
+    // We do not currently support translated names in Java objects
+    public boolean hasTranslatedName(String lang, String name, Scriptable start)
+    {
+       return false;
+    }
+    public String getTranslatedName(String lang, String name, Scriptable start)
+    {
+       return null;
+    }
+    public String getReverseTranslatedName(String lang, String name, Scriptable start)
+    {
+        return null;
+    }
+    public void deleteTranslatedName(String lang, String name)
+    {
+        return;
+    }
+    public void putTranslatedName(String lang, String name, Scriptable start, String value)
+    {
+    }
+
     public boolean has(String name, Scriptable start) {
         return members.has(name, false);
     }
