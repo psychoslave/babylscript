@@ -118,13 +118,13 @@ public class TokenStream
 
     final String getLine() { return in.getLine(); }
 
-    
+
     final int getToken() throws IOException
     {
         int token = Token.LANGMODE;
         while (token == Token.LANGMODE)
         {
-           token = languageTokenizer.getToken();
+            token = currentTokenizer.getToken();
         }
         return token; 
     }
@@ -272,53 +272,53 @@ public class TokenStream
     }
     public void setLanguage(LanguageMode language)
     {
-       switch(language)
-       {
-       case ar:
-           languageMode = LanguageMode.ar;
-           this.languageTokenizer = new ArabicTokenizer(parser, in, this);
-           break;
-       case en:
-          languageMode = LanguageMode.en;
-          this.languageTokenizer = this.englishTokenizer;
-          break;
-       case fr:
-          languageMode = LanguageMode.fr;
-          this.languageTokenizer = new FrenchTokenizer(parser, in, this);
-          break;
-       case pt:
-           languageMode = LanguageMode.pt;
-           this.languageTokenizer = new PortugueseTokenizer(parser, in, this);
-           break;
-       case ro:
-           languageMode = LanguageMode.ro;
-           this.languageTokenizer = new RomanianTokenizer(parser, in, this);
-           break;
-       case test:
-           languageMode = LanguageMode.test;
-//           this.languageTokenizer = CustomTokenizer.createFromKeywordProperties(parser, in, this, customLanguageConfig);
-           break;
-       }
+        switch(language)
+        {
+        case ar:
+            languageMode = LanguageMode.ar;
+            currentTokenizer = new ArabicTokenizer(parser, in, this);
+            break;
+        case en:
+            languageMode = LanguageMode.en;
+            currentTokenizer = this.englishTokenizer;
+            break;
+        case fr:
+            languageMode = LanguageMode.fr;
+            currentTokenizer = new FrenchTokenizer(parser, in, this);
+            break;
+        case pt:
+            languageMode = LanguageMode.pt;
+            currentTokenizer = new PortugueseTokenizer(parser, in, this);
+            break;
+        case ro:
+            languageMode = LanguageMode.ro;
+            currentTokenizer = new RomanianTokenizer(parser, in, this);
+            break;
+        case test:
+            languageMode = LanguageMode.test;
+//            this.currentTokenizer = CustomTokenizer.createFromKeywordProperties(parser, in, this, customLanguageConfig);
+            break;
+        }
     }
 
     public String getLastLanguageString()
     {
-       switch(languageMode)
-       {
-       case ar:
-           return "ar";
-       case en:
-          return "en";
-       case fr:
-          return "fr";
-       case pt:
-           return "pt";
-       case ro:
-           return "ro";
-       case test:
-           return "test";
-       }
-       return null;
+        switch(languageMode)
+        {
+        case ar:
+            return "ar";
+        case en:
+            return "en";
+        case fr:
+            return "fr";
+        case pt:
+            return "pt";
+        case ro:
+            return "ro";
+        case test:
+            return "test";
+        }
+        return null;
     }
 
     String regExpFlags;
@@ -337,7 +337,7 @@ public class TokenStream
     private TokenCharStream in;
 
     private LanguageMode languageMode = LanguageMode.en;
-    private BabylTokenizer languageTokenizer;
+    private BabylTokenizer currentTokenizer;
     private BabylTokenizer englishTokenizer;
     private XMLTokenizer xmlTokenizer;
     
