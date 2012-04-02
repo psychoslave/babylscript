@@ -178,10 +178,23 @@ public class Interpreter implements Evaluator
        Icode_GENERATOR                  = -62,
        Icode_GENERATOR_END              = -63,
 
-       Icode_DEBUGGER                   = -64,
+       Icode_DEBUGGER                   = -64;
 
+    // New opcodes for Babylscript
+    private static final int
+       Icode_REF_TRANSNAME              = -65,
+       Icode_SET_TRANSNAME              = -66,
+       Icode_DEL_TRANSNAME              = -67,
+       Icode_DUP3                       = -68, // duplicates the top 3 items on the stack
+       Icode_NOLANG                     = -69, // puts null onto the stack
+       Icode_LANGREG_STR1               = -70, // loads a language string into the language register
+       Icode_LANGREG_STR2               = -71,
+       Icode_LANGREG_STR4               = -72,
+       Icode_BINDWITHLANG               = -73; // like BIND, but returns the translated name that an id was bounded to 
+
+    private static final int
        // Last icode
-        MIN_ICODE                       = -64;
+       MIN_ICODE                       = -73;
 
     // data for parsing
 
@@ -454,6 +467,15 @@ public class Interpreter implements Evaluator
           case Icode_GENERATOR:        return "GENERATOR";
           case Icode_GENERATOR_END:    return "GENERATOR_END";
           case Icode_DEBUGGER:         return "DEBUGGER";
+          case Icode_REF_TRANSNAME:    return "REF_TRANSNAME";
+          case Icode_SET_TRANSNAME:    return "SET_TRANSNAME";
+          case Icode_DEL_TRANSNAME:    return "DEL_TRANSNAME";
+          case Icode_DUP3:             return "DUP3";
+          case Icode_NOLANG:           return "NOLANG";
+          case Icode_LANGREG_STR1:     return "LOAD_LANGSTR1";
+          case Icode_LANGREG_STR2:     return "LOAD_LANGSTR2";
+          case Icode_LANGREG_STR4:     return "LOAD_LANGSTR4";
+          case Icode_BINDWITHLANG:     return "BINDWITHLANG"; 
         }
 
         // icode without name
@@ -1177,19 +1199,54 @@ public class Interpreter implements Evaluator
 
           case Token.SET_REF:
           case Token.SET_REF_OP:
-            visitExpression(child, 0);
-            child = child.getNext();
-            if (type == Token.SET_REF_OP) {
-                addIcode(Icode_DUP);
-                stackChange(1);
-                addToken(Token.GET_REF);
-                // Compensate for the following USE_STACK
-                stackChange(-1);
-            }
-            visitExpression(child, 0);
-            addToken(Token.SET_REF);
-            stackChange(-1);
-            break;
+              visitExpression(child, 0);
+              child = child.getNext();
+              if (type == Token.SET_REF_OP) {
+                  addIcode(Icode_DUP);
+                  stackChange(1);
+                  addToken(Token.GET_REF);
+                  // Compensate for the following USE_STACK
+                  stackChange(-1);
+              }
+              visitExpression(child, 0);
+              addToken(Token.SET_REF);
+              stackChange(-1);
+              break;
+
+          case Token.REF_TRANSNAME:
+              visitExpression(child, 0);
+              child = child.getNext();
+              visitExpression(child, 0);
+              child = child.getNext();
+              visitExpression(child, 0);
+              child = child.getNext();
+              addIcode(Icode_REF_TRANSNAME);
+              stackChange(-2);
+              break;
+
+          case Token.SET_TRANSNAME:
+              visitExpression(child, 0);
+              child = child.getNext();
+              visitExpression(child, 0);
+              child = child.getNext();
+              visitExpression(child, 0);
+              child = child.getNext();
+              visitExpression(child, 0);
+              child = child.getNext();
+              addIcode(Icode_SET_TRANSNAME);
+              stackChange(-3);
+              break;
+
+          case Token.DEL_TRANSNAME:
+              visitExpression(child, 0);
+              child = child.getNext();
+              visitExpression(child, 0);
+              child = child.getNext();
+              visitExpression(child, 0);
+              child = child.getNext();
+              addIcode(Icode_DEL_TRANSNAME);
+              stackChange(-2);
+              break;
 
           case Token.SETNAME:
             {
@@ -1818,6 +1875,30 @@ public class Interpreter implements Evaluator
         }
     }
 
+    private void addLangStringPrefix(String str)
+    {
+        if (str == null)
+        {
+            addIcode(Icode_NOLANG);
+            return;
+        }
+        int index = itsStrings.get(str, -1);
+        if (index == -1) {
+            index = itsStrings.size();
+            itsStrings.put(str, index);
+        }
+        if (index <= 0xFF) {
+            addIcode(Icode_LANGREG_STR1);
+            addUint8(index);
+        } else if (index <= 0xFFFF) {
+            addIcode(Icode_LANGREG_STR2);
+            addUint16(index);
+        } else {
+            addIcode(Icode_LANGREG_STR4);
+            addInt(index);
+        }
+    }
+
     private void addIndexPrefix(int index)
     {
         if (index < 0) Kit.codeBug();
@@ -2144,6 +2225,24 @@ public class Interpreter implements Evaluator
                 out.println(tname+" "+indexReg);
                 ++pc;
                 break;
+              case Icode_LANGREG_STR1: {
+                String str = strings[0xFF & iCode[pc]];
+                out.println(tname + " \"" + str + '"');
+                ++pc;
+                break;
+              }
+               case Icode_LANGREG_STR2: {
+                 String str = strings[getIndex(iCode, pc)];
+                 out.println(tname + " \"" + str + '"');
+                 pc += 2;
+                 break;
+               }
+               case Icode_LANGREG_STR4: {
+                 String str = strings[getInt(iCode, pc)];
+                 out.println(tname + " \"" + str + '"');
+                 pc += 4;
+                 break;
+               }
             }
             if (old_pc + icodeLength != pc) Kit.codeBug();
         }
@@ -2249,6 +2348,18 @@ public class Interpreter implements Evaluator
             case Icode_LINE :
                 // line number
                 return 1 + 2;
+                
+            case Icode_LANGREG_STR1:
+               // ubyte string index
+               return 1 + 1;
+
+           case Icode_LANGREG_STR2:
+               // ushort string index
+               return 1 + 2;
+
+           case Icode_LANGREG_STR4:
+               // int string index
+               return 1 + 4;
         }
         if (!validBytecode(bytecode)) throw Kit.codeBug();
         return 1;
@@ -2565,6 +2676,7 @@ public class Interpreter implements Evaluator
         final int EXCEPTION_COST = 100;
 
         String stringReg = null;
+        String langStringReg = ScriptRuntime.TOFILL;
         int indexReg = -1;
 
         if (cx.lastInterpreterFrame != null) {
@@ -3107,6 +3219,58 @@ switch (op) {
         stack[stackTop] = ScriptRuntime.refSet(ref, value, cx);
         continue Loop;
     }
+    case Icode_REF_TRANSNAME: {
+        Object lhs = stack[stackTop - 2];
+        Object lang = stack[stackTop - 1];
+        Object id = stack[stackTop];
+        stackTop -= 2;
+        Object value = ScriptRuntime.getTranslatedName(lhs, lang, id, cx);
+        stack[stackTop] = value;
+        continue Loop;
+    }
+    case Icode_SET_TRANSNAME: {
+        Object value = stack[stackTop];
+        Object id = stack[stackTop - 1];
+        Object lang = stack[stackTop - 2];
+        Object lhs = stack[stackTop - 3];
+        stackTop -= 3;
+        value = ScriptRuntime.setTranslatedName(lhs, lang, id, value, cx);
+        stack[stackTop] = value;
+        continue Loop;
+    }
+    case Icode_DEL_TRANSNAME: {
+        Object lhs = stack[stackTop - 2];
+        Object lang = stack[stackTop - 1];
+        Object id = stack[stackTop];
+        stackTop -= 2;
+        Object value = ScriptRuntime.deleteTranslatedName(lhs, lang, id, cx);
+        stack[stackTop] = value;
+        continue Loop;
+    }
+    case Icode_DUP3 :
+        stack[stackTop + 1] = stack[stackTop - 2];
+        sDbl[stackTop + 1] = sDbl[stackTop - 2];
+        stack[stackTop + 2] = stack[stackTop - 1];
+        sDbl[stackTop + 2] = sDbl[stackTop - 1];
+        stack[stackTop + 3] = stack[stackTop];
+        sDbl[stackTop + 3] = sDbl[stackTop];
+        stackTop += 3;
+        continue Loop;
+    case Icode_NOLANG:
+        langStringReg = null;
+        continue Loop;
+    case Icode_LANGREG_STR1:
+        langStringReg = strings[0xFF & iCode[frame.pc]];
+        ++frame.pc;
+        continue Loop;
+    case Icode_LANGREG_STR2:
+        langStringReg = strings[getIndex(iCode, frame.pc)];
+        frame.pc += 2;
+        continue Loop;
+    case Icode_LANGREG_STR4:
+        langStringReg = strings[getInt(iCode, frame.pc)];
+        frame.pc += 4;
+        continue Loop;
     case Token.DEL_REF : {
         Ref ref = (Ref)stack[stackTop];
         stack[stackTop] = ScriptRuntime.refDel(ref, cx);

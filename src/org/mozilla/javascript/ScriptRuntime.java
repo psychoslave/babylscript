@@ -66,6 +66,14 @@ import org.mozilla.javascript.xml.XMLLib;
 
 public class ScriptRuntime {
 
+	/**
+	 * Constant that we use in the interpreter to indicate an
+	 * empty language tag (either because no language tag should
+	 * be used in a certain context or because we aren't sure
+	 * which language tag would be appropriate for the given context)
+	 */
+	public final static String TOFILL = null;
+
     /**
      * No instances should be created.
      */
@@ -1501,6 +1509,53 @@ public class ScriptRuntime {
         return result;
     }
 
+    public static Object setTranslatedName(Object obj, Object lang, Object id, Object value,
+                                       Context cx)
+    {
+        Scriptable sobj = toObjectOrNull(cx, obj);
+        if (sobj == null) {
+            throw undefWriteError(obj, id, value);
+        }
+        String langString = toString(lang);
+        String idString = toString(id);
+        String valString = toString(value);
+
+        ScriptableObject.putTranslatedNameWithPrototype(sobj, langString, idString, valString);
+        
+        return value;
+    }
+
+    public static Object getTranslatedName(Object obj, Object lang, Object id, Context cx)
+    {
+        Scriptable sobj = toObjectOrNull(cx, obj);
+        if (sobj == null) {
+            throw undefReadError(obj, id);
+        }
+        String langString = toString(lang);
+        String idString = toString(id);
+
+        Object result = ScriptableObject.getTranslatedNameWithPrototype(sobj, langString, idString);
+        if (result == null) {
+           result = Undefined.instance;
+        }
+
+        return result;
+    }
+
+    public static Object deleteTranslatedName(Object obj, Object lang, Object id, Context cx)
+    {
+        Scriptable sobj = toObjectOrNull(cx, obj);
+        if (sobj == null) {
+            String idStr = (id == null) ? "null" : id.toString();
+            throw typeError2("msg.undef.prop.delete", toString(obj), idStr);
+        }
+        String langString = toString(lang);
+        String idString = toString(id);
+
+        boolean result = ScriptableObject.deleteTranslatedNameWithPrototype(sobj, langString, idString);
+        return wrapBoolean(result);
+    }
+    
     /*
      * Call obj.[[Put]](id, value)
      */

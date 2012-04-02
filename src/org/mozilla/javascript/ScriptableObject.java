@@ -1711,6 +1711,71 @@ public abstract class ScriptableObject implements Scriptable, Serializable,
         throw Context.reportRuntimeError1("msg.modify.sealed", str);
     }
 
+    public static void clearTranslations(Scriptable scriptable, String lang)
+    {
+        if (!(scriptable instanceof ScriptableObject)) {
+            assert(false);
+            return;
+        }
+        ScriptableObject obj = (ScriptableObject)scriptable;
+        if (!obj.translations.containsKey(lang)) return;
+        obj.translations.get(lang).clear();
+        obj.reverseTranslations.get(lang).clear();
+    }
+    private static Scriptable getTranslatedNameBase(Scriptable obj, String lang, String name)
+    {
+        do {
+            if (obj.hasTranslatedName(lang, name, obj))
+                break;
+            obj = obj.getPrototype();
+        } while(obj != null);
+        return obj;
+    }
+    public static boolean hasTranslatedNameWithPrototype(Scriptable obj, String lang, String name)
+    {
+        return null != getTranslatedNameBase(obj, lang, name);
+    }
+    public static String getTranslatedNameWithPrototype(Scriptable obj, String lang, String name)
+    {
+        Scriptable start = obj;
+        String result;
+        do {
+            result = obj.getTranslatedName(lang, name, start);
+            if (result != null)
+                break;
+            obj = obj.getPrototype();
+        } while (obj != null);
+        return result;
+    }
+    public static String getReverseTranslatedNameWithPrototype(Scriptable obj, String lang, String name)
+    {
+        Scriptable start = obj;
+        String result;
+        do {
+            result = obj.getReverseTranslatedName(lang, name, start);
+            if (result != null)
+                break;
+            obj = obj.getPrototype();
+        } while (obj != null);
+        return result;
+    }
+    public static boolean deleteTranslatedNameWithPrototype(Scriptable obj, String lang, String name)
+    {
+        Scriptable base = getTranslatedNameBase(obj, lang, name);
+        if (base == null)
+            return true;
+        base.deleteTranslatedName(lang, name);
+        return !base.hasTranslatedName(lang, name, obj);
+    }
+
+    public static void putTranslatedNameWithPrototype(Scriptable obj, String lang, String name, String value)
+    {
+       Scriptable base = getTranslatedNameBase(obj, lang, name);
+       if (base == null)
+           base = obj;
+       base.putTranslatedName(lang, name, obj, value);
+    }
+
     /**
      * Gets a named property from an object or any object in its prototype chain.
      * <p>
