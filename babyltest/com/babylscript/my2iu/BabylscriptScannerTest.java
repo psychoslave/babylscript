@@ -1,0 +1,99 @@
+package com.babylscript.my2iu;
+
+
+import static org.junit.Assert.assertEquals;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Scriptable;
+
+public class BabylscriptScannerTest
+{
+   Scriptable scope;
+
+   @Before
+   public void setUp() throws Exception
+   {
+      Context cx = Context.enter();
+      cx.setOptimizationLevel(-1);
+      try {
+         scope = cx.initStandardObjects();
+      } finally {
+         Context.exit();
+      }
+   }
+
+   @After
+   public void tearDown() throws Exception
+   {
+   }
+
+   String evalStringToString(String code)
+   {
+      Context cx = Context.enter();
+      cx.setOptimizationLevel(-1);
+      try {
+         return Context.toString(cx.evaluateString(scope, code, "<test>", 0, null));
+      } finally {
+         Context.exit();
+      }
+   }
+   
+   @Test
+   public void basic1() 
+   {
+      assertEquals(evalStringToString("---fr------en---null;"), "null");
+   }
+
+   @Test
+   public void basic2() 
+   {
+      assertEquals(evalStringToString("---fr---fonction a(b){ renvoi b * 2; }; a(3);"), "6");
+   }
+
+   @Test
+   public void basic3() 
+   {
+      assertEquals(evalStringToString("---fr---fonction a(b){ ---en--- if (b == 3) ---fr--- renvoi b * 2; sinon ---en--- return 8; }; a(3);"), "6");
+   }
+
+   @Test
+   public void basic4() 
+   {
+      assertEquals(evalStringToString("---fr---«allo»"), "allo");
+   }
+   
+   @Test
+   public void basic5() 
+   {
+      assertEquals("5", evalStringToString("---fr---var \u00catre = 5; Être;"));
+   }
+
+   @Test
+   public void basic6() 
+   {
+      assertEquals(evalStringToString("---ro--- funcție î() {întoarce „hello”;} î();"), "hello");
+   }
+
+   @Test
+   public void basic7() 
+   {
+      assertEquals(evalStringToString("---ro--- „hello”.lungime"), "5");
+   }
+
+   @Test
+   public void basic8() 
+   {
+      assertEquals("8.25", evalStringToString("---ar---\n\ufeff\u062f\u0627\u0644\u0629 \u0623\u064a_\u0634\u0626 (\u0623\u060c\u0628\u200e)\n{\n\u0623\u0631\u062c\u0639 \"\u0623\u0647\u0644\u0627\".\u0637\u0648\u0644 + (1.25 + 3)\u061b\n\u200e}\n\u200e \u0623\u064a_\u0634\u0626(0\u060c0)\u061b"));
+   }
+
+   @Test
+   public void basic9() 
+   {
+      assertEquals(evalStringToString("Math['\u0639\u0631\u0628\u064a':'\u0628\u0627\u064a']"), evalStringToString("Math['ar':'\u0628\u0627\u064a']"));
+   }
+   
+   
+}
