@@ -3099,7 +3099,10 @@ switch (op) {
                               !stack_boolean(frame, stackTop));
         continue Loop;
     case Token.BINDNAME :
-        stack[++stackTop] = ScriptRuntime.bind(cx, frame.scope, ScriptRuntime.TOFILL, stringReg);
+        stack[++stackTop] = ScriptRuntime.bind(cx, frame.scope, langStringReg, stringReg);
+        continue Loop;
+    case Icode_BINDWITHLANG :
+        stack[++stackTop] = ScriptRuntime.bindId(cx, frame.scope, langStringReg, stringReg);
         continue Loop;
     case Token.SETNAME : {
         Object rhs = stack[stackTop];
@@ -3124,19 +3127,19 @@ switch (op) {
         --stackTop;
         Object lhs = stack[stackTop];
         if (lhs == DBL_MRK) lhs = ScriptRuntime.wrapNumber(sDbl[stackTop]);
-        stack[stackTop] = ScriptRuntime.delete(lhs, ScriptRuntime.TOFILL, rhs, cx);
+        stack[stackTop] = ScriptRuntime.delete(lhs, langStringReg, rhs, cx);
         continue Loop;
     }
     case Token.GETPROPNOWARN : {
         Object lhs = stack[stackTop];
         if (lhs == DBL_MRK) lhs = ScriptRuntime.wrapNumber(sDbl[stackTop]);
-        stack[stackTop] = ScriptRuntime.getObjectPropNoWarn(lhs, ScriptRuntime.TOFILL, stringReg, cx);
+        stack[stackTop] = ScriptRuntime.getObjectPropNoWarn(lhs, langStringReg, stringReg, cx);
         continue Loop;
     }
     case Token.GETPROP : {
         Object lhs = stack[stackTop];
         if (lhs == DBL_MRK) lhs = ScriptRuntime.wrapNumber(sDbl[stackTop]);
-        stack[stackTop] = ScriptRuntime.getObjectProp(lhs, ScriptRuntime.TOFILL, stringReg, cx, frame.scope);
+        stack[stackTop] = ScriptRuntime.getObjectProp(lhs, langStringReg, stringReg, cx, frame.scope);
         continue Loop;
     }
     case Token.SETPROP : {
@@ -3145,14 +3148,14 @@ switch (op) {
         --stackTop;
         Object lhs = stack[stackTop];
         if (lhs == DBL_MRK) lhs = ScriptRuntime.wrapNumber(sDbl[stackTop]);
-        stack[stackTop] = ScriptRuntime.setObjectProp(lhs, ScriptRuntime.TOFILL, stringReg, rhs,
+        stack[stackTop] = ScriptRuntime.setObjectProp(lhs, langStringReg, stringReg, rhs,
                                                       cx);
         continue Loop;
     }
     case Icode_PROP_INC_DEC : {
         Object lhs = stack[stackTop];
         if (lhs == DBL_MRK) lhs = ScriptRuntime.wrapNumber(sDbl[stackTop]);
-        stack[stackTop] = ScriptRuntime.propIncrDecr(lhs, ScriptRuntime.TOFILL, stringReg,
+        stack[stackTop] = ScriptRuntime.propIncrDecr(lhs, langStringReg, stringReg,
                                                      cx, iCode[frame.pc]);
         ++frame.pc;
         continue Loop;
@@ -3164,12 +3167,13 @@ switch (op) {
             lhs = ScriptRuntime.wrapNumber(sDbl[stackTop]);
         }
         Object value;
+        String lang = langStringReg;
         Object id = stack[stackTop + 1];
         if (id != DBL_MRK) {
-            value = ScriptRuntime.getObjectElem(lhs, ScriptRuntime.TOFILL, id, cx, frame.scope);
+            value = ScriptRuntime.getObjectElem(lhs, lang, id, cx, frame.scope);
         } else {
             double d = sDbl[stackTop + 1];
-            value = ScriptRuntime.getObjectIndex(lhs, ScriptRuntime.TOFILL, d, cx);
+            value = ScriptRuntime.getObjectIndex(lhs, lang, d, cx);
         }
         stack[stackTop] = value;
         continue Loop;
@@ -3184,10 +3188,11 @@ switch (op) {
         if (lhs == DBL_MRK) {
             lhs = ScriptRuntime.wrapNumber(sDbl[stackTop]);
         }
+        String lang = langStringReg;
         Object value;
         Object id = stack[stackTop + 1];
         if (id != DBL_MRK) {
-            value = ScriptRuntime.setObjectElem(lhs, ScriptRuntime.TOFILL, id, rhs, cx);
+            value = ScriptRuntime.setObjectElem(lhs, lang, id, rhs, cx);
         } else {
             double d = sDbl[stackTop + 1];
             value = ScriptRuntime.setObjectIndex(lhs, d, rhs, cx);
@@ -3201,7 +3206,7 @@ switch (op) {
         --stackTop;
         Object lhs = stack[stackTop];
         if (lhs == DBL_MRK) lhs = ScriptRuntime.wrapNumber(sDbl[stackTop]);
-        stack[stackTop] = ScriptRuntime.elemIncrDecr(lhs, ScriptRuntime.TOFILL, rhs, cx,
+        stack[stackTop] = ScriptRuntime.elemIncrDecr(lhs, langStringReg, rhs, cx,
                                                      iCode[frame.pc]);
         ++frame.pc;
         continue Loop;
@@ -3295,7 +3300,7 @@ switch (op) {
     case Icode_NAME_AND_THIS :
         // stringReg: name
         ++stackTop;
-        stack[stackTop] = ScriptRuntime.getNameFunctionAndThis(ScriptRuntime.TOFILL, stringReg,
+        stack[stackTop] = ScriptRuntime.getNameFunctionAndThis(langStringReg, stringReg,
                                                                cx, frame.scope);
         ++stackTop;
         stack[stackTop] = ScriptRuntime.lastStoredScriptable(cx);
@@ -3304,7 +3309,7 @@ switch (op) {
         Object obj = stack[stackTop];
         if (obj == DBL_MRK) obj = ScriptRuntime.wrapNumber(sDbl[stackTop]);
         // stringReg: property
-        stack[stackTop] = ScriptRuntime.getPropFunctionAndThis(obj, ScriptRuntime.TOFILL, stringReg,
+        stack[stackTop] = ScriptRuntime.getPropFunctionAndThis(obj, langStringReg, stringReg,
                                                                cx, frame.scope);
         ++stackTop;
         stack[stackTop] = ScriptRuntime.lastStoredScriptable(cx);
@@ -3315,7 +3320,7 @@ switch (op) {
         if (obj == DBL_MRK) obj = ScriptRuntime.wrapNumber(sDbl[stackTop - 1]);
         Object id = stack[stackTop];
         if (id == DBL_MRK) id = ScriptRuntime.wrapNumber(sDbl[stackTop]);
-        stack[stackTop - 1] = ScriptRuntime.getElemFunctionAndThis(obj, id, cx);
+        stack[stackTop - 1] = ScriptRuntime.getElemFunctionAndThis(obj, langStringReg, id, cx);
         stack[stackTop] = ScriptRuntime.lastStoredScriptable(cx);
         continue Loop;
     }
@@ -3571,10 +3576,10 @@ switch (op) {
         sDbl[stackTop] = frame.idata.itsDoubleTable[indexReg];
         continue Loop;
     case Token.NAME :
-        stack[++stackTop] = ScriptRuntime.name(cx, frame.scope, ScriptRuntime.TOFILL, stringReg);
+        stack[++stackTop] = ScriptRuntime.name(cx, frame.scope, langStringReg, stringReg);
         continue Loop;
     case Icode_NAME_INC_DEC :
-        stack[++stackTop] = ScriptRuntime.nameIncrDecr(frame.scope, ScriptRuntime.TOFILL, stringReg,
+        stack[++stackTop] = ScriptRuntime.nameIncrDecr(frame.scope, langStringReg, stringReg,
                                                        cx, iCode[frame.pc]);
         ++frame.pc;
         continue Loop;
@@ -3741,7 +3746,7 @@ switch (op) {
         ++stackTop;
         stack[stackTop] = (op == Token.ENUM_NEXT)
                           ? (Object)ScriptRuntime.enumNext(val)
-                          : (Object)ScriptRuntime.enumId(ScriptRuntime.TOFILL, val, cx);
+                          : (Object)ScriptRuntime.enumId(langStringReg, val, cx);
         continue Loop;
     }
     case Token.REF_SPECIAL : {
