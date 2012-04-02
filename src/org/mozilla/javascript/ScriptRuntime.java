@@ -1943,6 +1943,16 @@ public class ScriptRuntime {
         return firstXMLObject;
     }
 
+    /**
+     * When doing a bind now, it is not sufficient to have just the object and
+     * the property of the object being modified. Some intermediate computation
+     * may change the translated name bindings, thereby meaning the property
+     * name may bind to a different property when the binding is revisited the
+     * 2nd time. BindId, will also give you the corresponding default name for
+     * an id, so that even if the translated name bindings are changed, the 
+     * correct property will still be referenced when the bound values are
+     * revisited.  
+     */
     public static String bindId(Context cx, Scriptable scope, String lang, String id)
     {
         Scriptable firstXMLObject = null;
