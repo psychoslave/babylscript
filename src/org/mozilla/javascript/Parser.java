@@ -221,6 +221,17 @@ public class Parser
         return true;
     }
 
+    private boolean matchEitherToken(int toMatch, int altMatch)
+        throws IOException
+    {
+        int tt = peekToken();
+        if (tt != toMatch && tt != altMatch) {
+            return false;
+        }
+        consumeToken();
+        return true;
+    }
+
     private int peekTokenOrEOL()
         throws IOException
     {
@@ -581,7 +592,7 @@ public class Parser
                         defineSymbol(Token.LP, false, s);
                         decompiler.addName(s);
                     }
-                } while (matchToken(Token.COMMA));
+                } while (matchEitherToken(Token.COMMA, Token.SEMI));
 
                 mustMatchToken(Token.RP, "msg.no.paren.after.parms");
             }
@@ -1908,7 +1919,7 @@ public class Parser
                     reportError("msg.yield.parenthesized");
                 }
                 nf.addChildToBack(listNode, assignExpr(false));
-            } while (matchToken(Token.COMMA));
+            } while (matchEitherToken(Token.COMMA, Token.SEMI));
 
             mustMatchToken(Token.RP, "msg.no.paren.arg");
         }
@@ -2254,7 +2265,7 @@ public class Parser
             for (;;) {
                 tt = peekToken();
 
-                if (tt == Token.COMMA) {
+                if (tt == Token.COMMA || tt == Token.SEMI) {
                     consumeToken();
                     decompiler.addToken(Token.COMMA);
                     if (!after_lb_or_comma) {
@@ -2380,7 +2391,7 @@ public class Parser
                         reportError("msg.bad.prop");
                         break commaloop;
                     }
-                } while (matchToken(Token.COMMA));
+                } while (matchEitherToken(Token.COMMA, Token.SEMI));
 
                 mustMatchToken(Token.RC, "msg.no.brace.prop");
             }
