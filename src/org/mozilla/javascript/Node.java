@@ -370,6 +370,17 @@ public class Node
         right.next = null;
     }
 
+    // Assignments of translated names requires 4 parameters, so we need this special constructor
+    public Node(int nodeType, Node left, Node mid1, Node mid2, Node right) {
+        type = nodeType;
+        first = left;
+        last = right;
+        left.next = mid1;
+        mid1.next = mid2;
+        mid2.next = right;
+        right.next = null;
+    }
+
     public Node(int nodeType, int line) {
         type = nodeType;
         lineno = line;
@@ -387,6 +398,11 @@ public class Node
 
     public Node(int nodeType, Node left, Node mid, Node right, int line) {
         this(nodeType, left, mid, right);
+        lineno = line;
+    }
+
+    public Node(int nodeType, Node left, Node mid1, Node mid2, Node right, int line) {
+        this(nodeType, left, mid1, mid2, right);
         lineno = line;
     }
 
@@ -1144,6 +1160,10 @@ public class Node
           case Token.YIELD:
             return true;
 
+          case Token.SET_TRANSNAME:
+          case Token.DEL_TRANSNAME:
+             return true;
+            
           default:
             return false;
         }

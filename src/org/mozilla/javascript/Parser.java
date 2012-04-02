@@ -2034,7 +2034,17 @@ public class Parser
               case Token.LB:
                 consumeToken();
                 decompiler.addToken(Token.LB);
-                pn = nf.createElementGet(pn, null, expr(false), 0);
+                Node left = expr(false);
+                if (peekToken() == Token.COLON)
+                {
+                    // Look for a reference to a translated name
+                    consumeToken();
+                    decompiler.addToken(Token.COLON);
+                    Node right = expr(false);
+                    pn = nf.createTranslatedNameGet(pn, null, left, right, 0);
+                }
+                else
+                    pn = nf.createElementGet(pn, null, left, 0);
                 mustMatchToken(Token.RB, "msg.no.bracket.index");
                 decompiler.addToken(Token.RB);
                 break;

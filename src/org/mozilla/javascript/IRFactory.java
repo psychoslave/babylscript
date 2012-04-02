@@ -957,6 +957,14 @@ final class IRFactory
                 Node ref = child.getFirstChild();
                 child.removeChild(ref);
                 n = new Node(Token.DEL_REF, ref);
+            } else if (childType == Token.REF_TRANSNAME) {
+                Node left = child.getFirstChild();
+                Node langNode = left.getNext();
+                Node right = child.getLastChild();
+                child.removeChild(left);
+                child.removeChild(langNode);
+                child.removeChild(right);
+                n = new Node(Token.DEL_TRANSNAME, left, langNode, right);
             } else {
                 n = new Node(Token.TRUE);
             }
@@ -1096,6 +1104,13 @@ final class IRFactory
         return createMemberRefGet(target, namespace, elem, memberTypeFlags);
     }
 
+    Node createTranslatedNameGet(Node target, String namespace, 
+                          Node lang, Node member,
+                          int memberTypeFlags)
+    {
+       return new Node(Token.REF_TRANSNAME, target, lang, member);
+    }
+    
     Node createElementGet(Node target, String namespace, Node elem,
                           int memberTypeFlags)
     {
@@ -1299,6 +1314,12 @@ final class IRFactory
             Node ref = left.getFirstChild();
             checkMutableReference(ref);
             return new Node(Token.SET_REF, ref, right);
+          }
+          case Token.REF_TRANSNAME: {
+            Node ref = left.getFirstChild();
+            Node lang = ref.getNext();
+            Node member = lang.getNext();
+            return new Node(Token.SET_TRANSNAME, ref, lang, member, right);
           }
         }
 
@@ -1528,6 +1549,7 @@ final class IRFactory
           case Token.GETPROP:
           case Token.GETELEM:
           case Token.GET_REF:
+          case Token.REF_TRANSNAME:
             return node;
           case Token.CALL:
             node.setType(Token.REF_CALL);
