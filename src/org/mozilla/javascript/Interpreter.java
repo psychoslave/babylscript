@@ -1109,6 +1109,15 @@ public class Interpreter implements Evaluator
             break;
 
           case Token.DELPROP:
+          case Token.GETELEM:
+            visitExpression(child, 0);
+            child = child.getNext();
+            visitExpression(child, 0);
+            addLangStringPrefix(node.getLanguageTag());
+            addToken(type);
+            stackChange(-1);
+            break;
+          
           case Token.BITAND:
           case Token.BITOR:
           case Token.BITXOR:
@@ -1136,15 +1145,6 @@ public class Interpreter implements Evaluator
             addToken(type);
             stackChange(-1);
             break;
-
-          case Token.GETELEM:
-              visitExpression(child, 0);
-              child = child.getNext();
-              visitExpression(child, 0);
-              addLangStringPrefix(node.getLanguageTag());
-              addToken(type);
-              stackChange(-1);
-              break;
             
           case Token.POS:
           case Token.NEG:
@@ -1172,16 +1172,19 @@ public class Interpreter implements Evaluator
             {
                 visitExpression(child, 0);
                 child = child.getNext();
+                String lang = node.getLanguageTag();
                 String property = child.getString();
                 child = child.getNext();
                 if (type == Token.SETPROP_OP) {
                     addIcode(Icode_DUP);
                     stackChange(1);
+                    addLangStringPrefix(lang);
                     addStringOp(Token.GETPROP, property);
                     // Compensate for the following USE_STACK
                     stackChange(-1);
                 }
                 visitExpression(child, 0);
+                addLangStringPrefix(lang);
                 addStringOp(Token.SETPROP, property);
                 stackChange(-1);
             }
@@ -1196,12 +1199,14 @@ public class Interpreter implements Evaluator
             if (type == Token.SETELEM_OP) {
                 addIcode(Icode_DUP2);
                 stackChange(2);
+                addLangStringPrefix(node.getLanguageTag());
                 addToken(Token.GETELEM);
                 stackChange(-1);
                 // Compensate for the following USE_STACK
                 stackChange(-1);
             }
             visitExpression(child, 0);
+            addLangStringPrefix(node.getLanguageTag());
             addToken(Token.SETELEM);
             stackChange(-2);
             break;
@@ -1537,6 +1542,7 @@ public class Interpreter implements Evaluator
             Node object = child.getFirstChild();
             visitExpression(object, 0);
             String property = object.getNext().getString();
+            addLangStringPrefix(child.getLanguageTag());
             addStringOp(Icode_PROP_INC_DEC, property);
             addUint8(incrDecrMask);
             break;
