@@ -1265,11 +1265,22 @@ public class Interpreter implements Evaluator
           case Token.SETNAME:
             {
                 String name = child.getString();
-                visitExpression(child, 0);
+                String lang = child.getLanguageTag();
+                if (child.getType() == Token.BINDNAME) {
+                    addLangStringPrefix(lang);
+                    addStringOp(Icode_BINDWITHLANG, child.getString());
+                    stackChange(1);
+                    visitExpression(child, 0);
+                } else {
+                    addStringOp(Token.STRING, name);
+                    stackChange(1);
+                    visitExpression(child, 0);
+                }
                 child = child.getNext();
                 visitExpression(child, 0);
+                addLangStringPrefix(lang);
                 addStringOp(Token.SETNAME, name);
-                stackChange(-1);
+                stackChange(-2);
             }
             break;
 
@@ -1302,9 +1313,14 @@ public class Interpreter implements Evaluator
             }
             break;
 
+          case Token.STRING:
+            addStringOp(type, node.getString());
+            stackChange(1);
+            break;
+
           case Token.BINDNAME:
           case Token.NAME:
-          case Token.STRING:
+             addLangStringPrefix(node.getLanguageTag());
             addStringOp(type, node.getString());
             stackChange(1);
             break;
@@ -1485,6 +1501,7 @@ public class Interpreter implements Evaluator
           case Token.NAME: {
             String name = left.getString();
             // stack: ... -> ... function thisObj
+            addLangStringPrefix(left.getLanguageTag());
             addStringOp(Icode_NAME_AND_THIS, name);
             stackChange(2);
             break;
@@ -1533,6 +1550,7 @@ public class Interpreter implements Evaluator
           }
           case Token.NAME : {
             String name = child.getString();
+            addLangStringPrefix(child.getLanguageTag());
             addStringOp(Icode_NAME_INC_DEC, name);
             addUint8(incrDecrMask);
             stackChange(1);
@@ -3127,8 +3145,11 @@ switch (op) {
         if (rhs == DBL_MRK) rhs = ScriptRuntime.wrapNumber(sDbl[stackTop]);
         --stackTop;
         Scriptable lhs = (Scriptable)stack[stackTop];
+        --stackTop;
+        String id = (String)stack[stackTop];
+        
         stack[stackTop] = ScriptRuntime.setName(lhs, rhs, cx,
-                                                frame.scope, ScriptRuntime.TOFILL, stringReg);
+                                                frame.scope, ScriptRuntime.TOFILL, id);  // id has been bound to a language
         continue Loop;
     }
     case Icode_SETCONST: {
