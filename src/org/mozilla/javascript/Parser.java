@@ -498,15 +498,17 @@ public class Parser
 
         int functionSourceStart = decompiler.markFunctionStart(functionType);
         String name;
+        String lang;
         Node memberExprNode = null;
         if (matchToken(Token.NAME)) {
+            lang = ts.getLastLanguageString();
             name = ts.getString();
             decompiler.addName(name);
             if (!matchToken(Token.LP)) {
                 if (compilerEnv.isAllowMemberExprAsFunctionName()) {
                     // Extension to ECMA: if 'function <name>' does not follow
                     // by '(', assume <name> starts memberExpr
-                    Node memberExprHead = nf.createName(name);
+                    Node memberExprHead = nf.createName(lang, name);
                     name = "";
                     memberExprNode = memberExprTail(false, memberExprHead);
                 }
@@ -590,7 +592,7 @@ public class Parser
                         defineSymbol(Token.LP, false, parmName);
                         destructuring.addChildToBack(
                             nf.createDestructuringAssignment(Token.VAR,
-                                primaryExpr(), nf.createName(parmName)));
+                                primaryExpr(), nf.createName(ScriptRuntime.TOFILL, parmName)));
                     } else {
                         mustMatchToken(Token.NAME, "msg.no.parm");
                         String s = ts.getString();
@@ -741,7 +743,7 @@ public class Parser
                 break guessingStatementEnd;
             }
         }
-        return nf.createExprStatement(nf.createName("error"), lineno);
+        return nf.createExprStatement(nf.createName(ScriptRuntime.TOFILL, "error"), lineno);
     }
 
     private Node statementHelper(Node statementLabel)
@@ -1387,6 +1389,7 @@ public class Parser
         for (;;) {
             Node destructuring = null;
             String s = null;
+            String lang = ScriptRuntime.TOFILL;
             int tt = peekToken();
             if (tt == Token.LB || tt == Token.LC) {
                 // Destructuring assignment, e.g., var [a,b] = ...
@@ -1395,6 +1398,7 @@ public class Parser
                 // Simple variable name
                 mustMatchToken(Token.NAME, "msg.bad.var");
                 s = ts.getString();
+                lang = ts.getLastLanguageString();
     
                 if (!first)
                     decompiler.addToken(Token.COMMA);
@@ -1421,7 +1425,7 @@ public class Parser
                             destructuring, init));
                 }
             } else {
-                Node name = nf.createName(s);
+                Node name = nf.createName(lang, s);
                 if (init != null)
                     nf.addChildToBack(name, init);
                 nf.addChildToBack(result, name);
@@ -1837,7 +1841,7 @@ public class Parser
             }
             return pn;
         }
-        return nf.createName("error"); // Only reached on error.Try to continue.
+        return nf.createName(ScriptRuntime.TOFILL, "error"); // Only reached on error.Try to continue.
 
     }
 
@@ -1855,7 +1859,7 @@ public class Parser
         String xml = ts.getString();
         boolean fAnonymous = xml.trim().startsWith("<>");
 
-        Node pn = nf.createName(fAnonymous ? "XMLList" : "XML");
+        Node pn = nf.createName(ScriptRuntime.TOFILL, fAnonymous ? "XMLList" : "XML");
         nf.addChildToBack(pnXML, pn);
 
         pn = null;
@@ -2182,7 +2186,7 @@ public class Parser
         return pn;
     }
 
-    private Node arrayComprehension(String arrayName, Node expr)
+    private Node arrayComprehension(String langArray, String arrayName, Node expr)
         throws IOException, ParserException
     {
         if (nextToken() != Token.FOR)
@@ -2200,26 +2204,29 @@ public class Parser
         }
         mustMatchToken(Token.LP, "msg.no.paren.for");
         decompiler.addToken(Token.LP);
+        String lang;
         String name;
         int tt = peekToken();
         if (tt == Token.LB || tt == Token.LC) {
             // handle destructuring assignment
             name = currentScriptOrFn.getNextTempName();
+            lang = ScriptRuntime.TOFILL;
             defineSymbol(Token.LP, false, name);
             expr = nf.createBinary(Token.COMMA,
                 nf.createAssignment(Token.ASSIGN, primaryExpr(), 
-                                    nf.createName(name)),
+                                    nf.createName(lang, name)),
                 expr);
         } else if (tt == Token.NAME) {
             consumeToken();
             name = ts.getString();
+            lang = ts.getLastLanguageString();
             decompiler.addName(name);
         } else {
             reportError("msg.bad.var");
             return nf.createNumber(0);
         }
 
-        Node init = nf.createName(name);
+        Node init = nf.createName(lang, name);
         // Define as a let since we want the scope of the variable to
         // be restricted to the array comprehension
         defineSymbol(Token.LET, false, name);
@@ -2233,10 +2240,10 @@ public class Parser
         Node body;
         tt = peekToken();
         if (tt == Token.FOR) {
-            body = arrayComprehension(arrayName, expr);
+            body = arrayComprehension(langArray, arrayName, expr);
         } else {
             Node call = nf.createCallOrNew(Token.CALL,
-                nf.createPropertyGet(nf.createName(arrayName), 
+                nf.createPropertyGet(nf.createName(langArray, arrayName), 
                                      ScriptRuntime.TOFILL, null,
                                      "push", 0));
             call.addChildToBack(expr);
@@ -2316,14 +2323,14 @@ public class Parser
                         Node block = nf.createBlock(ts.getLineno());
                         Node init = new Node(Token.EXPR_VOID, 
                             nf.createAssignment(Token.ASSIGN, 
-                                nf.createName(tempName),
+                                nf.createName(ScriptRuntime.TOFILL, tempName),
                                 nf.createCallOrNew(Token.NEW,
-                                    nf.createName("Array"))), ts.getLineno());
+                                    nf.createName(ScriptRuntime.TOFILL, "Array"))), ts.getLineno());
                         block.addChildToBack(init);
-                        block.addChildToBack(arrayComprehension(tempName, 
+                        block.addChildToBack(arrayComprehension(ScriptRuntime.TOFILL, tempName, 
                             expr));
                         scopeNode.addChildToBack(block);
-                        scopeNode.addChildToBack(nf.createName(tempName));
+                        scopeNode.addChildToBack(nf.createName(ScriptRuntime.TOFILL, tempName));
                         return scopeNode;
                     } finally {
                         popScope();
@@ -2443,6 +2450,7 @@ public class Parser
 
           case Token.NAME: {
             String name = ts.getString();
+            String lang = ts.getLastLanguageString();
             if ((ttFlagged & TI_CHECK_LABEL) != 0) {
                 if (peekToken() == Token.COLON) {
                     // Do not consume colon, it is used as unwind indicator
@@ -2456,7 +2464,7 @@ public class Parser
             if (compilerEnv.isXmlAvailable()) {
                 pn = propertyName(null, name, 0);
             } else {
-                pn = nf.createName(name);
+                pn = nf.createName(lang, name);
             }
             return pn;
           }

@@ -209,15 +209,17 @@ final class IRFactory
     /**
      * Name
      */
-    Node createName(String name)
+    Node createName(String lang, String name)
     {
         checkActivationName(name, Token.NAME);
-        return Node.newString(Token.NAME, name);
+        Node n = Node.newString(Token.NAME, name);
+        n.setLanguageTag(lang);
+        return n;
     }
     
-    private Node createName(int type, String name, Node child)
+    private Node createName(int type, String lang, String name, Node child)
     {
-        Node result = createName(name);
+        Node result = createName(lang, name);
         result.setType(type);
         if (child != null)
             result.addChildToBack(child);
@@ -253,7 +255,7 @@ final class IRFactory
         if (catchCond == null) {
             catchCond = new Node(Token.EMPTY);
         }
-        return new Node(Token.CATCH, createName(varName),
+        return new Node(Token.CATCH, createName(ScriptRuntime.TOFILL, varName),
                         catchCond, stmts, lineno);
     }
 
@@ -945,6 +947,7 @@ final class IRFactory
                 Node left = child;
                 Node right = Node.newString(child.getString());
                 n = new Node(nodeType, left, right);
+                n.setLanguageTag(child.getLanguageTag());
             } else if (childType == Token.GETPROP ||
                        childType == Token.GETELEM)
             {
@@ -1091,7 +1094,7 @@ final class IRFactory
     {
         if (namespace == null && memberTypeFlags == 0) {
             if (target == null) {
-                return createName(name);
+                return createName(lang, name);
             }
             checkActivationName(name, Token.GETPROP);
             if (ScriptRuntime.isSpecialProperty(name)) {
@@ -1141,7 +1144,7 @@ final class IRFactory
             if (namespace.equals("*")) {
                 nsNode = new Node(Token.NULL);
             } else {
-                nsNode = createName(namespace);
+                nsNode = createName(ScriptRuntime.TOFILL, namespace);
             }
         }
         Node ref;
@@ -1384,6 +1387,7 @@ final class IRFactory
           case Token.NAME: {
             Node op = new Node(assignOp, left, right);
             Node lvalueLeft = Node.newString(Token.BINDNAME, left.getString());
+            lvalueLeft.setLanguageTag(left.getLanguageTag());
             return new Node(Token.SETNAME, lvalueLeft, op);
           }
           case Token.GETPROP:
@@ -1431,7 +1435,7 @@ final class IRFactory
         Node result = destructuringAssignmentHelper(type, left, right,
             tempName);
         Node comma = result.getLastChild();
-        comma.addChildToBack(createName(tempName));
+        comma.addChildToBack(createName(ScriptRuntime.TOFILL, tempName));
         return result;
     }
 
@@ -1441,7 +1445,7 @@ final class IRFactory
         Node result = createScopeNode(Token.LETEXPR,
             parser.getCurrentLineNumber());
         result.addChildToFront(new Node(Token.LET,
-            createName(Token.NAME, tempName, right)));
+            createName(Token.NAME, ScriptRuntime.TOFILL, tempName, right)));
         try {
             parser.pushScope(result);
             parser.defineSymbol(Token.LET, true, tempName);
@@ -1471,12 +1475,12 @@ final class IRFactory
                 if (n == null)
                     break;
                 Node rightElem = new Node(Token.GETELEM,
-                    createName(tempName), 
+                    createName(ScriptRuntime.TOFILL, tempName), 
                     createNumber(index));
                 if (n.getType() == Token.NAME) {
                     String name = n.getString();
                     comma.addChildToBack(new Node(setOp, 
-                        createName(Token.BINDNAME, name, null),
+                        createName(Token.BINDNAME, ScriptRuntime.TOFILL, name, null),
                         rightElem));
                     if (variableType != -1) {
                         parser.defineSymbol(variableType, true, name);
@@ -1501,15 +1505,15 @@ final class IRFactory
                 Object id = propertyIds[index];
                 Node rightElem = id instanceof String 
                     ? new Node(Token.GETPROP,
-                        createName(tempName), 
+                        createName(ScriptRuntime.TOFILL, tempName), 
                         createString((String)id))
                     : new Node(Token.GETELEM,
-                        createName(tempName), 
+                        createName(ScriptRuntime.TOFILL, tempName), 
                         createNumber(((Number)id).intValue()));
                 if (n.getType() == Token.NAME) {
                     String name = n.getString();
                     comma.addChildToBack(new Node(setOp, 
-                        createName(Token.BINDNAME, name, null),
+                        createName(Token.BINDNAME, ScriptRuntime.TOFILL, name, null),
                         rightElem));
                     if (variableType != -1) {
                         parser.defineSymbol(variableType, true, name);
@@ -1525,7 +1529,7 @@ final class IRFactory
                 empty = false;
             }
         } else if (type == Token.GETPROP || type == Token.GETELEM) {
-            comma.addChildToBack(simpleAssignment(left, createName(tempName)));
+            comma.addChildToBack(simpleAssignment(left, createName(ScriptRuntime.TOFILL, tempName)));
         } else {
             parser.reportError("msg.bad.assign.left");
         }
