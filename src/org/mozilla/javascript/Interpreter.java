@@ -1320,7 +1320,7 @@ public class Interpreter implements Evaluator
 
           case Token.BINDNAME:
           case Token.NAME:
-             addLangStringPrefix(node.getLanguageTag());
+            addLangStringPrefix(node.getLanguageTag());
             addStringOp(type, node.getString());
             stackChange(1);
             break;
@@ -1398,7 +1398,12 @@ public class Interpreter implements Evaluator
             break;
 
           case Token.ENUM_NEXT:
+            addIndexOp(type, getLocalBlockRef(node));
+            stackChange(1);
+            break;
+
           case Token.ENUM_ID:
+            addLangStringPrefix(node.getLanguageTag());
             addIndexOp(type, getLocalBlockRef(node));
             stackChange(1);
             break;

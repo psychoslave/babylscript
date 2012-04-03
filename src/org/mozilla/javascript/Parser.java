@@ -883,6 +883,7 @@ public class Parser
             consumeToken();
             boolean isForEach = false;
             decompiler.addToken(Token.FOR);
+            String lang = lastPeekedLanguageString();
 
             Node loop = enterLoop(statementLabel, true);
             try {
@@ -952,7 +953,7 @@ public class Parser
                 if (incr == null) {
                     // cond could be null if 'in obj' got eaten
                     // by the init node.
-                    pn = nf.createForIn(declType, loop, init, cond, body,
+                    pn = nf.createForIn(declType, lang, loop, init, cond, body,
                                         isForEach);
                 } else {
                     pn = nf.createFor(loop, init, cond, incr, body);
@@ -2261,7 +2262,7 @@ public class Parser
 
         Node loop = enterLoop(null, true);
         try {
-            return nf.createForIn(Token.LET, loop, init, iterator, body,
+            return nf.createForIn(Token.LET, lang, loop, init, iterator, body,
                                   isForEach);
         } finally {
             exitLoop(false);

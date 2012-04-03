@@ -532,7 +532,7 @@ final class IRFactory
      * For .. In
      *
      */
-    Node createForIn(int declType, Node loop, Node lhs, Node obj, Node body,
+    Node createForIn(int declType, String lang, Node loop, Node lhs, Node obj, Node body,
                      boolean isForEach)
     {
         int destructuring = -1;
@@ -559,6 +559,7 @@ final class IRFactory
                     Node.DESTRUCTURING_ARRAY_LENGTH, 0);
             } else if (lastChild.getType() == Token.NAME) {
                 lvalue = Node.newString(Token.NAME, lastChild.getString());
+                lvalue.setLanguageTag(ScriptRuntime.TOFILL);
             } else {
                 parser.reportError("msg.bad.for.in.lhs");
                 return obj;
@@ -584,6 +585,7 @@ final class IRFactory
         Node cond = new Node(Token.ENUM_NEXT);
         cond.putProp(Node.LOCAL_BLOCK_PROP, localBlock);
         Node id = new Node(Token.ENUM_ID);
+        id.setLanguageTag(lang);
         id.putProp(Node.LOCAL_BLOCK_PROP, localBlock);
 
         Node newBody = new Node(Token.BLOCK);
