@@ -674,6 +674,14 @@ public class Node
         item.intValue = prop;
     }
 
+    public String getLanguageTag() {
+        return langTag;
+    }
+    
+    public void setLanguageTag(String tag) {
+        langTag = tag;
+    }
+    
     public int getLineno() {
         return lineno;
     }
@@ -1407,6 +1415,7 @@ public class Node
     Node next;             // next sibling
     private Node first;    // first element of a linked list of children
     private Node last;     // last element of a linked list of children
+    private String langTag; // language tag that can be optionally attached to the IR
     protected int lineno = -1;
 
     /**

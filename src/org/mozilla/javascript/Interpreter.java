@@ -1104,10 +1104,10 @@ public class Interpreter implements Evaluator
           case Token.GETPROPNOWARN:
             visitExpression(child, 0);
             child = child.getNext();
+            addLangStringPrefix(node.getLanguageTag());
             addStringOp(type, child.getString());
             break;
 
-          case Token.GETELEM:
           case Token.DELPROP:
           case Token.BITAND:
           case Token.BITOR:
@@ -1137,6 +1137,15 @@ public class Interpreter implements Evaluator
             stackChange(-1);
             break;
 
+          case Token.GETELEM:
+              visitExpression(child, 0);
+              child = child.getNext();
+              visitExpression(child, 0);
+              addLangStringPrefix(node.getLanguageTag());
+              addToken(type);
+              stackChange(-1);
+              break;
+            
           case Token.POS:
           case Token.NEG:
           case Token.NOT:
@@ -1482,11 +1491,13 @@ public class Interpreter implements Evaluator
             Node id = target.getNext();
             if (type == Token.GETPROP) {
                 String property = id.getString();
+                addLangStringPrefix(left.getLanguageTag());
                 // stack: ... target -> ... function thisObj
                 addStringOp(Icode_PROP_AND_THIS, property);
                 stackChange(1);
             } else {
                 visitExpression(id, 0);
+                addLangStringPrefix(left.getLanguageTag());
                 // stack: ... target id -> ... function thisObj
                 addIcode(Icode_ELEM_AND_THIS);
             }
@@ -1535,6 +1546,7 @@ public class Interpreter implements Evaluator
             visitExpression(object, 0);
             Node index = object.getNext();
             visitExpression(index, 0);
+            addLangStringPrefix(child.getLanguageTag());
             addIcode(Icode_ELEM_INC_DEC);
             addUint8(incrDecrMask);
             stackChange(-1);

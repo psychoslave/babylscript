@@ -164,6 +164,11 @@ public class Parser
         throw new ParserException();
     }
 
+    private String lastPeekedLanguageString()
+    {
+        return ts.getLastLanguageString();
+    }
+
     private int peekToken()
         throws IOException
     {
@@ -1994,7 +1999,8 @@ public class Parser
                         mustMatchToken(Token.NAME, "msg.no.name.after.dot");
                         s = ts.getString();
                         decompiler.addName(s);
-                        pn = nf.createPropertyGet(pn, null, s, memberTypeFlags);
+                        String lang = lastPeekedLanguageString();
+                        pn = nf.createPropertyGet(pn, lang, null, s, memberTypeFlags);
                         break;
                     }
 
@@ -2043,6 +2049,8 @@ public class Parser
                 break;
 
               case Token.LB:
+              {
+                String lang = lastPeekedLanguageString();
                 consumeToken();
                 decompiler.addToken(Token.LB);
                 Node left = expr(false);
@@ -2055,10 +2063,11 @@ public class Parser
                     pn = nf.createTranslatedNameGet(pn, null, left, right, 0);
                 }
                 else
-                    pn = nf.createElementGet(pn, null, left, 0);
+                    pn = nf.createElementGet(pn, lang, null, left, 0);
                 mustMatchToken(Token.RB, "msg.no.bracket.index");
                 decompiler.addToken(Token.RB);
                 break;
+              }
 
               case Token.LP:
                 if (!allowCallSyntax) {
@@ -2106,15 +2115,18 @@ public class Parser
 
           // handles @[expr]
           case Token.LB:
+          {
             decompiler.addToken(Token.LB);
-            pn = nf.createElementGet(pn, null, expr(false), memberTypeFlags);
+            String lang = lastPeekedLanguageString();
+            pn = nf.createElementGet(pn, lang, null, expr(false), memberTypeFlags);
             mustMatchToken(Token.RB, "msg.no.bracket.index");
             decompiler.addToken(Token.RB);
             break;
+          }
 
           default:
             reportError("msg.no.name.after.xmlAttr");
-            pn = nf.createPropertyGet(pn, null, "?", memberTypeFlags);
+            pn = nf.createPropertyGet(pn, lastPeekedLanguageString(), null, "?", memberTypeFlags);
             break;
         }
 
@@ -2127,6 +2139,8 @@ public class Parser
     private Node propertyName(Node pn, String name, int memberTypeFlags)
         throws IOException, ParserException
     {
+        String lang = lastPeekedLanguageString();
+        
         String namespace = null;
         if (matchToken(Token.COLONCOLON)) {
             decompiler.addToken(Token.COLONCOLON);
@@ -2148,12 +2162,15 @@ public class Parser
 
               // handles name::[expr]
               case Token.LB:
+              {
+                String sublang = lastPeekedLanguageString();
                 decompiler.addToken(Token.LB);
-                pn = nf.createElementGet(pn, namespace, expr(false),
+                pn = nf.createElementGet(pn, sublang, namespace, expr(false),
                                          memberTypeFlags);
                 mustMatchToken(Token.RB, "msg.no.bracket.index");
                 decompiler.addToken(Token.RB);
                 return pn;
+              }
 
               default:
                 reportError("msg.no.name.after.coloncolon");
@@ -2161,7 +2178,7 @@ public class Parser
             }
         }
 
-        pn = nf.createPropertyGet(pn, namespace, name, memberTypeFlags);
+        pn = nf.createPropertyGet(pn, lang, namespace, name, memberTypeFlags);
         return pn;
     }
 
@@ -2219,7 +2236,8 @@ public class Parser
             body = arrayComprehension(arrayName, expr);
         } else {
             Node call = nf.createCallOrNew(Token.CALL,
-                nf.createPropertyGet(nf.createName(arrayName), null,
+                nf.createPropertyGet(nf.createName(arrayName), 
+                                     ScriptRuntime.TOFILL, null,
                                      "push", 0));
             call.addChildToBack(expr);
             body = new Node(Token.EXPR_VOID, call, ts.getLineno());

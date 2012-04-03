@@ -952,7 +952,9 @@ final class IRFactory
                 Node right = child.getLastChild();
                 child.removeChild(left);
                 child.removeChild(right);
+                String lang = child.getLanguageTag();
                 n = new Node(nodeType, left, right);
+                n.setLanguageTag(lang);
             } else if (childType == Token.GET_REF) {
                 Node ref = child.getFirstChild();
                 child.removeChild(ref);
@@ -1084,7 +1086,7 @@ final class IRFactory
         throw Kit.codeBug();
     }
 
-    Node createPropertyGet(Node target, String namespace, String name,
+    Node createPropertyGet(Node target, String lang, String namespace, String name,
                            int memberTypeFlags)
     {
         if (namespace == null && memberTypeFlags == 0) {
@@ -1097,7 +1099,9 @@ final class IRFactory
                 ref.putProp(Node.NAME_PROP, name);
                 return new Node(Token.GET_REF, ref);
             }
-            return new Node(Token.GETPROP, target, createString(name));
+            Node n = new Node(Token.GETPROP, target, createString(name));
+            n.setLanguageTag(lang);
+            return n;
         }
         Node elem = createString(name);
         memberTypeFlags |= Node.PROPERTY_FLAG;
@@ -1111,7 +1115,8 @@ final class IRFactory
        return new Node(Token.REF_TRANSNAME, target, lang, member);
     }
     
-    Node createElementGet(Node target, String namespace, Node elem,
+    Node createElementGet(Node target, String lang, 
+    		              String namespace, Node elem,
                           int memberTypeFlags)
     {
         // OPT: could optimize to createPropertyGet
@@ -1120,7 +1125,9 @@ final class IRFactory
             // stand-alone [aaa] as primary expression is array literal
             // declaration and should not come here!
             if (target == null) throw Kit.codeBug();
-            return new Node(Token.GETELEM, target, elem);
+            Node n = new Node(Token.GETELEM, target, elem);
+            n.setLanguageTag(lang);
+            return n;
         }
         return createMemberRefGet(target, namespace, elem, memberTypeFlags);
     }
@@ -1308,7 +1315,9 @@ final class IRFactory
             } else {
                 type = Token.SETELEM;
             }
-            return new Node(type, obj, id, right);
+            Node n = new Node(type, obj, id, right);
+            n.setLanguageTag(left.getLanguageTag());
+            return n; 
           }
           case Token.GET_REF: {
             Node ref = left.getFirstChild();
@@ -1388,7 +1397,9 @@ final class IRFactory
 
             Node opLeft = new Node(Token.USE_STACK);
             Node op = new Node(assignOp, opLeft, right);
-            return new Node(type, obj, id, op);
+            Node n = new Node(type, obj, id, op);
+            n.setLanguageTag(left.getLanguageTag());
+            return n;
           }
           case Token.GET_REF: {
             ref = left.getFirstChild();
