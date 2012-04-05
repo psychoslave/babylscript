@@ -55,6 +55,7 @@ import java.text.MessageFormat;
 import java.util.Locale;
 import java.util.ResourceBundle;
 
+import org.mozilla.javascript.babylscript.TranslatedNameBindings;
 import org.mozilla.javascript.xml.XMLObject;
 import org.mozilla.javascript.xml.XMLLib;
 
@@ -260,6 +261,8 @@ public class ScriptRuntime {
             new LazilyLoadedCtor(scope, topProperty, className, sealed);
         }
 
+        TranslatedNameBindings.initStandardTranslations(scope);
+        
         return scope;
     }
 
