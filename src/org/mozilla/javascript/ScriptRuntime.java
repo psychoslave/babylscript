@@ -51,6 +51,7 @@ package org.mozilla.javascript;
 
 import java.io.Serializable;
 import java.lang.reflect.*;
+import java.text.DecimalFormatSymbols;
 import java.text.MessageFormat;
 import java.util.Locale;
 import java.util.Properties;
@@ -554,6 +555,8 @@ public class ScriptRuntime {
      * See ECMA 9.3.1
      */
     public static double toNumber(String s) {
+        s = unlocalizeNumberString(s);
+        
         int len = s.length();
         int start = 0;
         char startChar;
@@ -741,6 +744,10 @@ public class ScriptRuntime {
      * See ECMA 9.8.
      */
     public static String toString(Object val) {
+        return toString(val, getLocaleForConversions());
+    }
+
+    public static String toString(Object val, Locale locale) {
         for (;;) {
             if (val == null) {
                 return "null";
@@ -754,7 +761,7 @@ public class ScriptRuntime {
             if (val instanceof Number) {
                 // XXX should we just teach NativeNumber.stringValue()
                 // about Numbers?
-                return numberToString(((Number)val).doubleValue(), 10);
+                return numberToString(((Number)val).doubleValue(), 10, locale);
             }
             if (val instanceof Scriptable) {
                 val = ((Scriptable) val).getDefaultValue(StringClass);
@@ -796,10 +803,44 @@ public class ScriptRuntime {
      * Optimized version of toString(Object) for numbers.
      */
     public static String toString(double val) {
-        return numberToString(val, 10);
+        return toString(val, getLocaleForConversions());
+    }
+    public static String toString(double val, Locale locale) {
+        return numberToString(val, 10, locale);
     }
 
+    public static Locale getLocaleForConversions()
+    {
+        Context c = Context.getCurrentContext();
+        if (c == null) return Locale.getDefault();
+        return c.getLocale();
+    }
+    
+    // Takes a number that is simply localized, and converts it to a 
+    // proper JS-style canonical-format number
+    public static String unlocalizeNumberString(String number)
+    {
+        return number.replace(',', '.');
+    }
+
+    // You can use this locale to refer to the default JavaScript conversions
+    // for strings and numbers
+    public static Locale jsLocale = null;
+    
+    // Takes a JS-style number and performs some rudimentary localizations
+    // to the number (decimal symbols are swapped, etc.)
+    public static String localizeNumberString(String number, Locale locale)
+    {
+        if (locale == null) locale = Locale.ENGLISH;
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols(locale);
+        return number.replace('.', symbols.getDecimalSeparator());
+    }
+    
     public static String numberToString(double d, int base) {
+        return numberToString(d, base, getLocaleForConversions());
+    }
+    
+    public static String numberToString(double d, int base, Locale locale) {
         if (d != d)
             return "NaN";
         if (d == Double.POSITIVE_INFINITY)
@@ -807,7 +848,7 @@ public class ScriptRuntime {
         if (d == Double.NEGATIVE_INFINITY)
             return "-Infinity";
         if (d == 0.0)
-            return "0";
+            return localizeNumberString("0", locale);
 
         if ((base < 2) || (base > 36)) {
             throw Context.reportRuntimeError1(
@@ -815,13 +856,12 @@ public class ScriptRuntime {
         }
 
         if (base != 10) {
-            return DToA.JS_dtobasestr(base, d);
+            return localizeNumberString(DToA.JS_dtobasestr(base, d), locale);
         } else {
             StringBuffer result = new StringBuffer();
             DToA.JS_dtostr(result, DToA.DTOSTR_STANDARD, 0, d);
-            return result.toString();
+            return localizeNumberString(result.toString(), locale);
         }
-
     }
 
     static String uneval(Context cx, Scriptable scope, Object value)
@@ -845,7 +885,7 @@ public class ScriptRuntime {
             if (d == 0 && 1 / d < 0) {
                 return "-0";
             }
-            return toString(d);
+            return toString(d, ScriptRuntime.jsLocale);
         }
         if (value instanceof Boolean) {
             return toString(value);
@@ -1260,6 +1300,8 @@ public class ScriptRuntime {
      */
     private static long indexFromString(String str)
     {
+        str = unlocalizeNumberString(str);
+        
         // The length of the decimal string representation of
         //  Integer.MAX_VALUE, 2147483647
         final int MAX_VALUE_LENGTH = 10;
@@ -1314,7 +1356,7 @@ public class ScriptRuntime {
      * If str is a decimal presentation of Uint32 value, return it as long.
      * Othewise return -1L;
      */
-    public static long testUint32String(String str)
+    @Deprecated public static long testUint32String(String str)
     {
         // The length of the decimal string representation of
         //  UINT32_MAX_VALUE, 4294967296
