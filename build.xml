@@ -151,6 +151,8 @@
       <include name="org/mozilla/javascript/*.class"/>
 
       <include name="org/mozilla/javascript/debug/*.class"/>
+      <include name="org/mozilla/javascript/babylscript/*.class"/>
+      <include name="org/mozilla/javascript/babylscript/resources/*.properties"/>
       <include name="org/mozilla/javascript/resources/*.properties"/>
       <include name="org/mozilla/javascript/xml/*.class"/>
       <include name="org/mozilla/javascript/continuations/*.class"/>
@@ -165,6 +167,7 @@
       <include name="org/mozilla/javascript/regexp/*.class"
                unless="no-regexp"/>
     </jar>
+  	<copy file="${smalljarfile}" tofile="${dist.dir}/babylscript15.jar"/>
 
   </target>
 
@@ -174,6 +177,7 @@
       destjar="${dist.dir}/${small-rhino-14.jar}"
       embed="org.mozilla.javascript"
     />
+  	<copy file="${dist.dir}/${small-rhino-14.jar}" tofile="${dist.dir}/babylscript14.jar"/>
   </target>
 
   <target name="copy-examples" depends="init">
