@@ -349,7 +349,8 @@ public class Parser
                                 String sourceURI, int lineno)
     {
         this.sourceURI = sourceURI;
-        this.ts = new TokenStream(this, null, sourceString, lineno);
+        this.ts = new TokenStream(this, null, sourceString, lineno, 
+                compilerEnv.getLanguageMode(), compilerEnv.getCustomTokenizerConfig());
         try {
             return parse();
         } catch (IOException ex) {
@@ -371,7 +372,8 @@ public class Parser
         throws IOException
     {
         this.sourceURI = sourceURI;
-        this.ts = new TokenStream(this, sourceReader, null, lineno);
+        this.ts = new TokenStream(this, sourceReader, null, lineno,
+                compilerEnv.getLanguageMode(), compilerEnv.getCustomTokenizerConfig());
         return parse();
     }
 

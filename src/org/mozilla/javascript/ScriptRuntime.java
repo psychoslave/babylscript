@@ -53,6 +53,7 @@ import java.io.Serializable;
 import java.lang.reflect.*;
 import java.text.MessageFormat;
 import java.util.Locale;
+import java.util.Properties;
 import java.util.ResourceBundle;
 
 import org.mozilla.javascript.babylscript.TranslatedNameBindings;
@@ -200,6 +201,12 @@ public class ScriptRuntime {
         }
     }
 
+    public static void initCustomLanguageObjectTranslations(Context cx, Scriptable scope, Properties translations)
+    {
+        if (translations == null) return;
+        TranslatedNameBindings.initCustomTranslation(scope, translations);
+    }
+    
     public static ScriptableObject initStandardObjects(Context cx,
                                                        ScriptableObject scope,
                                                        boolean sealed)

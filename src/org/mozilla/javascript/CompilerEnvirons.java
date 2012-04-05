@@ -41,6 +41,8 @@ package org.mozilla.javascript;
 
 import java.util.Set;
 
+import org.mozilla.javascript.babylscript.CustomTokenizerConfig;
+
 public class CompilerEnvirons
 {
     public CompilerEnvirons()
@@ -57,6 +59,8 @@ public class CompilerEnvirons
         strictMode = false;
         warningAsError = false;
         generateObserverCount = false;
+        languageMode = TokenStream.LanguageMode.en;
+        customTokenizerConfig = new CustomTokenizerConfig();
     }
 
     public void initFromContext(Context cx)
@@ -83,6 +87,13 @@ public class CompilerEnvirons
         
         // Observer code generation in compiled code :
         generateObserverCount = cx.generateObserverCount;
+        
+        languageMode = cx.getLanguageMode();
+        if (languageMode == null)
+            languageMode = TokenStream.LanguageMode.en; 
+        customTokenizerConfig = cx.getCustomTokenizerConfig();
+        if (customTokenizerConfig == null)
+            customTokenizerConfig = new CustomTokenizerConfig();
     }
 
     public final ErrorReporter getErrorReporter()
@@ -215,6 +226,15 @@ public class CompilerEnvirons
         this.generateObserverCount = generateObserverCount;
     }
 
+    public TokenStream.LanguageMode getLanguageMode()
+    {
+        return this.languageMode;
+    }
+    public CustomTokenizerConfig getCustomTokenizerConfig()
+    {
+        return this.customTokenizerConfig;
+    }
+
     private ErrorReporter errorReporter;
 
     private int languageVersion;
@@ -229,5 +249,7 @@ public class CompilerEnvirons
     private boolean warningAsError;
     private boolean generateObserverCount;
     Set<String> activationNames;
+    private TokenStream.LanguageMode languageMode;
+    private CustomTokenizerConfig customTokenizerConfig = null;
 }
 

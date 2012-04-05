@@ -52,10 +52,12 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Properties;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.Locale;
 
+import org.mozilla.javascript.babylscript.CustomTokenizerConfig;
 import org.mozilla.javascript.debug.DebuggableScript;
 import org.mozilla.javascript.debug.Debugger;
 import org.mozilla.javascript.xml.XMLLib;
@@ -1069,6 +1071,12 @@ public class Context
         return ScriptRuntime.initStandardObjects(this, scope, sealed);
     }
 
+    // I'm pretty sure it's ok to call this multiple times with different translations
+    public void initCustomLanguageObjectTranslations(Scriptable scope, Properties translations)
+    {
+        ScriptRuntime.initCustomLanguageObjectTranslations(this, scope, translations);
+    }
+    
     /**
      * Get the singleton object that represents the JavaScript Undefined value.
      */
@@ -2309,6 +2317,27 @@ public class Context
         applicationClassLoader = loader;
     }
 
+    public void setLanguageMode(String mode)
+    {
+        this.languageMode = TokenStream.stringToLanguageMode(mode);
+    }
+
+    public void setCustomTokenizerConfig(CustomTokenizerConfig translation)
+    {
+        this.customTokenizerConfig = translation;
+    }
+
+    public TokenStream.LanguageMode getLanguageMode()
+    {
+        return this.languageMode;
+    }
+
+    public CustomTokenizerConfig getCustomTokenizerConfig()
+    {
+        return this.customTokenizerConfig;
+    }
+
+    
     /********** end of API **********/
 
     /**
@@ -2608,6 +2637,9 @@ public class Context
     private Map<Object,Object> threadLocalMap;
     private ClassLoader applicationClassLoader;
 
+    private TokenStream.LanguageMode languageMode;
+    private CustomTokenizerConfig customTokenizerConfig = null;
+    
     /**
      * This is the list of names of objects forcing the creation of
      * function activation records.

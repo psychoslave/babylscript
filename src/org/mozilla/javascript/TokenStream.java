@@ -47,6 +47,8 @@ package org.mozilla.javascript;
 import java.io.*;
 
 import org.mozilla.javascript.babylscript.ArabicTokenizer;
+import org.mozilla.javascript.babylscript.CustomTokenizer;
+import org.mozilla.javascript.babylscript.CustomTokenizerConfig;
 import org.mozilla.javascript.babylscript.EnglishTokenizer;
 import org.mozilla.javascript.babylscript.FrenchTokenizer;
 import org.mozilla.javascript.babylscript.PortugueseTokenizer;
@@ -68,13 +70,15 @@ import org.mozilla.javascript.babylscript.RomanianTokenizer;
 public class TokenStream
 {
     TokenStream(Parser parser, Reader sourceReader, String sourceString,
-                int lineno)
+                int lineno, LanguageMode startLanguageMode, CustomTokenizerConfig customLanguageConfig)
     {
         this.parser = parser;
         this.in = new TokenCharStream(sourceReader, sourceString, lineno);
         this.englishTokenizer = new EnglishTokenizer(parser, in, this);
+        this.customLanguageConfig = customLanguageConfig; 
         xmlTokenizer = new XMLTokenizer(parser, in, this);
-        setLanguage(LanguageMode.en);
+        if (startLanguageMode == null) startLanguageMode = LanguageMode.en;
+        setLanguage(startLanguageMode);
     }
 
     /* This function uses the cached op, string and number fields in
@@ -296,7 +300,7 @@ public class TokenStream
             break;
         case test:
             languageMode = LanguageMode.test;
-//            this.currentTokenizer = CustomTokenizer.createFromKeywordProperties(parser, in, this, customLanguageConfig);
+            this.currentTokenizer = new CustomTokenizer(parser, in, this, customLanguageConfig);
             break;
         }
     }
@@ -339,6 +343,7 @@ public class TokenStream
     private LanguageMode languageMode = LanguageMode.en;
     private BabylTokenizer currentTokenizer;
     private BabylTokenizer englishTokenizer;
+    private CustomTokenizerConfig customLanguageConfig;
     private XMLTokenizer xmlTokenizer;
     
     private Parser parser;
