@@ -94,6 +94,22 @@ public class BabylscriptScannerTest
    {
       assertEquals(evalStringToString("Math['\u0639\u0631\u0628\u064a':'\u0628\u0627\u064a']"), evalStringToString("Math['ar':'\u0628\u0627\u064a']"));
    }
-   
-   
+
+   @Test
+   public void normalization0() 
+   {
+      assertEquals("5", evalStringToString("abba = 5; a\uff42\uff42a;"));
+   }
+
+   @Test
+   public void normalization1() 
+   {
+      assertEquals("\uff42", evalStringToString("a = \"\uff42\"; a;"));
+   }
+
+   @Test
+   public void normalization2() 
+   {
+      assertEquals("hello", evalStringToString("a = ---zh--- \uff62hello\u300d; ---en---a;"));
+   }
 }

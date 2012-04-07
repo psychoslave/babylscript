@@ -262,11 +262,15 @@ public class BabylTokenizer
                 int quoteChar = getMatchingStringDelimiter(c);
                 setStringBufferTop(0);
 
+                // Turn of normalization so we can put the raw character stream into the string
+                in.setIsNormalizeChars(false);  
+                
                 c = in.getChar();
             strLoop: while (c != quoteChar) {
                     if (c == '\n' || c == TokenCharStream.EOF_CHAR) {
                         in.ungetChar(c);
                         parser.addError("msg.unterminated.string.lit");
+                        in.setIsNormalizeChars(true);  
                         return Token.ERROR;
                     }
 
@@ -358,6 +362,7 @@ public class BabylTokenizer
                     c = in.getChar();
                 }
 
+                in.setIsNormalizeChars(true);  
                 String str = getStringFromBuffer();
                 setString(internString(str));
                 return Token.STRING;
@@ -629,6 +634,13 @@ public class BabylTokenizer
             if (in.matchChar('o') && in.matchChar('-') && in.matchChar('-') && in.matchChar('-'))
             {
                 setLanguage(TokenStream.LanguageMode.ro);
+                return Token.LANGMODE;
+            }
+            break;
+        case 'z':
+            if (in.matchChar('h') && in.matchChar('-') && in.matchChar('-') && in.matchChar('-'))
+            {
+                setLanguage(TokenStream.LanguageMode.zh);
                 return Token.LANGMODE;
             }
             break;
