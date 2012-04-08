@@ -30,6 +30,11 @@ public class TranslatedNameBindings
         // The equivalent language name mappings must always show ALL the equivalent names and in the same order
         EquivalentLanguageNames.put("ar", new String[] {"ar", "\u0639\u0631\u0628\u064a"});
         EquivalentLanguageNames.put("\u0639\u0631\u0628\u064a", new String[] {"ar", "\u0639\u0631\u0628\u064a"});
+
+        EquivalentLanguageNames.put("zh", new String[] {"zh", "\u4e2d\u6587", "\u7b80\u4f53"});
+        EquivalentLanguageNames.put("\u4e2d\u6587", new String[] {"zh", "\u4e2d\u6587", "\u7b80\u4f53"});
+        EquivalentLanguageNames.put("\u7b80\u4f53", new String[] {"zh", "\u4e2d\u6587", "\u7b80\u4f53"});
+
         EquivalentLanguageNames = Collections.unmodifiableMap(EquivalentLanguageNames);
     }
 
