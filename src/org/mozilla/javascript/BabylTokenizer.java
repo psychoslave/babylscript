@@ -582,71 +582,51 @@ public class BabylTokenizer
             return Token.ERROR;
         }
     }
+
+    static HashMap<String, TokenStream.LanguageMode> languageModeCodes;
+    static {
+        languageModeCodes  = new HashMap<String, TokenStream.LanguageMode>();
+        languageModeCodes.put("\u0639\u0631\u0628\u064a", TokenStream.LanguageMode.ar);
+        languageModeCodes.put("ar", TokenStream.LanguageMode.ar);
+        languageModeCodes.put("en", TokenStream.LanguageMode.en);
+        languageModeCodes.put("fr", TokenStream.LanguageMode.fr);
+        languageModeCodes.put("pt", TokenStream.LanguageMode.pt);
+        languageModeCodes.put("test", TokenStream.LanguageMode.test);
+        languageModeCodes.put("ro", TokenStream.LanguageMode.ro);
+        languageModeCodes.put("zh", TokenStream.LanguageMode.zh);
+    }
     
     private int scanLanguageMode() throws IOException
     {
-        int c = in.getChar();
-        switch(c)
+        setStringBufferTop(0);
+        while(true)
         {
-        case '\u0639':
-            if (in.matchChar('\u0631') && in.matchChar('\u0628') && in.matchChar('\u064a') && in.matchChar('-') && in.matchChar('-') && in.matchChar('-'))
+            int c = in.getChar();
+            if (c == '-')
             {
-                setLanguage(TokenStream.LanguageMode.ar);
-                return Token.LANGMODE;
+                if (in.matchChar('-') && in.matchChar('-'))
+                    break;
+                parser.addError("msg.unknown.language.mode");
+                return Token.ERROR;
             }
-            break;
-        case 'a':
-            if (in.matchChar('r') && in.matchChar('-') && in.matchChar('-') && in.matchChar('-'))
+            
+            if (!Character.isJavaIdentifierPart(c))
             {
-                setLanguage(TokenStream.LanguageMode.ar);
-                return Token.LANGMODE;
+                parser.addError("msg.unknown.language.mode");
+                return Token.ERROR;
             }
-            break;
-        case 'e':
-            if (in.matchChar('n') && in.matchChar('-') && in.matchChar('-') && in.matchChar('-'))
-            {
-                setLanguage(TokenStream.LanguageMode.en);
-                return Token.LANGMODE;
-            }
-            break;
-        case 'f':
-            if (in.matchChar('r') && in.matchChar('-') && in.matchChar('-') && in.matchChar('-'))
-            {
-                setLanguage(TokenStream.LanguageMode.fr);
-                return Token.LANGMODE;
-            }
-            break;
-        case 'p':
-            if (in.matchChar('t') && in.matchChar('-') && in.matchChar('-') && in.matchChar('-'))
-            {
-                setLanguage(TokenStream.LanguageMode.pt);
-                return Token.LANGMODE;
-            }
-            break;
-        case 't':
-            if (in.matchChar('e') && in.matchChar('s') && in.matchChar('t') && in.matchChar('-') && in.matchChar('-') && in.matchChar('-'))
-            {
-                setLanguage(TokenStream.LanguageMode.test);
-                return Token.LANGMODE;
-            }
-            break;
-        case 'r':
-            if (in.matchChar('o') && in.matchChar('-') && in.matchChar('-') && in.matchChar('-'))
-            {
-                setLanguage(TokenStream.LanguageMode.ro);
-                return Token.LANGMODE;
-            }
-            break;
-        case 'z':
-            if (in.matchChar('h') && in.matchChar('-') && in.matchChar('-') && in.matchChar('-'))
-            {
-                setLanguage(TokenStream.LanguageMode.zh);
-                return Token.LANGMODE;
-            }
-            break;
-        default:
-            break;
+        
+            addToString(c);
         }
+        String langCode = getStringFromBuffer();
+
+        TokenStream.LanguageMode mode = languageModeCodes.get(langCode);
+        if (mode != null) 
+        {
+            setLanguage(mode);
+            return Token.LANGMODE;
+        }
+        
         parser.addError("msg.unknown.language.mode");
         return Token.ERROR;
     }
