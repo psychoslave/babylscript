@@ -3,6 +3,8 @@ package com.babylscript.my2iu;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.Locale;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,6 +36,7 @@ public class BabylscriptScannerTest
    {
       Context cx = Context.enter();
       cx.setOptimizationLevel(-1);
+      cx.setLocale(Locale.ENGLISH);
       try {
          return Context.toString(cx.evaluateString(scope, code, "<test>", 0, null));
       } finally {

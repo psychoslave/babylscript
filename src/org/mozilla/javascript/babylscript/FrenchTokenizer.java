@@ -60,7 +60,7 @@ public class FrenchTokenizer extends BabylGenericTokenizer
                 in, 
                 ts, 
                 new BabylTokenizer.DecimalNumberReader(','),
-                ResourceBundle.getBundle("org.mozilla.javascript.babylscript.resources.Keywords", new Locale("fr")));
+                ResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Keywords", new Locale("fr")));
     }
 
     protected boolean isStringDelimiter(int ch)

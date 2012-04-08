@@ -33,11 +33,11 @@ public class TranslatedNameBindings
         EquivalentLanguageNames = Collections.unmodifiableMap(EquivalentLanguageNames);
     }
 
-    static ResourceBundle romanian = ResourceBundle.getBundle("org.mozilla.javascript.babylscript.resources.Objects", new Locale("ro"));
-    static ResourceBundle french = ResourceBundle.getBundle("org.mozilla.javascript.babylscript.resources.Objects", new Locale("fr"));
-    static ResourceBundle arabic = ResourceBundle.getBundle("org.mozilla.javascript.babylscript.resources.Objects", new Locale("ar"));
-    static ResourceBundle portuguese = ResourceBundle.getBundle("org.mozilla.javascript.babylscript.resources.Objects", new Locale("pt"));
-    static ResourceBundle chineseSimplified = ResourceBundle.getBundle("org.mozilla.javascript.babylscript.resources.Objects", new Locale("zh"));
+    static ResourceBundle romanian = BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Objects", new Locale("ro"));
+    static ResourceBundle french = BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Objects", new Locale("fr"));
+    static ResourceBundle arabic = BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Objects", new Locale("ar"));
+    static ResourceBundle portuguese = BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Objects", new Locale("pt"));
+    static ResourceBundle chineseSimplified = BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Objects", new Locale("zh"));
 
     static Map<String, ResourceBundle> langResourceMap = new HashMap<String, ResourceBundle>();
     static {

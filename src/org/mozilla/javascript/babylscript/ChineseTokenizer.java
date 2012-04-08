@@ -61,7 +61,7 @@ public class ChineseTokenizer extends BabylGenericTokenizer
                 in, 
                 ts, 
                 new BabylTokenizer.DecimalNumberReader(),
-                ResourceBundle.getBundle("org.mozilla.javascript.babylscript.resources.Keywords", new Locale("zh")));
+                BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Keywords", new Locale("zh")));
     }
 
     protected int matchSymbol(int c) throws IOException

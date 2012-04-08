@@ -3,6 +3,8 @@ package com.babylscript.my2iu;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.Locale;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -17,6 +19,7 @@ public class BabylscriptCommaTest
    public void setUp() throws Exception
    {
       Context cx = Context.enter();
+      cx.setLocale(Locale.ENGLISH);
       cx.setOptimizationLevel(-1);
       try {
          scope = cx.initStandardObjects();
@@ -33,6 +36,7 @@ public class BabylscriptCommaTest
    String evalStringToString(String code)
    {
       Context cx = Context.enter();
+      cx.setLocale(Locale.ENGLISH);
       cx.setOptimizationLevel(-1);
       try {
          return Context.toString(cx.evaluateString(scope, code, "<test>", 0, null));

@@ -16,7 +16,7 @@ public class NumberConversionsTest
 {
    Scriptable scope;
 
-   Locale none = null;
+   Locale none = Locale.ENGLISH;
    Locale en = Locale.ENGLISH;
    Locale fr = Locale.FRENCH;
    
@@ -25,6 +25,7 @@ public class NumberConversionsTest
    {
       Context cx = Context.enter();
       cx.setOptimizationLevel(-1);
+      cx.setLocale(Locale.ENGLISH);
       try {
          scope = cx.initStandardObjects();
       } finally {
