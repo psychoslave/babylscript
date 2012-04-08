@@ -266,7 +266,7 @@ public class BabylTokenizer
                 in.setIsNormalizeChars(false);  
                 
                 c = in.getChar();
-            strLoop: while (c != quoteChar) {
+            strLoop: while (c != quoteChar && TokenCharStream.normalizeChar(c) != quoteChar) {
                     if (c == '\n' || c == TokenCharStream.EOF_CHAR) {
                         in.ungetChar(c);
                         parser.addError("msg.unterminated.string.lit");
