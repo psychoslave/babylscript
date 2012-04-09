@@ -596,6 +596,7 @@ public class BabylTokenizer
         languageModeCodes.put("zh", TokenStream.LanguageMode.zh);
         languageModeCodes.put("\u4e2d\u6587", TokenStream.LanguageMode.zh);
         languageModeCodes.put("\u7b80\u4f53", TokenStream.LanguageMode.zh);
+        languageModeCodes.put("hi", TokenStream.LanguageMode.hi);
     }
     
     private int scanLanguageMode() throws IOException
@@ -637,11 +638,19 @@ public class BabylTokenizer
     {
         protected double readValue;
         protected StringBuilder stringBuffer = new StringBuilder(128);
-        protected char decimalSeparator = '.';
-        
-        public DecimalNumberReader(char decimalSeparator)
+        protected char decimalSeparator;
+        protected char altNumbers0Base;
+        protected char altDecimalSeparator;
+
+        public DecimalNumberReader(char decimalSeparator, char altNumbers0Base, char altDecimalSeparator)
         {
             this.decimalSeparator = decimalSeparator;
+            this.altNumbers0Base = altNumbers0Base;
+            this.altDecimalSeparator = altDecimalSeparator;
+        }
+        public DecimalNumberReader(char decimalSeparator)
+        {
+            this(decimalSeparator, '0', decimalSeparator);
         }
         public DecimalNumberReader()
         {
@@ -660,6 +669,7 @@ public class BabylTokenizer
             stringBuffer.setLength(0);
             int base = 10;
 
+            c = toJSNumberChar(c);
             if (c == '0') {
                 c = in.getChar();
                 if (c == 'x' || c == 'X') {
@@ -692,6 +702,7 @@ public class BabylTokenizer
                     }
                     stringBuffer.append((char)c);
                     c = in.getChar();
+                    c = toJSNumberChar(c);
                 }
             }
 
@@ -703,11 +714,13 @@ public class BabylTokenizer
                     stringBuffer.append((char)'.');
                     c = in.getChar();
                     while (isDigit(c)) {
+                        c = toJSNumberChar(c);
                         stringBuffer.append((char)c);
                         c = in.getChar();
                     } ;
                 }
                 if (c == 'e' || c == 'E') {
+                    c = toJSNumberChar(c);
                     stringBuffer.append((char)c);
                     c = in.getChar();
                     if (c == '+' || c == '-') {
@@ -719,6 +732,7 @@ public class BabylTokenizer
                         return Token.ERROR;
                     }
                     do {
+                        c = toJSNumberChar(c);
                         stringBuffer.append((char)c);
                         c = in.getChar();
                     } while (isDigit(c));
@@ -744,15 +758,23 @@ public class BabylTokenizer
             readValue = dval;
             return Token.NUMBER;
         }
+
+        protected int toJSNumberChar(int c)
+        {
+            if (altNumbers0Base <= c && c <= altNumbers0Base + 9)
+                return c - altNumbers0Base + '0';
+            return c;
+        }
         
         protected boolean isDigit(int c)
         {
-            return '0' <= c && c <= '9';
+            return ('0' <= c && c <= '9')
+                    || (altNumbers0Base <= c && c <= altNumbers0Base + 9);
         }
         
         protected boolean isDecimalSeparator(int c)
         {
-            return c == decimalSeparator;
+            return c == decimalSeparator || c == altDecimalSeparator;
         }
     }
  

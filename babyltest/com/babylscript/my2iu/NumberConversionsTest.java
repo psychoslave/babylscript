@@ -19,6 +19,8 @@ public class NumberConversionsTest
    Locale none = Locale.ENGLISH;
    Locale en = Locale.ENGLISH;
    Locale fr = Locale.FRENCH;
+   Locale ar = new Locale("ar");
+   Locale hi = new Locale("hi");
    
    @Before
    public void setUp() throws Exception
@@ -135,6 +137,14 @@ public class NumberConversionsTest
    }
 
    @Test
+   public void toNumber15() 
+   {
+      // Java seems to want to use Western digits for Devanagari numbers.
+      // Perhaps they're fixed up during rendering 
+      assertEquals("1.2", evalStringToString(hi, "Number('\u0967.\u0968');"));
+   }
+
+   @Test
    public void toString1() 
    {
       assertEquals("1", evalStringToString(none, "(1).toString();"));
@@ -182,4 +192,12 @@ public class NumberConversionsTest
       assertEquals("1", evalStringToString(fr, "a= {}; a['2,5'] = 1; a[2.5];"));
    }
 
+   @Test
+   public void toString9() 
+   {
+      // Numbers for Arabic countries are stored internally using western 
+      // (Arabic) numerals because some Arab countries use western
+      // numerals (they're only *rendered* using different digits) 
+      assertEquals("1", evalStringToString(ar, "---ar---a= {}; a['2.5'] = 1; a[\u0662\u066B\u0665];"));
+   }
 }

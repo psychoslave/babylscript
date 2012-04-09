@@ -52,6 +52,7 @@ import org.mozilla.javascript.babylscript.CustomTokenizer;
 import org.mozilla.javascript.babylscript.CustomTokenizerConfig;
 import org.mozilla.javascript.babylscript.EnglishTokenizer;
 import org.mozilla.javascript.babylscript.FrenchTokenizer;
+import org.mozilla.javascript.babylscript.HindiTokenizer;
 import org.mozilla.javascript.babylscript.PortugueseTokenizer;
 import org.mozilla.javascript.babylscript.RomanianTokenizer;
 
@@ -253,6 +254,7 @@ public class TokenStream
         ar,
         en,
         fr,
+        hi,
         pt,
         test,
         ro,
@@ -268,6 +270,8 @@ public class TokenStream
             return LanguageMode.en;
         else if ("fr".equals(str))
             return LanguageMode.fr;
+        else if ("hi".equals(str))
+            return LanguageMode.hi;
         else if ("pt".equals(str))
             return LanguageMode.pt;
         else if ("ro".equals(str))
@@ -280,34 +284,31 @@ public class TokenStream
     }
     public void setLanguage(LanguageMode language)
     {
+        languageMode = language;
         switch(language)
         {
         case ar:
-            languageMode = LanguageMode.ar;
             currentTokenizer = new ArabicTokenizer(parser, in, this);
             break;
         case en:
-            languageMode = LanguageMode.en;
             currentTokenizer = this.englishTokenizer;
             break;
         case fr:
-            languageMode = LanguageMode.fr;
             currentTokenizer = new FrenchTokenizer(parser, in, this);
             break;
+        case hi:
+            currentTokenizer = new HindiTokenizer(parser, in, this);
+            break;
         case pt:
-            languageMode = LanguageMode.pt;
             currentTokenizer = new PortugueseTokenizer(parser, in, this);
             break;
         case ro:
-            languageMode = LanguageMode.ro;
             currentTokenizer = new RomanianTokenizer(parser, in, this);
             break;
         case zh:
-            languageMode = LanguageMode.zh;
             currentTokenizer = new ChineseTokenizer(parser, in, this);
             break;
         case test:
-            languageMode = LanguageMode.test;
             this.currentTokenizer = new CustomTokenizer(parser, in, this, customLanguageConfig);
             break;
         }
@@ -323,6 +324,8 @@ public class TokenStream
             return "en";
         case fr:
             return "fr";
+        case hi:
+            return "hi";
         case pt:
             return "pt";
         case ro:

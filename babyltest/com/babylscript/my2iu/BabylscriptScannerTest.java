@@ -115,4 +115,28 @@ public class BabylscriptScannerTest
    {
       assertEquals("hello", evalStringToString("a = ---zh--- \uff62hello\u300d; ---en---a;"));
    }
+
+   @Test
+   public void numbers0() 
+   {
+      assertEquals("3", evalStringToString("---hi--- \u0969"));
+   }
+
+   @Test
+   public void numbers1() 
+   {
+      assertEquals("3.25", evalStringToString("---hi--- \u0969.\u0968\u096b"));
+   }
+
+   @Test
+   public void numbers2() 
+   {
+      assertEquals("1.25", evalStringToString("---hi--- 1.25"));
+   }
+
+   @Test
+   public void numbers3() 
+   {
+      assertEquals("1.25", evalStringToString("---ar--- \u0661\u066B\u0662\u0665"));
+   }
 }

@@ -820,7 +820,14 @@ public class ScriptRuntime {
     // proper JS-style canonical-format number
     public static String unlocalizeNumberString(String number)
     {
-        return number.replace(',', '.');
+        String str = number.replace(',', '.');
+        str = str.replace('\u066B', '.');
+        for (int n = 0; n < 10; n++)
+        {
+            str = str.replace((char)('\u0660'+n), (char)('0' + n));
+            str = str.replace((char)('\u0966'+n), (char)('0' + n));
+        }
+        return str;
     }
 
     // You can use this locale to refer to the default JavaScript conversions
@@ -833,7 +840,10 @@ public class ScriptRuntime {
     {
         if (locale == null) locale = Locale.ENGLISH;
         DecimalFormatSymbols symbols = new DecimalFormatSymbols(locale);
-        return number.replace('.', symbols.getDecimalSeparator());
+        String str = number.replace('.', symbols.getDecimalSeparator());
+        for (int n = 0; n < 10; n++)
+            str = str.replace((char)('0' + n), (char)(symbols.getZeroDigit() + n));
+        return str;
     }
     
     public static String numberToString(double d, int base) {
