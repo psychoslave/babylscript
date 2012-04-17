@@ -35,6 +35,9 @@ public class TranslatedNameBindings
         EquivalentLanguageNames.put("\u4e2d\u6587", new String[] {"zh", "\u4e2d\u6587", "\u7b80\u4f53"});
         EquivalentLanguageNames.put("\u7b80\u4f53", new String[] {"zh", "\u4e2d\u6587", "\u7b80\u4f53"});
 
+        EquivalentLanguageNames.put("hi", new String[] {"hi", "\u0939\u093f"});
+        EquivalentLanguageNames.put("\u0939\u093f", new String[] {"hi", "\u0939\u093f"});
+
         EquivalentLanguageNames = Collections.unmodifiableMap(EquivalentLanguageNames);
     }
 

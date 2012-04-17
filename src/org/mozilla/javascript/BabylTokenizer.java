@@ -597,6 +597,7 @@ public class BabylTokenizer
         languageModeCodes.put("\u4e2d\u6587", TokenStream.LanguageMode.zh);
         languageModeCodes.put("\u7b80\u4f53", TokenStream.LanguageMode.zh);
         languageModeCodes.put("hi", TokenStream.LanguageMode.hi);
+        languageModeCodes.put("\u0939\u093f", TokenStream.LanguageMode.hi);
     }
     
     private int scanLanguageMode() throws IOException
