@@ -55,6 +55,7 @@ import org.mozilla.javascript.babylscript.FrenchTokenizer;
 import org.mozilla.javascript.babylscript.HindiTokenizer;
 import org.mozilla.javascript.babylscript.PortugueseTokenizer;
 import org.mozilla.javascript.babylscript.RomanianTokenizer;
+import org.mozilla.javascript.babylscript.SpanishTokenizer;
 
 
 /**
@@ -253,6 +254,7 @@ public class TokenStream
     {
         ar,
         en,
+        es,
         fr,
         hi,
         pt,
@@ -268,6 +270,8 @@ public class TokenStream
             return LanguageMode.ar;
         else if ("en".equals(str))
             return LanguageMode.en;
+        else if ("es".equals(str))
+            return LanguageMode.es;
         else if ("fr".equals(str))
             return LanguageMode.fr;
         else if ("hi".equals(str))
@@ -292,6 +296,9 @@ public class TokenStream
             break;
         case en:
             currentTokenizer = this.englishTokenizer;
+            break;
+        case es:
+            currentTokenizer = new SpanishTokenizer(parser, in, this);
             break;
         case fr:
             currentTokenizer = new FrenchTokenizer(parser, in, this);
@@ -322,6 +329,8 @@ public class TokenStream
             return "ar";
         case en:
             return "en";
+        case es:
+            return "es";
         case fr:
             return "fr";
         case hi:
