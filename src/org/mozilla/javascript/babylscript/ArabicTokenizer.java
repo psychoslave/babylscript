@@ -60,7 +60,7 @@ public class ArabicTokenizer extends BabylGenericTokenizer
         super(p, 
                 in, 
                 ts, 
-                new BabylTokenizer.DecimalNumberReader('.', '\u0660', '\u066B'),
+                new BabylTokenizer.DecimalNumberReader('.', ',', '\u0660', '\u066B'),
                 BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Keywords", new Locale("ar")));
     }
 

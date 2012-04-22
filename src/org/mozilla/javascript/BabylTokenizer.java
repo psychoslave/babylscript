@@ -641,14 +641,20 @@ public class BabylTokenizer
         protected double readValue;
         protected StringBuilder stringBuffer = new StringBuilder(128);
         protected char decimalSeparator;
+        protected char tertiaryDecimalSeparator;
         protected char altNumbers0Base;
         protected char altDecimalSeparator;
 
-        public DecimalNumberReader(char decimalSeparator, char altNumbers0Base, char altDecimalSeparator)
+        public DecimalNumberReader(char decimalSeparator, char tertiaryDecimalSeparator, char altNumbers0Base, char altDecimalSeparator)
         {
             this.decimalSeparator = decimalSeparator;
+            this.tertiaryDecimalSeparator = tertiaryDecimalSeparator;
             this.altNumbers0Base = altNumbers0Base;
             this.altDecimalSeparator = altDecimalSeparator;
+        }
+        public DecimalNumberReader(char decimalSeparator, char altNumbers0Base, char altDecimalSeparator)
+        {
+            this(decimalSeparator, decimalSeparator, altNumbers0Base, altDecimalSeparator);
         }
         public DecimalNumberReader(char decimalSeparator)
         {
@@ -776,7 +782,7 @@ public class BabylTokenizer
         
         protected boolean isDecimalSeparator(int c)
         {
-            return c == decimalSeparator || c == altDecimalSeparator;
+            return c == decimalSeparator || c == altDecimalSeparator || c == tertiaryDecimalSeparator;
         }
     }
  
