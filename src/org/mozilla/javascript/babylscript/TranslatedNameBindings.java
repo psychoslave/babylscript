@@ -38,6 +38,9 @@ public class TranslatedNameBindings
         EquivalentLanguageNames.put("hi", new String[] {"hi", "\u0939\u093f"});
         EquivalentLanguageNames.put("\u0939\u093f", new String[] {"hi", "\u0939\u093f"});
 
+        EquivalentLanguageNames.put("ja", new String[] {"ja", "\u65e5\u672c\u8a9e"});
+        EquivalentLanguageNames.put("\u65e5\u672c\u8a9e", new String[] {"ja", "\u65e5\u672c\u8a9e"});
+
         EquivalentLanguageNames = Collections.unmodifiableMap(EquivalentLanguageNames);
     }
 
@@ -48,6 +51,7 @@ public class TranslatedNameBindings
     static ResourceBundle chineseSimplified = BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Objects", new Locale("zh"));
     static ResourceBundle hindi = BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Objects", new Locale("hi"));
     static ResourceBundle spanish = BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Objects", new Locale("es"));
+    static ResourceBundle japanese = BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Objects", new Locale("ja"));
 
     static Map<String, ResourceBundle> langResourceMap = new HashMap<String, ResourceBundle>();
     static {
@@ -58,6 +62,7 @@ public class TranslatedNameBindings
         langResourceMap.put("zh", chineseSimplified);
         langResourceMap.put("hi", hindi);
         langResourceMap.put("es", spanish);
+        langResourceMap.put("ja", japanese);
     }
     
     private static void fillTranslationsFromResourceBundle(Scriptable obj, String lang, ResourceBundle res, String[] english)
