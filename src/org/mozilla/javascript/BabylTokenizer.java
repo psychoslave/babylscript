@@ -588,6 +588,7 @@ public class BabylTokenizer
         languageModeCodes  = new HashMap<String, TokenStream.LanguageMode>();
         languageModeCodes.put("\u0639\u0631\u0628\u064a", TokenStream.LanguageMode.ar);
         languageModeCodes.put("ar", TokenStream.LanguageMode.ar);
+        languageModeCodes.put("de", TokenStream.LanguageMode.de);
         languageModeCodes.put("en", TokenStream.LanguageMode.en);
         languageModeCodes.put("es", TokenStream.LanguageMode.es);
         languageModeCodes.put("fr", TokenStream.LanguageMode.fr);

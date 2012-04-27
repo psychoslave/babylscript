@@ -52,6 +52,7 @@ import org.mozilla.javascript.babylscript.CustomTokenizer;
 import org.mozilla.javascript.babylscript.CustomTokenizerConfig;
 import org.mozilla.javascript.babylscript.EnglishTokenizer;
 import org.mozilla.javascript.babylscript.FrenchTokenizer;
+import org.mozilla.javascript.babylscript.GermanTokenizer;
 import org.mozilla.javascript.babylscript.HindiTokenizer;
 import org.mozilla.javascript.babylscript.JapaneseTokenizer;
 import org.mozilla.javascript.babylscript.PortugueseTokenizer;
@@ -254,6 +255,7 @@ public class TokenStream
     public static enum LanguageMode
     {
         ar,
+        de,
         en,
         es,
         fr,
@@ -270,6 +272,8 @@ public class TokenStream
             return LanguageMode.en;
         if ("ar".equals(str))
             return LanguageMode.ar;
+        else if ("de".equals(str))
+            return LanguageMode.de;
         else if ("en".equals(str))
             return LanguageMode.en;
         else if ("es".equals(str))
@@ -297,6 +301,9 @@ public class TokenStream
         {
         case ar:
             currentTokenizer = new ArabicTokenizer(parser, in, this);
+            break;
+        case de:
+            currentTokenizer = new GermanTokenizer(parser, in, this);
             break;
         case en:
             currentTokenizer = this.englishTokenizer;
@@ -334,6 +341,8 @@ public class TokenStream
         {
         case ar:
             return "ar";
+        case de:
+            return "de";
         case en:
             return "en";
         case es:
