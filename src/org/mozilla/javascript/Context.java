@@ -59,6 +59,7 @@ import java.util.HashSet;
 import org.mozilla.javascript.babylscript.CustomTokenizerConfig;
 import org.mozilla.javascript.debug.DebuggableScript;
 import org.mozilla.javascript.debug.Debugger;
+import org.mozilla.javascript.regexp.RegExpImpl;
 import org.apache.harmony.Locale;
 
 /**
@@ -2444,26 +2445,18 @@ public class Context
         }
     }
 
-    private static Class<?> codegenClass = Kit.classOrNull(
-                             "org.mozilla.javascript.optimizer.Codegen");
-    private static Class<?> interpreterClass = Kit.classOrNull(
-                             "org.mozilla.javascript.Interpreter");
+    private static Class<?> codegenClass = null;
 
     private Evaluator createCompiler()
     {
         Evaluator result = null;
-        if (optimizationLevel >= 0 && codegenClass != null) {
-            result = (Evaluator)Kit.newInstanceOrNull(codegenClass);
-        }
-        if (result == null) {
-            result = createInterpreter();
-        }
+        result = createInterpreter();
         return result;
     }
 
     static Evaluator createInterpreter()
     {
-        return (Evaluator)Kit.newInstanceOrNull(interpreterClass);
+        return (Evaluator)new Interpreter();
     }
 
     static String getSourcePositionFromStack(int[] linep)
@@ -2522,11 +2515,7 @@ public class Context
     RegExpProxy getRegExpProxy()
     {
         if (regExpProxy == null) {
-            Class<?> cl = Kit.classOrNull(
-                          "org.mozilla.javascript.regexp.RegExpImpl");
-            if (cl != null) {
-                regExpProxy = (RegExpProxy)Kit.newInstanceOrNull(cl);
-            }
+            regExpProxy = new RegExpImpl();
         }
         return regExpProxy;
     }
@@ -2628,7 +2617,6 @@ public class Context
     private int enterCount;
     private Object propertyListeners;
     private Map<Object,Object> threadLocalMap;
-    private ClassLoader applicationClassLoader;
 
     private TokenStream.LanguageMode languageMode;
     private CustomTokenizerConfig customTokenizerConfig = null;

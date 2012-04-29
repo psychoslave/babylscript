@@ -116,10 +116,10 @@ public class VMBridge
     /**
      * Return the ClassLoader instance associated with the current thread.
      */
-    protected ClassLoader getCurrentThreadClassLoader()
-    {
-        return Thread.currentThread().getContextClassLoader();
-    }
+//    protected ClassLoader getCurrentThreadClassLoader()
+//    {
+//        return Thread.currentThread().getContextClassLoader();
+//    }
 
     /**
      * In many JVMSs, public methods in private
@@ -134,18 +134,19 @@ public class VMBridge
      */
     protected boolean tryToMakeAccessible(Object accessibleObject)
     {
-        if (!(accessibleObject instanceof AccessibleObject)) {
-            return false;
-        }
-        AccessibleObject accessible = (AccessibleObject)accessibleObject;
-        if (accessible.isAccessible()) {
-            return true;
-        }
-        try {
-            accessible.setAccessible(true);
-        } catch (Exception ex) { }
-
-        return accessible.isAccessible();
+        return false;
+//        if (!(accessibleObject instanceof AccessibleObject)) {
+//            return false;
+//        }
+//        AccessibleObject accessible = (AccessibleObject)accessibleObject;
+//        if (accessible.isAccessible()) {
+//            return true;
+//        }
+//        try {
+//            accessible.setAccessible(true);
+//        } catch (Exception ex) { }
+//
+//        return accessible.isAccessible();
     }
 
 

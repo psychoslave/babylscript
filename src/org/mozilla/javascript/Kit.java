@@ -86,8 +86,8 @@ public class Kit
      * Attempt to load the class of the given name. Note that the type parameter
      * isn't checked.
      */
-    public static Class<?> classOrNull(ClassLoader loader, String className)
-    {
+//    public static Class<?> classOrNull(ClassLoader loader, String className)
+//    {
 //        try {
 //            return loader.loadClass(className);
 //        } catch (ClassNotFoundException ex) {
@@ -97,37 +97,37 @@ public class Kit
 //            // Can be thrown if name has characters that a class name
 //            // can not contain
 //        }
-        return null;
-    }
+//        return null;
+//    }
 
-    static Object newInstanceOrNull(Class<?> cl)
-    {
-        try {
-            return cl.newInstance();
-        } catch (Exception x) {
+//    static Object newInstanceOrNull(Class<?> cl)
+//    {
+//        try {
+//            return cl.newInstance();
+//        } catch (Exception x) {
 //        } catch  (LinkageError ex) {
 //        } catch (InstantiationException x) {
 //        } catch (IllegalAccessException x) {
-        }
-        return null;
-    }
+//        }
+//        return null;
+//    }
 
     /**
      * Check that testClass is accessible from the given loader.
      */
-    static boolean testIfCanLoadRhinoClasses(ClassLoader loader)
-    {
-        Class<?> testClass = ScriptRuntime.ContextFactoryClass;
-        Class<?> x = Kit.classOrNull(loader, testClass.getName());
-        if (x != testClass) {
-            // The check covers the case when x == null =>
-            // loader does not know about testClass or the case
-            // when x != null && x != testClass =>
-            // loader loads a class unrelated to testClass
-            return false;
-        }
-        return true;
-    }
+//    static boolean testIfCanLoadRhinoClasses(ClassLoader loader)
+//    {
+//        Class<?> testClass = ScriptRuntime.ContextFactoryClass;
+//        Class<?> x = Kit.classOrNull(loader, testClass.getName());
+//        if (x != testClass) {
+//            // The check covers the case when x == null =>
+//            // loader does not know about testClass or the case
+//            // when x != null && x != testClass =>
+//            // loader loads a class unrelated to testClass
+//            return false;
+//        }
+//        return true;
+//    }
 
     /**
      * If initCause methods exists in Throwable, call

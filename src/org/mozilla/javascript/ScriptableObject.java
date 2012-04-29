@@ -255,10 +255,10 @@ public abstract class ScriptableObject implements Scriptable, Serializable,
      * Data structures for holding the mappings of translated
      * names to default name and the inverse mapping.
      */
-    ConcurrentHashMap<String, ConcurrentHashMap<String, String>> translations
-        = new ConcurrentHashMap<String, ConcurrentHashMap<String, String>>();
-    ConcurrentHashMap<String, ConcurrentHashMap<String, String>> reverseTranslations
-        = new ConcurrentHashMap<String, ConcurrentHashMap<String, String>>();
+    HashMap<String, HashMap<String, String>> translations
+        = new HashMap<String, HashMap<String, String>>();
+    HashMap<String, HashMap<String, String>> reverseTranslations
+        = new HashMap<String, HashMap<String, String>>();
 
     /**
      * Implementations of the methods for directly accessing
@@ -267,21 +267,21 @@ public abstract class ScriptableObject implements Scriptable, Serializable,
     public boolean hasTranslatedName(String lang, String name, Scriptable start)
     {
         if (lang == null) return false;
-        ConcurrentHashMap<String, String> trans = translations.get(lang);
+        HashMap<String, String> trans = translations.get(lang);
         if (trans == null) return false;
         return trans.containsKey(name);
     }
     public String getTranslatedName(String lang, String name, Scriptable start)
     {
         if (lang == null) return null;
-        ConcurrentHashMap<String, String> trans = translations.get(lang);
+        HashMap<String, String> trans = translations.get(lang);
         if (trans == null) return null;
         return trans.get(name);
     }
     public String getReverseTranslatedName(String lang, String name, Scriptable start)
     {
         if (lang == null) return null;
-        ConcurrentHashMap<String, String> trans = reverseTranslations.get(lang);
+        HashMap<String, String> trans = reverseTranslations.get(lang);
         if (trans == null) return null;
         return trans.get(name);
     }
@@ -289,7 +289,7 @@ public abstract class ScriptableObject implements Scriptable, Serializable,
     {
         if (lang == null) return;
         
-        ConcurrentHashMap<String, String> trans = translations.get(lang);
+        HashMap<String, String> trans = translations.get(lang);
         if (trans == null) return;
         String val = trans.get(name);
         trans.remove(name);
@@ -308,10 +308,10 @@ public abstract class ScriptableObject implements Scriptable, Serializable,
         if (start instanceof ScriptableObject)
         {
             // Put mapping in one direction
-            ConcurrentHashMap<String, String> trans = ((ScriptableObject)start).translations.get(lang);
+            HashMap<String, String> trans = ((ScriptableObject)start).translations.get(lang);
             if (trans == null) 
             {
-                ConcurrentHashMap<String, String> newLanguageMapping = new ConcurrentHashMap<String, String>();
+                HashMap<String, String> newLanguageMapping = new HashMap<String, String>();
                 if (TranslatedNameBindings.EquivalentLanguageNames.containsKey(lang))
                 {
                     // Different strings refer to the same language, so we map these different strings
@@ -322,13 +322,13 @@ public abstract class ScriptableObject implements Scriptable, Serializable,
                     // in order (the order is described in TranslatedNameBindings.EquivalentLanguageNames
                     for (String equivLang: equivs)
                     {
-                        ConcurrentHashMap<String, String> old = ((ScriptableObject)start).translations.putIfAbsent(equivLang, newLanguageMapping);
+                        HashMap<String, String> old = ((ScriptableObject)start).translations.put(equivLang, newLanguageMapping);
                         if (old != null)
                             newLanguageMapping = old;
                     }
                 }
                 else
-                    ((ScriptableObject)start).translations.putIfAbsent(lang, newLanguageMapping);
+                    ((ScriptableObject)start).translations.put(lang, newLanguageMapping);
                 trans = ((ScriptableObject)start).translations.get(lang);
             }
             trans.put(name, value);
@@ -337,7 +337,7 @@ public abstract class ScriptableObject implements Scriptable, Serializable,
             trans = ((ScriptableObject)start).reverseTranslations.get(lang);
             if (trans == null) 
             {
-                ConcurrentHashMap<String, String> newLanguageMapping = new ConcurrentHashMap<String, String>();
+                HashMap<String, String> newLanguageMapping = new HashMap<String, String>();
                 if (TranslatedNameBindings.EquivalentLanguageNames.containsKey(lang))
                 {
                     // Different strings refer to the same language, so we map these different strings
@@ -348,13 +348,13 @@ public abstract class ScriptableObject implements Scriptable, Serializable,
                     // in order (the order is described in TranslatedNameBindings.EquivalentLanguageNames
                     for (String equivLang: equivs)
                     {
-                        ConcurrentHashMap<String, String> old = ((ScriptableObject)start).reverseTranslations.putIfAbsent(equivLang, newLanguageMapping);
+                        HashMap<String, String> old = ((ScriptableObject)start).reverseTranslations.put(equivLang, newLanguageMapping);
                         if (old != null)
                             newLanguageMapping = old;
                     }
                 }
                 else
-                    ((ScriptableObject)start).reverseTranslations.putIfAbsent(lang, newLanguageMapping);
+                    ((ScriptableObject)start).reverseTranslations.put(lang, newLanguageMapping);
                 trans = ((ScriptableObject)start).reverseTranslations.get(lang);
             }
             trans.put(value, name);
