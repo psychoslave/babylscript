@@ -5,6 +5,10 @@ import java.util.ResourceBundle;
 
 import org.apache.harmony.Locale;
 import org.mozilla.javascript.ScriptRuntime.MessageProvider;
+import org.mozilla.javascript.resources.Messages;
+
+import com.google.gwt.core.client.GWT;
+import com.google.gwt.i18n.client.ConstantsWithLookup;
 
 /* OPT there's a noticable delay for the first error!  Maybe it'd
  * make sense to use a ListResourceBundle instead of a properties
@@ -12,29 +16,34 @@ import org.mozilla.javascript.ScriptRuntime.MessageProvider;
  */
 class DefaultMessageProvider implements MessageProvider {
     public String getMessage(String messageId, Object[] arguments) {
-        final String defaultResource
-            = "org.mozilla.javascript.resources.Messages";
+        Messages errMsgs = GWT.create(Messages.class); 
+//        final String defaultResource
+//            = "org.mozilla.javascript.resources.Messages";
+//
+//        Context cx = Context.getCurrentContext();
+//        Locale locale = cx != null ? cx.getLocale() : Locale.getDefault();
+//
+//        // ResourceBundle does caching.
+//        ResourceBundle rb = ResourceBundle.getBundle(defaultResource, new java.util.Locale(locale.getCountry()));
 
-        Context cx = Context.getCurrentContext();
-        Locale locale = cx != null ? cx.getLocale() : Locale.getDefault();
-
-        // ResourceBundle does caching.
-        ResourceBundle rb = ResourceBundle.getBundle(defaultResource, new java.util.Locale(locale.getCountry()));
-
-        String formatString;
-        try {
-            formatString = rb.getString(messageId);
-        } catch (java.util.MissingResourceException mre) {
-            throw new RuntimeException
-                ("no message resource found for message property "+ messageId);
-        }
+        messageId = messageId.replace(".", "_");
+        String formatString = errMsgs.getString(messageId);
 
         /*
          * It's OK to format the string, even if 'arguments' is null;
          * we need to format it anyway, to make double ''s collapse to
          * single 's.
          */
-        MessageFormat formatter = new MessageFormat(formatString);
-        return formatter.format(arguments);
+        return simpleFormat(formatString, arguments);
     }
+    
+    private String simpleFormat(String messageId, Object[] arguments)
+    {
+        // in GWT, there is no MessageFormat object, but the Rhino error messages only
+        // need simple string substitution, so we can just emulate that
+        for (int n = 0; n < arguments.length; n++)
+            messageId = messageId.replace("{" + n + "}", (String)arguments[n]);
+        return messageId;
+    }
+    
 }

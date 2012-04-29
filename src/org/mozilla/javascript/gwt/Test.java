@@ -37,7 +37,7 @@ public class Test implements EntryPoint
 //                p.calledByCompileFunction = true;
 //            }
 //             tree;
-            String sourceString = "22 + 23";
+            String sourceString = "22 + 23; ";
             int lineno = 0;
             String sourceName = "hey";
             if (sourceString != null) {
