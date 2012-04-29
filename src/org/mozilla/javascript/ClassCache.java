@@ -57,7 +57,7 @@ public class ClassCache implements Serializable
     private static final Object AKEY = "ClassCache";
     private volatile boolean cachingIsEnabled = true;
     private transient HashMap<Class<?>,JavaMembers> classTable;
-    private transient HashMap<JavaAdapter.JavaAdapterSignature,Class<?>> classAdapterCache;
+//    private transient HashMap<JavaAdapter.JavaAdapterSignature,Class<?>> classAdapterCache;
     private transient HashMap<Class<?>,Object> interfaceAdapterCache;
     private int generatedClassSerial;
 
@@ -114,7 +114,7 @@ public class ClassCache implements Serializable
     public synchronized void clearCaches()
     {
         classTable = null;
-        classAdapterCache = null;
+//        classAdapterCache = null;
         interfaceAdapterCache = null;
     }
 
@@ -164,13 +164,13 @@ public class ClassCache implements Serializable
         return classTable;
     }
     
-    Map<JavaAdapter.JavaAdapterSignature,Class<?>> getInterfaceAdapterCacheMap()
-    {
-        if (classAdapterCache == null) {
-            classAdapterCache = new HashMap<JavaAdapter.JavaAdapterSignature,Class<?>>();
-        }
-        return classAdapterCache;
-    }
+//    Map<JavaAdapter.JavaAdapterSignature,Class<?>> getInterfaceAdapterCacheMap()
+//    {
+//        if (classAdapterCache == null) {
+//            classAdapterCache = new HashMap<JavaAdapter.JavaAdapterSignature,Class<?>>();
+//        }
+//        return classAdapterCache;
+//    }
     
     /**
      * @deprecated
