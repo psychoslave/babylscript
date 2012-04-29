@@ -39,22 +39,24 @@
 
 package org.mozilla.javascript;
 
+import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Method;
-import java.lang.reflect.Member;
 import java.util.Iterator;
 
-import org.mozilla.javascript.jdk15.VMBridge_jdk15;
 
-public abstract class VMBridge
+public class VMBridge
 {
 
     static final VMBridge instance = makeInstance();
 
     private static VMBridge makeInstance()
     {
-        return new VMBridge_jdk15();
+        return new VMBridge();
     }
 
+    //private ThreadLocal<Object[]> contextLocal = new ThreadLocal<Object[]>();
+    private Object[] contextLocal;
+    
     /**
      * Return a helper object to optimize {@link Context} access.
      * <p>
@@ -64,7 +66,24 @@ public abstract class VMBridge
      * In this way the implementation can use the helper to cache
      * information about current thread to make {@link Context} access faster.
      */
-    protected abstract Object getThreadContextHelper();
+    protected Object getThreadContextHelper()
+    {
+        // To make subsequent batch calls to getContext/setContext faster
+        // associate permanently one element array with contextLocal
+        // so getContext/setContext would need just to read/write the first
+        // array element.
+        // Note that it is necessary to use Object[], not Context[] to allow
+        // garbage collection of Rhino classes. For details see comments
+        // by Attila Szegedi in
+        // https://bugzilla.mozilla.org/show_bug.cgi?id=281067#c5
+
+        Object[] storage = contextLocal;
+        if (storage == null) {
+            storage = new Object[1];
+            contextLocal = storage;
+        }
+        return storage;
+    }
 
     /**
      * Get {@link Context} instance associated with the current thread
@@ -73,7 +92,11 @@ public abstract class VMBridge
      * @param contextHelper The result of {@link #getThreadContextHelper()}
      *                      called from the current thread.
      */
-    protected abstract Context getContext(Object contextHelper);
+    protected Context getContext(Object contextHelper)
+    {
+        Object[] storage = (Object[])contextHelper;
+        return (Context)storage[0];
+    }
 
     /**
      * Associate {@link Context} instance with the current thread or remove
@@ -82,12 +105,21 @@ public abstract class VMBridge
      * @param contextHelper The result of {@link #getThreadContextHelper()}
      *                      called from the current thread.
      */
-    protected abstract void setContext(Object contextHelper, Context cx);
+    protected void setContext(Object contextHelper, Context cx)
+    {
+        Object[] storage = (Object[])contextHelper;
+        storage[0] = cx;
+    }
+
+
 
     /**
      * Return the ClassLoader instance associated with the current thread.
      */
-    protected abstract ClassLoader getCurrentThreadClassLoader();
+    protected ClassLoader getCurrentThreadClassLoader()
+    {
+        return Thread.currentThread().getContextClassLoader();
+    }
 
     /**
      * In many JVMSs, public methods in private
@@ -100,7 +132,22 @@ public abstract class VMBridge
      * @return true if it was possible to make method accessible
      *         or false otherwise.
      */
-    protected abstract boolean tryToMakeAccessible(Object accessibleObject);
+    protected boolean tryToMakeAccessible(Object accessibleObject)
+    {
+        if (!(accessibleObject instanceof AccessibleObject)) {
+            return false;
+        }
+        AccessibleObject accessible = (AccessibleObject)accessibleObject;
+        if (accessible.isAccessible()) {
+            return true;
+        }
+        try {
+            accessible.setAccessible(true);
+        } catch (Exception ex) { }
+
+        return accessible.isAccessible();
+    }
+
 
     /**
      * Create helper object to create later proxies implementing the specified
@@ -119,6 +166,25 @@ public abstract class VMBridge
         throw Context.reportRuntimeError(
             "VMBridge.getInterfaceProxyHelper is not supported");
     }
+//  From Java 1.5 version
+//================
+//  @Override
+//  protected Object getInterfaceProxyHelper(ContextFactory cf,
+//                                           Class<?>[] interfaces)
+//  {
+//      // XXX: How to handle interfaces array withclasses from different
+//      // class loaders? Using cf.getApplicationClassLoader() ?
+//      ClassLoader loader = interfaces[0].getClassLoader();
+//      Class<?> cl = Proxy.getProxyClass(loader, interfaces);
+//      Constructor<?> c;
+//      try {
+//          c = cl.getConstructor(new Class[] { InvocationHandler.class });
+//      } catch (NoSuchMethodException ex) {
+//          // Should not happen
+//          throw Kit.initCause(new IllegalStateException(), ex);
+//      }
+//      return c;
+//  }
 
     /**
      * Create proxy object for {@link InterfaceAdapter}. The proxy should call
@@ -142,14 +208,40 @@ public abstract class VMBridge
         throw Context.reportRuntimeError(
             "VMBridge.newInterfaceProxy is not supported");
     }
+//  From Java 1.5 version
+//================
+//  @Override
+//  protected Object newInterfaceProxy(Object proxyHelper,
+//                                     final ContextFactory cf,
+//                                     final InterfaceAdapter adapter,
+//                                     final Object target,
+//                                     final Scriptable topScope)
+//  {
+//      Constructor<?> c = (Constructor<?>)proxyHelper;
+//
+//      InvocationHandler handler = new InvocationHandler() {
+//              public Object invoke(Object proxy,
+//                                   Method method,
+//                                   Object[] args)
+//              {
+//                  return adapter.invoke(cf, target, topScope, method, args);
+//              }
+//          };
+//      Object proxy;
+//      try {
+//          proxy = c.newInstance(new Object[] { handler });
+//      } catch (InvocationTargetException ex) {
+//          throw Context.throwAsScriptRuntimeEx(ex);
+//      } catch (IllegalAccessException ex) {
+//          // Shouls not happen
+//          throw Kit.initCause(new IllegalStateException(), ex);
+//      } catch (InstantiationException ex) {
+//          // Shouls not happen
+//          throw Kit.initCause(new IllegalStateException(), ex);
+//      }
+//      return proxy;
+//  }
 
-    /**
-     * Returns whether or not a given member (method or constructor)
-     * has variable arguments.
-     * Variable argument methods have only been supported in Java since
-     * JDK 1.5.
-     */
-    protected abstract boolean isVarArgs(Member member);
 
     /**
      * If "obj" is a java.util.Iterator or a java.lang.Iterable, return a
@@ -162,6 +254,8 @@ public abstract class VMBridge
             Iterator<?> iterator = null;
             if (unwrapped instanceof Iterator)
                 iterator = (Iterator<?>) unwrapped;
+            if (unwrapped instanceof Iterable)
+                iterator = ((Iterable<?>)unwrapped).iterator();
             return iterator;
         }
         return null;
