@@ -54,11 +54,6 @@ public class VMBridge_jdk15 extends VMBridge
 
     @Override
     public boolean isVarArgs(Member member) {
-        if (member instanceof Method)
-            return ((Method) member).isVarArgs();
-        else if (member instanceof Constructor)
-            return ((Constructor<?>) member).isVarArgs();
-        else 
             return false;
     }
     
@@ -92,8 +87,9 @@ public class VMBridge_jdk15 extends VMBridge
     
     
     
-    private ThreadLocal<Object[]> contextLocal = new ThreadLocal<Object[]>();
-
+    //private ThreadLocal<Object[]> contextLocal = new ThreadLocal<Object[]>();
+    private Object[] contextLocal;
+    
     @Override
     protected Object getThreadContextHelper()
     {
@@ -106,10 +102,10 @@ public class VMBridge_jdk15 extends VMBridge
         // by Attila Szegedi in
         // https://bugzilla.mozilla.org/show_bug.cgi?id=281067#c5
 
-        Object[] storage = contextLocal.get();
+        Object[] storage = contextLocal;
         if (storage == null) {
             storage = new Object[1];
-            contextLocal.set(storage);
+            contextLocal = storage;
         }
         return storage;
     }
