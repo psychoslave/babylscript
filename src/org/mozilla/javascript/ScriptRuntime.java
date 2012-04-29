@@ -168,23 +168,23 @@ public class ScriptRuntime {
 
     private static final String[] lazilyNames = {
         "RegExp",        "org.mozilla.javascript.regexp.NativeRegExp",
-        "Packages",      "org.mozilla.javascript.NativeJavaTopPackage",
-        "java",          "org.mozilla.javascript.NativeJavaTopPackage",
-        "javax",         "org.mozilla.javascript.NativeJavaTopPackage",
-        "org",           "org.mozilla.javascript.NativeJavaTopPackage",
-        "com",           "org.mozilla.javascript.NativeJavaTopPackage",
-        "edu",           "org.mozilla.javascript.NativeJavaTopPackage",
-        "net",           "org.mozilla.javascript.NativeJavaTopPackage",
-        "getClass",      "org.mozilla.javascript.NativeJavaTopPackage",
-        "JavaAdapter",   "org.mozilla.javascript.JavaAdapter",
-        "JavaImporter",  "org.mozilla.javascript.ImporterTopLevel",
+//        "Packages",      "org.mozilla.javascript.NativeJavaTopPackage",
+//        "java",          "org.mozilla.javascript.NativeJavaTopPackage",
+//        "javax",         "org.mozilla.javascript.NativeJavaTopPackage",
+//        "org",           "org.mozilla.javascript.NativeJavaTopPackage",
+//        "com",           "org.mozilla.javascript.NativeJavaTopPackage",
+//        "edu",           "org.mozilla.javascript.NativeJavaTopPackage",
+//        "net",           "org.mozilla.javascript.NativeJavaTopPackage",
+//        "getClass",      "org.mozilla.javascript.NativeJavaTopPackage",
+//        "JavaAdapter",   "org.mozilla.javascript.JavaAdapter",
+//        "JavaImporter",  "org.mozilla.javascript.ImporterTopLevel",
         "Continuation",  "org.mozilla.javascript.NativeContinuation",
         //	TODO	Grotesque hack using literal string (xml) just to minimize
 		//			changes for now
-        "XML",           "(xml)",
-        "XMLList",       "(xml)",
-        "Namespace",     "(xml)",
-        "QName",         "(xml)",
+//        "XML",           "(xml)",
+//        "XMLList",       "(xml)",
+//        "Namespace",     "(xml)",
+//        "QName",         "(xml)",
     };
 
     private static final Object LIBRARY_SCOPE_KEY = "LIBRARY_SCOPE";
