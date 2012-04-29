@@ -52,6 +52,7 @@ import org.mozilla.javascript.BabylTokenizer;
 import org.mozilla.javascript.Parser;
 import org.mozilla.javascript.TokenCharStream;
 import org.mozilla.javascript.TokenStream;
+import org.mozilla.javascript.babylscript.gen.Keywords;
 
 public class ArabicTokenizer extends BabylGenericTokenizer
 {
@@ -61,7 +62,7 @@ public class ArabicTokenizer extends BabylGenericTokenizer
                 in, 
                 ts, 
                 new BabylTokenizer.DecimalNumberReader('.', '\u0660', '\u066B'),
-                BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Keywords", new Locale("ar")));
+                BabylGenericTokenizer.arrayToMap(Keywords.ar));
     }
 
     protected int matchSymbol(int c) throws IOException

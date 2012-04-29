@@ -55,7 +55,7 @@ import org.mozilla.javascript.babylscript.FrenchTokenizer;
 import org.mozilla.javascript.babylscript.HindiTokenizer;
 import org.mozilla.javascript.babylscript.PortugueseTokenizer;
 import org.mozilla.javascript.babylscript.RomanianTokenizer;
-
+import org.apache.harmony.Character;
 
 /**
  * This class implements the JavaScript scanner.
@@ -71,11 +71,11 @@ import org.mozilla.javascript.babylscript.RomanianTokenizer;
 
 public class TokenStream
 {
-    TokenStream(Parser parser, Reader sourceReader, String sourceString,
+    TokenStream(Parser parser, String sourceString,
                 int lineno, LanguageMode startLanguageMode, CustomTokenizerConfig customLanguageConfig)
     {
         this.parser = parser;
-        this.in = new TokenCharStream(sourceReader, sourceString, lineno);
+        this.in = new TokenCharStream(sourceString, lineno);
         this.englishTokenizer = new EnglishTokenizer(parser, in, this);
         this.customLanguageConfig = customLanguageConfig; 
         xmlTokenizer = new XMLTokenizer(parser, in, this);

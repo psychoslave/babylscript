@@ -423,41 +423,41 @@ public class ObjToIntMap implements Serializable
         return index;
     }
 
-    private void writeObject(ObjectOutputStream out)
-        throws IOException
-    {
-        out.defaultWriteObject();
+//    private void writeObject(ObjectOutputStream out)
+//        throws IOException
+//    {
+//        out.defaultWriteObject();
+//
+//        int count = keyCount;
+//        for (int i = 0; count != 0; ++i) {
+//            Object key = keys[i];
+//            if (key != null && key != DELETED) {
+//                --count;
+//                out.writeObject(key);
+//                out.writeInt(values[i]);
+//            }
+//        }
+//    }
 
-        int count = keyCount;
-        for (int i = 0; count != 0; ++i) {
-            Object key = keys[i];
-            if (key != null && key != DELETED) {
-                --count;
-                out.writeObject(key);
-                out.writeInt(values[i]);
-            }
-        }
-    }
-
-    private void readObject(ObjectInputStream in)
-        throws IOException, ClassNotFoundException
-    {
-        in.defaultReadObject();
-
-        int writtenKeyCount = keyCount;
-        if (writtenKeyCount != 0) {
-            keyCount = 0;
-            int N = 1 << power;
-            keys = new Object[N];
-            values = new int[2 * N];
-            for (int i = 0; i != writtenKeyCount; ++i) {
-                Object key = in.readObject();
-                int hash = key.hashCode();
-                int index = insertNewKey(key, hash);
-                values[index] = in.readInt();
-            }
-        }
-    }
+//    private void readObject(ObjectInputStream in)
+//        throws IOException, ClassNotFoundException
+//    {
+//        in.defaultReadObject();
+//
+//        int writtenKeyCount = keyCount;
+//        if (writtenKeyCount != 0) {
+//            keyCount = 0;
+//            int N = 1 << power;
+//            keys = new Object[N];
+//            values = new int[2 * N];
+//            for (int i = 0; i != writtenKeyCount; ++i) {
+//                Object key = in.readObject();
+//                int hash = key.hashCode();
+//                int index = insertNewKey(key, hash);
+//                values[index] = in.readInt();
+//            }
+//        }
+//    }
 
 // A == golden_ratio * (1 << 32) = ((sqrt(5) - 1) / 2) * (1 << 32)
 // See Knuth etc.

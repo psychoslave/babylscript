@@ -43,6 +43,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Member;
 import java.util.Iterator;
 
+import org.mozilla.javascript.jdk15.VMBridge_jdk15;
+
 public abstract class VMBridge
 {
 
@@ -50,23 +52,7 @@ public abstract class VMBridge
 
     private static VMBridge makeInstance()
     {
-        String[] classNames = {
-            "org.mozilla.javascript.VMBridge_custom",
-            "org.mozilla.javascript.jdk15.VMBridge_jdk15",
-            "org.mozilla.javascript.jdk13.VMBridge_jdk13",
-            "org.mozilla.javascript.jdk11.VMBridge_jdk11",
-        };
-        for (int i = 0; i != classNames.length; ++i) {
-            String className = classNames[i];
-            Class<?> cl = Kit.classOrNull(className);
-            if (cl != null) {
-                VMBridge bridge = (VMBridge)Kit.newInstanceOrNull(cl);
-                if (bridge != null) {
-                    return bridge;
-                }
-            }
-        }
-        throw new IllegalStateException("Failed to create VMBridge instance");
+        return new VMBridge_jdk15();
     }
 
     /**

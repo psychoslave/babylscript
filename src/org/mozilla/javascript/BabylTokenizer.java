@@ -47,7 +47,7 @@ package org.mozilla.javascript;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
+import org.apache.harmony.Character;
 
 
 /**
@@ -613,7 +613,7 @@ public class BabylTokenizer
                 return Token.ERROR;
             }
             
-            if (!Character.isJavaIdentifierPart(c))
+            if (!Character.isJavaIdentifierPart((char)c))
             {
                 parser.addError("msg.unknown.language.mode");
                 return Token.ERROR;

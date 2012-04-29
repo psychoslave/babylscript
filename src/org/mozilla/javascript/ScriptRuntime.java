@@ -52,14 +52,14 @@ package org.mozilla.javascript;
 import java.io.Serializable;
 import java.lang.reflect.*;
 import java.text.DecimalFormatSymbols;
-import java.text.MessageFormat;
-import java.util.Locale;
+import java.util.Map;
 import java.util.Properties;
-import java.util.ResourceBundle;
 
 import org.mozilla.javascript.babylscript.TranslatedNameBindings;
 import org.mozilla.javascript.xml.XMLObject;
 import org.mozilla.javascript.xml.XMLLib;
+import org.apache.harmony.Locale;
+import org.apache.harmony.Character;
 
 /**
  * This is the class that implements the runtime.
@@ -191,18 +191,18 @@ public class ScriptRuntime {
 
     private static final Object LIBRARY_SCOPE_KEY = "LIBRARY_SCOPE";
 
-    public static boolean isRhinoRuntimeType(Class<?> cl)
-    {
-        if (cl.isPrimitive()) {
-            return (cl != Character.TYPE);
-        } else {
-            return (cl == StringClass || cl == BooleanClass
-                    || NumberClass.isAssignableFrom(cl)
-                    || ScriptableClass.isAssignableFrom(cl));
-        }
-    }
+//    public static boolean isRhinoRuntimeType(Class<?> cl)
+//    {
+//        if (cl.isPrimitive()) {
+//            return (cl != Character.TYPE);
+//        } else {
+//            return (cl == StringClass || cl == BooleanClass
+//                    || NumberClass.isAssignableFrom(cl)
+//                    || ScriptableClass.isAssignableFrom(cl));
+//        }
+//    }
 
-    public static void initCustomLanguageObjectTranslations(Context cx, Scriptable scope, Properties translations)
+    public static void initCustomLanguageObjectTranslations(Context cx, Scriptable scope, Map<String, String> translations)
     {
         if (translations == null) return;
         TranslatedNameBindings.initCustomTranslation(scope, translations);
@@ -388,11 +388,12 @@ public class ScriptRuntime {
     // Double.NaN to be converted to 1.0.
     // So we use ScriptRuntime.NaN instead of Double.NaN.
     public static final double
-        NaN = Double.longBitsToDouble(0x7ff8000000000000L);
+        NaN = Double.NaN;
 
     // A similar problem exists for negative zero.
+    // TODO: Not really negative zero
     public static final double
-        negativeZero = Double.longBitsToDouble(0x8000000000000000L);
+        negativeZero = -0.0;//Double.longBitsToDouble(0x8000000000000000L);
 
     public static final Double NaNobj = new Double(NaN);
 
@@ -839,10 +840,17 @@ public class ScriptRuntime {
     public static String localizeNumberString(String number, Locale locale)
     {
         if (locale == null) locale = Locale.ENGLISH;
-        DecimalFormatSymbols symbols = new DecimalFormatSymbols(locale);
-        String str = number.replace('.', symbols.getDecimalSeparator());
+        char decimalSeparator = '.';
+        char zeroDigit = '0';
+        if (locale.getCountry().equals("fr")) decimalSeparator = ',';
+        else if (locale.getCountry().equals("pt")) decimalSeparator = ',';
+        else if (locale.getCountry().equals("es")) decimalSeparator = ',';
+        else if (locale.getCountry().equals("de")) decimalSeparator = ',';
+        else if (locale.getCountry().equals("ro")) decimalSeparator = ',';
+        
+        String str = number.replace('.', decimalSeparator);
         for (int n = 0; n < 10; n++)
-            str = str.replace((char)('0' + n), (char)(symbols.getZeroDigit() + n));
+            str = str.replace((char)('0' + n), (char)(zeroDigit + n));
         return str;
     }
     
@@ -1164,7 +1172,7 @@ public class ScriptRuntime {
         d = (d >= 0) ? Math.floor(d) : Math.ceil(d);
 
         double two32 = 4294967296.0;
-        d = Math.IEEEremainder(d, two32);
+        d = (d% two32);
         // (double)(long)d == d should hold here
 
         long l = (long)d;
@@ -1195,7 +1203,7 @@ public class ScriptRuntime {
 
         // 0x100000000 gives me a numeric overflow...
         double two32 = 4294967296.0;
-        l = (long)Math.IEEEremainder(d, two32);
+        l = (long)(d% two32);
 
         return l & 0xffffffffL;
     }
@@ -1226,7 +1234,7 @@ public class ScriptRuntime {
         d = (d >= 0) ? Math.floor(d) : Math.ceil(d);
 
         int int16 = 0x10000;
-        i = (int)Math.IEEEremainder(d, int16);
+        i = (int)(d % int16);
 
         return (char)i;
     }
@@ -3268,18 +3276,18 @@ public class ScriptRuntime {
     // ------------------
 
     public static ScriptableObject getGlobal(Context cx) {
-        final String GLOBAL_CLASS = "org.mozilla.javascript.tools.shell.Global";
-        Class<?> globalClass = Kit.classOrNull(GLOBAL_CLASS);
-        if (globalClass != null) {
-            try {
-                Class<?>[] parm = { ScriptRuntime.ContextClass };
-                Constructor<?> globalClassCtor = globalClass.getConstructor(parm);
-                Object[] arg = { cx };
-                return (ScriptableObject) globalClassCtor.newInstance(arg);
-            } catch (Exception e) {
-                // fall through...
-            }
-        }
+//        final String GLOBAL_CLASS = "org.mozilla.javascript.tools.shell.Global";
+//        Class<?> globalClass = Kit.classOrNull(GLOBAL_CLASS);
+//        if (globalClass != null) {
+//            try {
+//                Class<?>[] parm = { ScriptRuntime.ContextClass };
+//                Constructor<?> globalClassCtor = globalClass.getConstructor(parm);
+//                Object[] arg = { cx };
+//                return (ScriptableObject) globalClassCtor.newInstance(arg);
+//            } catch (Exception e) {
+//                // fall through...
+//            }
+//        }
         return new ImporterTopLevel(cx);
     }
 
@@ -3838,39 +3846,6 @@ public class ScriptRuntime {
     public static String getMessage(String messageId, Object[] arguments)
     {
         return messageProvider.getMessage(messageId, arguments);
-    }
-
-    /* OPT there's a noticable delay for the first error!  Maybe it'd
-     * make sense to use a ListResourceBundle instead of a properties
-     * file to avoid (synchronized) text parsing.
-     */
-    private static class DefaultMessageProvider implements MessageProvider {
-        public String getMessage(String messageId, Object[] arguments) {
-            final String defaultResource
-                = "org.mozilla.javascript.resources.Messages";
-
-            Context cx = Context.getCurrentContext();
-            Locale locale = cx != null ? cx.getLocale() : Locale.getDefault();
-
-            // ResourceBundle does caching.
-            ResourceBundle rb = ResourceBundle.getBundle(defaultResource, locale);
-
-            String formatString;
-            try {
-                formatString = rb.getString(messageId);
-            } catch (java.util.MissingResourceException mre) {
-                throw new RuntimeException
-                    ("no message resource found for message property "+ messageId);
-            }
-
-            /*
-             * It's OK to format the string, even if 'arguments' is null;
-             * we need to format it anyway, to make double ''s collapse to
-             * single 's.
-             */
-            MessageFormat formatter = new MessageFormat(formatString);
-            return formatter.format(arguments);
-        }
     }
 
     public static EcmaError constructError(String error, String message)

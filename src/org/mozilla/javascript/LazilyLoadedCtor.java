@@ -107,8 +107,8 @@ public final class LazilyLoadedCtor implements java.io.Serializable {
         Class<? extends Scriptable> cl = cast(Kit.classOrNull(className));
         if (cl != null) {
             try {
-                Object value = ScriptableObject.buildClassCtor(scope, cl,
-                                                               sealed, false);
+                Object value = null; //ScriptableObject.buildClassCtor(scope, cl,
+                                     //                          sealed, false);
                 if (value != null) {
                     return value;
                 }
@@ -119,14 +119,14 @@ public final class LazilyLoadedCtor implements java.io.Serializable {
                     if (value != Scriptable.NOT_FOUND)
                         return value;
                 }
-            } catch (InvocationTargetException ex) {
-                Throwable target = ex.getTargetException();
-                if (target instanceof RuntimeException) {
-                    throw (RuntimeException)target;
-                }
+//            } catch (InvocationTargetException ex) {
+//                Throwable target = ex.getTargetException();
+//                if (target instanceof RuntimeException) {
+//                    throw (RuntimeException)target;
+//                }
             } catch (RhinoException ex) {
-            } catch (InstantiationException ex) {
-            } catch (IllegalAccessException ex) {
+//            } catch (InstantiationException ex) {
+//            } catch (IllegalAccessException ex) {
             } catch (SecurityException ex) {
             }
         }

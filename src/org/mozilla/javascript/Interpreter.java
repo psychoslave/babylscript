@@ -2613,7 +2613,7 @@ public class Interpreter implements Evaluator
                                    parent.idata.evalScriptFlag);
     }
 
-    static Object interpret(InterpretedFunction ifun,
+    public static Object interpret(InterpretedFunction ifun,
                             Context cx, Scriptable scope,
                             Scriptable thisObj, Object[] args)
     {

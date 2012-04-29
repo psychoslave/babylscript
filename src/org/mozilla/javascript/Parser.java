@@ -349,7 +349,7 @@ public class Parser
                                 String sourceURI, int lineno)
     {
         this.sourceURI = sourceURI;
-        this.ts = new TokenStream(this, null, sourceString, lineno, 
+        this.ts = new TokenStream(this, sourceString, lineno, 
                 compilerEnv.getLanguageMode(), compilerEnv.getCustomTokenizerConfig());
         try {
             return parse();
@@ -367,15 +367,15 @@ public class Parser
      * parse failure will result in a call to the ErrorReporter from
      * CompilerEnvirons.)
      */
-    public ScriptOrFnNode parse(Reader sourceReader,
-                                String sourceURI, int lineno)
-        throws IOException
-    {
-        this.sourceURI = sourceURI;
-        this.ts = new TokenStream(this, sourceReader, null, lineno,
-                compilerEnv.getLanguageMode(), compilerEnv.getCustomTokenizerConfig());
-        return parse();
-    }
+//    public ScriptOrFnNode parse(Reader sourceReader,
+//                                String sourceURI, int lineno)
+//        throws IOException
+//    {
+//        this.sourceURI = sourceURI;
+//        this.ts = new TokenStream(this, sourceReader, null, lineno,
+//                compilerEnv.getLanguageMode(), compilerEnv.getCustomTokenizerConfig());
+//        return parse();
+//    }
 
     private ScriptOrFnNode parse()
         throws IOException
@@ -397,7 +397,7 @@ public class Parser
          * we've collected all the source */
         Node pn = nf.createLeaf(Token.BLOCK);
 
-        try {
+//        try {
             for (;;) {
                 int tt = peekToken();
 
@@ -420,12 +420,12 @@ public class Parser
                 }
                 nf.addChildToBack(pn, n);
             }
-        } catch (StackOverflowError ex) {
-            String msg = ScriptRuntime.getMessage0(
-                "msg.too.deep.parser.recursion");
-            throw Context.reportRuntimeError(msg, sourceURI,
-                                             ts.getLineno(), null, 0);
-        }
+//        } catch (StackOverflowError ex) {
+//            String msg = ScriptRuntime.getMessage0(
+//                "msg.too.deep.parser.recursion");
+//            throw Context.reportRuntimeError(msg, sourceURI,
+//                                             ts.getLineno(), null, 0);
+//        }
 
         if (this.syntaxErrorCount != 0) {
             String msg = String.valueOf(this.syntaxErrorCount);

@@ -55,12 +55,12 @@ import java.util.HashMap;
 import java.util.Properties;
 import java.util.Set;
 import java.util.HashSet;
-import java.util.Locale;
 
 import org.mozilla.javascript.babylscript.CustomTokenizerConfig;
 import org.mozilla.javascript.debug.DebuggableScript;
 import org.mozilla.javascript.debug.Debugger;
 import org.mozilla.javascript.xml.XMLLib;
+import org.apache.harmony.Locale;
 
 /**
  * This class represents the runtime context of an executing script.
@@ -526,29 +526,29 @@ public class Context
      * @see ContextFactory#addListener(ContextFactory.Listener)
      * @see ContextFactory#getGlobal()
      */
-    public static void addContextListener(ContextListener listener)
-    {
-        // Special workaround for the debugger
-        String DBG = "org.mozilla.javascript.tools.debugger.Main";
-        if (DBG.equals(listener.getClass().getName())) {
-            Class<?> cl = listener.getClass();
-            Class<?> factoryClass = Kit.classOrNull(
-                "org.mozilla.javascript.ContextFactory");
-            Class<?>[] sig = { factoryClass };
-            Object[] args = { ContextFactory.getGlobal() };
-            try {
-                Method m = cl.getMethod("attachTo", sig);
-                m.invoke(listener, args);
-            } catch (Exception ex) {
-                RuntimeException rex = new RuntimeException();
-                Kit.initCause(rex, ex);
-                throw rex;
-            }
-            return;
-        }
-
-        ContextFactory.getGlobal().addListener(listener);
-    }
+//    public static void addContextListener(ContextListener listener)
+//    {
+//        // Special workaround for the debugger
+//        String DBG = "org.mozilla.javascript.tools.debugger.Main";
+//        if (DBG.equals(listener.getClass().getName())) {
+//            Class<?> cl = listener.getClass();
+//            Class<?> factoryClass = Kit.classOrNull(
+//                "org.mozilla.javascript.ContextFactory");
+//            Class<?>[] sig = { factoryClass };
+//            Object[] args = { ContextFactory.getGlobal() };
+//            try {
+//                Method m = cl.getMethod("attachTo", sig);
+//                m.invoke(listener, args);
+//            } catch (Exception ex) {
+//                RuntimeException rex = new RuntimeException();
+//                Kit.initCause(rex, ex);
+//                throw rex;
+//            }
+//            return;
+//        }
+//
+//        ContextFactory.getGlobal().addListener(listener);
+//    }
 
     /**
      * @deprecated
@@ -649,11 +649,11 @@ public class Context
         if (sealed) onSealedMutation();
         checkLanguageVersion(version);
         Object listeners = propertyListeners;
-        if (listeners != null && version != this.version) {
-            firePropertyChangeImpl(listeners, languageVersionProperty,
-                               new Integer(this.version),
-                               new Integer(version));
-        }
+//        if (listeners != null && version != this.version) {
+//            firePropertyChangeImpl(listeners, languageVersionProperty,
+//                               new Integer(this.version),
+//                               new Integer(version));
+//        }
         this.version = version;
     }
 
@@ -738,10 +738,10 @@ public class Context
             return old;
         }
         Object listeners = propertyListeners;
-        if (listeners != null) {
-            firePropertyChangeImpl(listeners, errorReporterProperty,
-                                   old, reporter);
-        }
+//        if (listeners != null) {
+//            firePropertyChangeImpl(listeners, errorReporterProperty,
+//                                   old, reporter);
+//        }
         this.errorReporter = reporter;
         return old;
     }
@@ -780,11 +780,11 @@ public class Context
      * @see #removePropertyChangeListener(java.beans.PropertyChangeListener)
      * @param l the listener
      */
-    public final void addPropertyChangeListener(PropertyChangeListener l)
-    {
-        if (sealed) onSealedMutation();
-        propertyListeners = Kit.addListener(propertyListeners, l);
-    }
+//    public final void addPropertyChangeListener(PropertyChangeListener l)
+//    {
+//        if (sealed) onSealedMutation();
+//        propertyListeners = Kit.addListener(propertyListeners, l);
+//    }
 
     /**
      * Remove an object from the list of objects registered to receive
@@ -793,11 +793,11 @@ public class Context
      * @see #addPropertyChangeListener(java.beans.PropertyChangeListener)
      * @param l the listener
      */
-    public final void removePropertyChangeListener(PropertyChangeListener l)
-    {
-        if (sealed) onSealedMutation();
-        propertyListeners = Kit.removeListener(propertyListeners, l);
-    }
+//    public final void removePropertyChangeListener(PropertyChangeListener l)
+//    {
+//        if (sealed) onSealedMutation();
+//        propertyListeners = Kit.removeListener(propertyListeners, l);
+//    }
 
     /**
      * Notify any registered listeners that a bounded property has changed
@@ -809,29 +809,29 @@ public class Context
      * @param  oldValue  the old value
      * @param  newValue   the new value
      */
-    final void firePropertyChange(String property, Object oldValue,
-                                  Object newValue)
-    {
-        Object listeners = propertyListeners;
-        if (listeners != null) {
-            firePropertyChangeImpl(listeners, property, oldValue, newValue);
-        }
-    }
-
-    private void firePropertyChangeImpl(Object listeners, String property,
-                                        Object oldValue, Object newValue)
-    {
-        for (int i = 0; ; ++i) {
-            Object l = Kit.getListener(listeners, i);
-            if (l == null)
-                break;
-            if (l instanceof PropertyChangeListener) {
-                PropertyChangeListener pcl = (PropertyChangeListener)l;
-                pcl.propertyChange(new PropertyChangeEvent(
-                    this, property, oldValue, newValue));
-            }
-        }
-    }
+//    final void firePropertyChange(String property, Object oldValue,
+//                                  Object newValue)
+//    {
+//        Object listeners = propertyListeners;
+//        if (listeners != null) {
+//            firePropertyChangeImpl(listeners, property, oldValue, newValue);
+//        }
+//    }
+//
+//    private void firePropertyChangeImpl(Object listeners, String property,
+//                                        Object oldValue, Object newValue)
+//    {
+//        for (int i = 0; ; ++i) {
+//            Object l = Kit.getListener(listeners, i);
+//            if (l == null)
+//                break;
+//            if (l instanceof PropertyChangeListener) {
+//                PropertyChangeListener pcl = (PropertyChangeListener)l;
+//                pcl.propertyChange(new PropertyChangeEvent(
+//                    this, property, oldValue, newValue));
+//            }
+//        }
+//    }
 
     /**
      * Report a warning using the error reporter for the current thread.
@@ -1072,10 +1072,10 @@ public class Context
     }
 
     // I'm pretty sure it's ok to call this multiple times with different translations
-    public void initCustomLanguageObjectTranslations(Scriptable scope, Properties translations)
-    {
-        ScriptRuntime.initCustomLanguageObjectTranslations(this, scope, translations);
-    }
+//    public void initCustomLanguageObjectTranslations(Scriptable scope, Properties translations)
+//    {
+//        ScriptRuntime.initCustomLanguageObjectTranslations(this, scope, translations);
+//    }
     
     /**
      * Get the singleton object that represents the JavaScript Undefined value.
@@ -1132,19 +1132,19 @@ public class Context
      *
      * @exception IOException if an IOException was generated by the Reader
      */
-    public final Object evaluateReader(Scriptable scope, Reader in,
-                                       String sourceName, int lineno,
-                                       Object securityDomain)
-        throws IOException
-    {
-        Script script = compileReader(scope, in, sourceName, lineno,
-                                      securityDomain);
-        if (script != null) {
-            return script.exec(this, scope);
-        } else {
-            return null;
-        }
-    }
+//    public final Object evaluateReader(Scriptable scope, Reader in,
+//                                       String sourceName, int lineno,
+//                                       Object securityDomain)
+//        throws IOException
+//    {
+//        Script script = compileReader(scope, in, sourceName, lineno,
+//                                      securityDomain);
+//        if (script != null) {
+//            return script.exec(this, scope);
+//        } else {
+//            return null;
+//        }
+//    }
     
     /**
      * Execute script that may pause execution by capturing a continuation.
@@ -1952,10 +1952,10 @@ public class Context
         if (sealed) onSealedMutation();
         if (controller == null) throw new IllegalArgumentException();
         if (securityController != null) {
-            throw new SecurityException("Can not overwrite existing SecurityController object");
+//            throw new SecurityException("Can not overwrite existing SecurityController object");
         }
         if (SecurityController.hasGlobal()) {
-            throw new SecurityException("Can not overwrite existing global SecurityController object");
+//            throw new SecurityException("Can not overwrite existing global SecurityController object");
         }
         securityController = controller;
     }
@@ -2382,21 +2382,21 @@ public class Context
         }
 
         if (debugger != null) {
-            if (sourceReader != null) {
-                sourceString = Kit.readReader(sourceReader);
-                sourceReader = null;
-            }
+//            if (sourceReader != null) {
+//                sourceString = Kit.readReader(sourceReader);
+//                sourceReader = null;
+//            }
         }
 
         Parser p = new Parser(compilerEnv, compilationErrorReporter);
         if (returnFunction) {
             p.calledByCompileFunction = true;
         }
-        ScriptOrFnNode tree;
+        ScriptOrFnNode tree = null;
         if (sourceString != null) {
             tree = p.parse(sourceString, sourceName, lineno);
         } else {
-            tree = p.parse(sourceReader, sourceName, lineno);
+//            tree = p.parse(sourceReader, sourceName, lineno);
         }
         if (returnFunction) {
             if (!(tree.getFunctionCount() == 1

@@ -50,6 +50,7 @@ import java.util.HashMap;
 
 import org.mozilla.javascript.Kit;
 import org.mozilla.javascript.ScriptRuntime;
+import org.apache.harmony.Character;
 
 /**
 * Manage the character stream for a TokenStream
@@ -67,16 +68,11 @@ public class TokenCharStream
     final static int
         EOF_CHAR = -1;
 
-    public TokenCharStream(Reader sourceReader, String sourceString,
+    public TokenCharStream(String sourceString,
              int lineno)
     {
        this.lineno = lineno;
-       if (sourceReader != null) {
-           if (sourceString != null) Kit.codeBug();
-           this.sourceReader = sourceReader;
-           this.sourceBuffer = new char[512];
-           this.sourceEnd = 0;
-       } else {
+       {
            if (sourceString == null) Kit.codeBug();
            this.sourceString = sourceString;
            this.sourceEnd = sourceString.length();
@@ -100,7 +96,6 @@ public class TokenCharStream
     private boolean isNormalizeChars = true;
 
     private String sourceString;
-    private Reader sourceReader;
     private char[] sourceBuffer;
     private int sourceEnd;
     private int sourceCursor;
@@ -314,25 +309,25 @@ public class TokenCharStream
     private boolean fillSourceBuffer() throws IOException
     {
         if (sourceString != null) Kit.codeBug();
-        if (sourceEnd == sourceBuffer.length) {
-            if (lineStart != 0) {
-                System.arraycopy(sourceBuffer, lineStart, sourceBuffer, 0,
-                                 sourceEnd - lineStart);
-                sourceEnd -= lineStart;
-                sourceCursor -= lineStart;
-                lineStart = 0;
-            } else {
-                char[] tmp = new char[sourceBuffer.length * 2];
-                System.arraycopy(sourceBuffer, 0, tmp, 0, sourceEnd);
-                sourceBuffer = tmp;
-            }
-        }
-        int n = sourceReader.read(sourceBuffer, sourceEnd,
-                                  sourceBuffer.length - sourceEnd);
-        if (n < 0) {
-            return false;
-        }
-        sourceEnd += n;
+//        if (sourceEnd == sourceBuffer.length) {
+//            if (lineStart != 0) {
+//                System.arraycopy(sourceBuffer, lineStart, sourceBuffer, 0,
+//                                 sourceEnd - lineStart);
+//                sourceEnd -= lineStart;
+//                sourceCursor -= lineStart;
+//                lineStart = 0;
+//            } else {
+//                char[] tmp = new char[sourceBuffer.length * 2];
+//                System.arraycopy(sourceBuffer, 0, tmp, 0, sourceEnd);
+//                sourceBuffer = tmp;
+//            }
+//        }
+//        int n = sourceReader.read(sourceBuffer, sourceEnd,
+//                                  sourceBuffer.length - sourceEnd);
+//        if (n < 0) {
+//            return false;
+//        }
+//        sourceEnd += n;
         return true;
     }
 

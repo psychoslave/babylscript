@@ -263,9 +263,10 @@ public class ContextFactory
             return true;
 
           case Context.FEATURE_E4X:
-            version = cx.getLanguageVersion();
-            return (version == Context.VERSION_DEFAULT
-                    || version >= Context.VERSION_1_6);
+            return false;
+//            version = cx.getLanguageVersion();
+//            return (version == Context.VERSION_DEFAULT
+//                    || version >= Context.VERSION_1_6);
 
           case Context.FEATURE_DYNAMIC_SCOPE:
             return false;

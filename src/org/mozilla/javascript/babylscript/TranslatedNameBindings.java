@@ -10,11 +10,11 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.PropertyResourceBundle;
-import java.util.ResourceBundle;
 
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
+import org.mozilla.javascript.babylscript.gen.Objects;
 
 /**
  * This class holds all the translated names used in the JavaScript standard
@@ -38,14 +38,14 @@ public class TranslatedNameBindings
         EquivalentLanguageNames = Collections.unmodifiableMap(EquivalentLanguageNames);
     }
 
-    static ResourceBundle romanian = BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Objects", new Locale("ro"));
-    static ResourceBundle french = BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Objects", new Locale("fr"));
-    static ResourceBundle arabic = BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Objects", new Locale("ar"));
-    static ResourceBundle portuguese = BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Objects", new Locale("pt"));
-    static ResourceBundle chineseSimplified = BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Objects", new Locale("zh"));
-    static ResourceBundle hindi = BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Objects", new Locale("hi"));
+    static Map<String, String> romanian = BabylGenericTokenizer.arrayToMap(Objects.ro);
+    static Map<String, String> french = BabylGenericTokenizer.arrayToMap(Objects.fr);
+    static Map<String, String> arabic = BabylGenericTokenizer.arrayToMap(Objects.ar);
+    static Map<String, String> portuguese = BabylGenericTokenizer.arrayToMap(Objects.pt);
+    static Map<String, String> chineseSimplified = BabylGenericTokenizer.arrayToMap(Objects.zh);
+    static Map<String, String> hindi = BabylGenericTokenizer.arrayToMap(Objects.hi);
 
-    static Map<String, ResourceBundle> langResourceMap = new HashMap<String, ResourceBundle>();
+    static Map<String, Map<String, String>> langResourceMap = new HashMap<String, Map<String, String>>();
     static {
         langResourceMap.put("fr", french);
         langResourceMap.put("ro", romanian);
@@ -55,49 +55,35 @@ public class TranslatedNameBindings
         langResourceMap.put("hi", hindi);
     }
     
-    private static void fillTranslationsFromResourceBundle(Scriptable obj, String lang, ResourceBundle res, String[] english)
+    private static void fillTranslationsFromResourceBundle(Scriptable obj, String lang, Map<String, String> res, String[] english)
     {
         for (String key: english)
-            obj.putTranslatedName(lang, res.getString(key), obj, key);
+            obj.putTranslatedName(lang, res.get(key), obj, key);
     }
 
-    static class CustomPropertyResourceBundle extends PropertyResourceBundle
-    {
-        CustomPropertyResourceBundle(Properties translations, ResourceBundle parent) throws IOException
-        {
-            super(PropertiesToReader(translations));
-            setParent(parent);
-        }
-        static Reader PropertiesToReader(Properties translations) throws IOException
-        {
-            StringWriter writer = new StringWriter();
-            translations.store(writer, null);
-            return new StringReader(writer.toString());            
-        }
-    }
 
     public static void initStandardTranslations(Scriptable scope)
     {
-        for (Map.Entry<String, ResourceBundle> entry: langResourceMap.entrySet())
+        for (Map.Entry<String, Map<String, String>> entry: langResourceMap.entrySet())
         {
             configureAllTranslations(scope, entry.getKey(), entry.getValue());
         }
     }
 
-    public static void initCustomTranslation(Scriptable scope, Properties translations)
+    public static void initCustomTranslation(Scriptable scope, Map<String, String> translations)
     {
-        String lang = "test";
-        try {
-            ResourceBundle res = new CustomPropertyResourceBundle(translations,
-                ResourceBundle.getBundle("org.mozilla.javascript.babylscript.resources.Objects", new Locale("")));
-            configureAllTranslations(scope, lang, res);
-        } catch (IOException e)
-        {
-        
-        }
+//        String lang = "test";
+//        try {
+//            Map<String, String> res = new CustomPropertyResourceBundle(translations,
+//                Map<String, String>.getBundle("org.mozilla.javascript.babylscript.resources.Objects", new Locale("")));
+//            configureAllTranslations(scope, lang, res);
+//        } catch (IOException e)
+//        {
+//        
+//        }
     }
     
-    public static void configureAllTranslations(Scriptable scope, String lang, ResourceBundle res)
+    public static void configureAllTranslations(Scriptable scope, String lang, Map<String, String> res)
     {
         ScriptableObject.clearTranslations(scope, lang);
         configureGlobalScopeTranslations(scope, lang, res);
@@ -149,8 +135,11 @@ public class TranslatedNameBindings
         ScriptableObject.clearTranslations(obj, lang);
         configureIteratorPrototypeTranslations(obj, lang, res);
         obj = ScriptableObject.getClassPrototype(scope, "RegExp");
-        ScriptableObject.clearTranslations(obj, lang);
-        configureRegExpPrototypeTranslations(obj, lang, res);
+        if (obj != null)
+        {
+            ScriptableObject.clearTranslations(obj, lang);
+            configureRegExpPrototypeTranslations(obj, lang, res);
+        }
 //        configureRegExpMatchesPrototypeTranslations(ScriptableObject.getClassPrototype(scope, "Object"), lang, res);
     }
     
@@ -159,7 +148,7 @@ public class TranslatedNameBindings
     // +length
     // +caller
 
-    protected static void configureGlobalScopeTranslations(Scriptable scope, String lang, ResourceBundle res)
+    protected static void configureGlobalScopeTranslations(Scriptable scope, String lang, Map<String, String> res)
     {
         Scriptable obj = scope;
         String [] names = new String[] {
@@ -212,7 +201,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureBaseFunctionPrototypeTranslations(Scriptable obj, String lang, ResourceBundle res)
+    protected static void configureBaseFunctionPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "name",
@@ -232,7 +221,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureObjectPrototypeTranslations(Scriptable obj, String lang, ResourceBundle res)
+    protected static void configureObjectPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "constructor",
@@ -251,7 +240,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureErrorPrototypeTranslations(Scriptable obj, String lang, ResourceBundle res)
+    protected static void configureErrorPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "name",
@@ -262,7 +251,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureArrayConstructorTranslations(Function obj, String lang, ResourceBundle res)
+    protected static void configureArrayConstructorTranslations(Function obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "join",
@@ -286,7 +275,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureArrayPrototypeTranslations(Scriptable obj, String lang, ResourceBundle res)
+    protected static void configureArrayPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "length",
@@ -311,7 +300,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureStringConstructorTranslations(Function obj, String lang, ResourceBundle res)
+    protected static void configureStringConstructorTranslations(Function obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "fromCharCode",
@@ -341,7 +330,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureStringPrototypeTranslations(Scriptable obj, String lang, ResourceBundle res)
+    protected static void configureStringPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "length",
@@ -382,7 +371,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureBooleanPrototypeTranslations(Scriptable obj, String lang, ResourceBundle res)
+    protected static void configureBooleanPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "valueOf",
@@ -390,7 +379,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureNumberConstructurTranslations(Function obj, String lang, ResourceBundle res)
+    protected static void configureNumberConstructurTranslations(Function obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "NaN",
@@ -402,7 +391,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureNumberPrototypeTranslations(Scriptable obj, String lang, ResourceBundle res)
+    protected static void configureNumberPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "valueOf",
@@ -413,7 +402,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureDateConstructorTranslations(Function obj, String lang, ResourceBundle res)
+    protected static void configureDateConstructorTranslations(Function obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "now",
@@ -423,7 +412,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureDatePrototypeTranslations(Scriptable obj, String lang, ResourceBundle res)
+    protected static void configureDatePrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "toTimeString",
@@ -471,7 +460,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureMathTranslations(Scriptable obj, String lang, ResourceBundle res)
+    protected static void configureMathTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "abs",
@@ -504,7 +493,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureCallPrototypeTranslations(Scriptable obj, String lang, ResourceBundle res)
+    protected static void configureCallPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
         // TODO: arguments are usually handled specially
         String [] names = new String[] {
@@ -513,7 +502,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureScriptPrototypeTranslations(Scriptable obj, String lang, ResourceBundle res)
+    protected static void configureScriptPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "exec",
@@ -522,7 +511,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureIteratorPrototypeTranslations(Scriptable obj, String lang, ResourceBundle res)
+    protected static void configureIteratorPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "next",
@@ -531,7 +520,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureRegExpPrototypeTranslations(Scriptable obj, String lang, ResourceBundle res)
+    protected static void configureRegExpPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 // TODO: Ignoring RegExp constructor translations for now
@@ -548,7 +537,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureRegExpMatchesPrototypeTranslations(Scriptable obj, String lang, ResourceBundle res)
+    protected static void configureRegExpMatchesPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 // TODO: JavaScript might not have a prototype for its match objects (uses Array objects)

@@ -353,29 +353,29 @@ public class ObjArray implements Serializable
         throw new IllegalStateException("Attempt to modify sealed array");
     }
 
-    private void writeObject(ObjectOutputStream os) throws IOException
-    {
-        os.defaultWriteObject();
-        int N = size;
-        for (int i = 0; i != N; ++i) {
-            Object obj = getImpl(i);
-            os.writeObject(obj);
-        }
-    }
-
-    private void readObject(ObjectInputStream is)
-        throws IOException, ClassNotFoundException
-    {
-        is.defaultReadObject(); // It reads size
-        int N = size;
-        if (N > FIELDS_STORE_SIZE) {
-            data = new Object[N - FIELDS_STORE_SIZE];
-        }
-        for (int i = 0; i != N; ++i) {
-            Object obj = is.readObject();
-            setImpl(i, obj);
-        }
-    }
+//    private void writeObject(ObjectOutputStream os) throws IOException
+//    {
+//        os.defaultWriteObject();
+//        int N = size;
+//        for (int i = 0; i != N; ++i) {
+//            Object obj = getImpl(i);
+//            os.writeObject(obj);
+//        }
+//    }
+//
+//    private void readObject(ObjectInputStream is)
+//        throws IOException, ClassNotFoundException
+//    {
+//        is.defaultReadObject(); // It reads size
+//        int N = size;
+//        if (N > FIELDS_STORE_SIZE) {
+//            data = new Object[N - FIELDS_STORE_SIZE];
+//        }
+//        for (int i = 0; i != N; ++i) {
+//            Object obj = is.readObject();
+//            setImpl(i, obj);
+//        }
+//    }
 
 // Number of data elements
     private int size;

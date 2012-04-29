@@ -716,26 +716,26 @@ public abstract class IdScriptableObject extends ScriptableObject
         return f;
     }
 
-    private void readObject(ObjectInputStream stream)
-        throws IOException, ClassNotFoundException
-    {
-        stream.defaultReadObject();
-        int maxPrototypeId = stream.readInt();
-        if (maxPrototypeId != 0) {
-            activatePrototypeMap(maxPrototypeId);
-        }
-    }
-
-    private void writeObject(ObjectOutputStream stream)
-        throws IOException
-    {
-        stream.defaultWriteObject();
-        int maxPrototypeId = 0;
-        if (prototypeValues != null) {
-            maxPrototypeId = prototypeValues.getMaxId();
-        }
-        stream.writeInt(maxPrototypeId);
-    }
-
+//    private void readObject(ObjectInputStream stream)
+//        throws IOException, ClassNotFoundException
+//    {
+//        stream.defaultReadObject();
+//        int maxPrototypeId = stream.readInt();
+//        if (maxPrototypeId != 0) {
+//            activatePrototypeMap(maxPrototypeId);
+//        }
+//    }
+//
+//    private void writeObject(ObjectOutputStream stream)
+//        throws IOException
+//    {
+//        stream.defaultWriteObject();
+//        int maxPrototypeId = 0;
+//        if (prototypeValues != null) {
+//            maxPrototypeId = prototypeValues.getMaxId();
+//        }
+//        stream.writeInt(maxPrototypeId);
+//    }
+//
 }
 

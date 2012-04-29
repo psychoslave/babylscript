@@ -54,31 +54,31 @@ public class Kit
      * Reflection of Throwable.initCause(Throwable) from JDK 1.4
      * or nul if it is not available.
      */
-    private static Method Throwable_initCause = null;
+//    private static Method Throwable_initCause = null;
 
-    static {
-        // Are we running on a JDK 1.4 or later system?
-        try {
-            Class<?> ThrowableClass = Kit.classOrNull("java.lang.Throwable");
-            Class<?>[] signature = { ThrowableClass };
-            Throwable_initCause
-                = ThrowableClass.getMethod("initCause", signature);
-        } catch (Exception ex) {
-            // Assume any exceptions means the method does not exist.
-        }
-    }
+//    static {
+//        // Are we running on a JDK 1.4 or later system?
+//        try {
+//            Class<?> ThrowableClass = Kit.classOrNull("java.lang.Throwable");
+//            Class<?>[] signature = { ThrowableClass };
+//            Throwable_initCause
+//                = ThrowableClass.getMethod("initCause", signature);
+//        } catch (Exception ex) {
+//            // Assume any exceptions means the method does not exist.
+//        }
+//    }
 
     public static Class<?> classOrNull(String className)
     {
-        try {
-            return Class.forName(className);
-        } catch  (ClassNotFoundException ex) {
-        } catch  (SecurityException ex) {
-        } catch  (LinkageError ex) {
-        } catch (IllegalArgumentException e) {
-            // Can be thrown if name has characters that a class name
-            // can not contain
-        }
+//        try {
+//            return Class.forName(className);
+//        } catch  (ClassNotFoundException ex) {
+//        } catch  (SecurityException ex) {
+//        } catch  (LinkageError ex) {
+//        } catch (IllegalArgumentException e) {
+//            // Can be thrown if name has characters that a class name
+//            // can not contain
+//        }
         return null;
     }
 
@@ -88,15 +88,15 @@ public class Kit
      */
     public static Class<?> classOrNull(ClassLoader loader, String className)
     {
-        try {
-            return loader.loadClass(className);
-        } catch (ClassNotFoundException ex) {
-        } catch (SecurityException ex) {
-        } catch (LinkageError ex) {
-        } catch (IllegalArgumentException e) {
-            // Can be thrown if name has characters that a class name
-            // can not contain
-        }
+//        try {
+//            return loader.loadClass(className);
+//        } catch (ClassNotFoundException ex) {
+//        } catch (SecurityException ex) {
+//        } catch (LinkageError ex) {
+//        } catch (IllegalArgumentException e) {
+//            // Can be thrown if name has characters that a class name
+//            // can not contain
+//        }
         return null;
     }
 
@@ -104,10 +104,10 @@ public class Kit
     {
         try {
             return cl.newInstance();
-        } catch (SecurityException x) {
-        } catch  (LinkageError ex) {
-        } catch (InstantiationException x) {
-        } catch (IllegalAccessException x) {
+        } catch (Exception x) {
+//        } catch  (LinkageError ex) {
+//        } catch (InstantiationException x) {
+//        } catch (IllegalAccessException x) {
         }
         return null;
     }
@@ -137,14 +137,15 @@ public class Kit
     public static RuntimeException initCause(RuntimeException ex,
                                              Throwable cause)
     {
-        if (Throwable_initCause != null) {
-            Object[] args = { cause };
-            try {
-                Throwable_initCause.invoke(ex, args);
-            } catch (Exception e) {
-                // Ignore any exceptions
-            }
-        }
+        ex.initCause(cause);
+//        if (Throwable_initCause != null) {
+//            Object[] args = { cause };
+//            try {
+//                Throwable_initCause.invoke(ex, args);
+//            } catch (Exception e) {
+//                // Ignore any exceptions
+//            }
+//        }
         return ex;
     }
 
@@ -392,50 +393,50 @@ public class Kit
         return new ComplexKey(key1, key2);
     }
 
-    public static String readReader(Reader r)
-        throws IOException
-    {
-        char[] buffer = new char[512];
-        int cursor = 0;
-        for (;;) {
-            int n = r.read(buffer, cursor, buffer.length - cursor);
-            if (n < 0) { break; }
-            cursor += n;
-            if (cursor == buffer.length) {
-                char[] tmp = new char[buffer.length * 2];
-                System.arraycopy(buffer, 0, tmp, 0, cursor);
-                buffer = tmp;
-            }
-        }
-        return new String(buffer, 0, cursor);
-    }
-
-    public static byte[] readStream(InputStream is, int initialBufferCapacity)
-        throws IOException
-    {
-        if (initialBufferCapacity <= 0) {
-            throw new IllegalArgumentException(
-                "Bad initialBufferCapacity: "+initialBufferCapacity);
-        }
-        byte[] buffer = new byte[initialBufferCapacity];
-        int cursor = 0;
-        for (;;) {
-            int n = is.read(buffer, cursor, buffer.length - cursor);
-            if (n < 0) { break; }
-            cursor += n;
-            if (cursor == buffer.length) {
-                byte[] tmp = new byte[buffer.length * 2];
-                System.arraycopy(buffer, 0, tmp, 0, cursor);
-                buffer = tmp;
-            }
-        }
-        if (cursor != buffer.length) {
-            byte[] tmp = new byte[cursor];
-            System.arraycopy(buffer, 0, tmp, 0, cursor);
-            buffer = tmp;
-        }
-        return buffer;
-    }
+//    public static String readReader(Reader r)
+//        throws IOException
+//    {
+//        char[] buffer = new char[512];
+//        int cursor = 0;
+//        for (;;) {
+//            int n = r.read(buffer, cursor, buffer.length - cursor);
+//            if (n < 0) { break; }
+//            cursor += n;
+//            if (cursor == buffer.length) {
+//                char[] tmp = new char[buffer.length * 2];
+//                System.arraycopy(buffer, 0, tmp, 0, cursor);
+//                buffer = tmp;
+//            }
+//        }
+//        return new String(buffer, 0, cursor);
+//    }
+//
+//    public static byte[] readStream(InputStream is, int initialBufferCapacity)
+//        throws IOException
+//    {
+//        if (initialBufferCapacity <= 0) {
+//            throw new IllegalArgumentException(
+//                "Bad initialBufferCapacity: "+initialBufferCapacity);
+//        }
+//        byte[] buffer = new byte[initialBufferCapacity];
+//        int cursor = 0;
+//        for (;;) {
+//            int n = is.read(buffer, cursor, buffer.length - cursor);
+//            if (n < 0) { break; }
+//            cursor += n;
+//            if (cursor == buffer.length) {
+//                byte[] tmp = new byte[buffer.length * 2];
+//                System.arraycopy(buffer, 0, tmp, 0, cursor);
+//                buffer = tmp;
+//            }
+//        }
+//        if (cursor != buffer.length) {
+//            byte[] tmp = new byte[cursor];
+//            System.arraycopy(buffer, 0, tmp, 0, cursor);
+//            buffer = tmp;
+//        }
+//        return buffer;
+//    }
 
     /**
      * Throws RuntimeException to indicate failed assertion.

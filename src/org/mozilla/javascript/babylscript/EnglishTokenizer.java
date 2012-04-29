@@ -51,6 +51,7 @@ import org.mozilla.javascript.BabylTokenizer;
 import org.mozilla.javascript.Parser;
 import org.mozilla.javascript.TokenCharStream;
 import org.mozilla.javascript.TokenStream;
+import org.mozilla.javascript.babylscript.gen.Keywords;
 
 public class EnglishTokenizer extends BabylGenericTokenizer
 {
@@ -60,7 +61,7 @@ public class EnglishTokenizer extends BabylGenericTokenizer
                 in, 
                 ts, 
                 new BabylTokenizer.DecimalNumberReader(),
-                BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Keywords", new Locale("en")));
+                BabylGenericTokenizer.arrayToMap(Keywords.en));
     }
 
 }

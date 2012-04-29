@@ -387,7 +387,7 @@ final class NativeString extends IdScriptableObject
                     // actually imagine that this'd be slower than caching them
                     // a la ClassCache, so we aren't trying to outsmart ourselves
                     // with a caching mechanism for now.
-                    Collator collator = Collator.getInstance(cx.getLocale());
+                    Collator collator = Collator.getInstance(); // TODO: cx.getLocale());
                     collator.setStrength(Collator.IDENTICAL);
                     collator.setDecomposition(Collator.CANONICAL_DECOMPOSITION);
                     return ScriptRuntime.wrapNumber(collator.compare(
@@ -397,12 +397,12 @@ final class NativeString extends IdScriptableObject
               case Id_toLocaleLowerCase:
                 {
                     return ScriptRuntime.toString(thisObj)
-                            .toLowerCase(cx.getLocale());
+                            .toLowerCase(); // TODO: cx.getLocale());
                 }
               case Id_toLocaleUpperCase:
                 {
                     return ScriptRuntime.toString(thisObj)
-                            .toUpperCase(cx.getLocale());
+                            .toUpperCase(); // TODO: cx.getLocale());
                 }
             }
             throw new IllegalArgumentException(String.valueOf(id));

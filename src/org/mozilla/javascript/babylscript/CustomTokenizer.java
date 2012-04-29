@@ -51,32 +51,33 @@ import java.util.ResourceBundle;
 import org.mozilla.javascript.Parser;
 import org.mozilla.javascript.TokenCharStream;
 import org.mozilla.javascript.TokenStream;
+import org.mozilla.javascript.babylscript.gen.Keywords;
 
 public class CustomTokenizer extends BabylGenericTokenizer
 {
-    static class CustomPropertyResourceBundle extends ResourceBundle
-    {
-        Properties translations;
-        CustomPropertyResourceBundle(Properties translations)  
-        {
-            this.translations = translations;
-        }
-        protected Object handleGetObject(String key) 
-        {
-            if (translations.containsKey(key))
-                return translations.get(key);
-            else
-                return key;
-        }
-        public Enumeration<String> getKeys() 
-        {
-            return (Enumeration<String>)translations.propertyNames();
-        }
-    }
+//    static class CustomPropertyResourceBundle extends ResourceBundle
+//    {
+//        Properties translations;
+//        CustomPropertyResourceBundle(Properties translations)  
+//        {
+//            this.translations = translations;
+//        }
+//        protected Object handleGetObject(String key) 
+//        {
+//            if (translations.containsKey(key))
+//                return translations.get(key);
+//            else
+//                return key;
+//        }
+//        public Enumeration<String> getKeys() 
+//        {
+//            return (Enumeration<String>)translations.propertyNames();
+//        }
+//    }
     
     public CustomTokenizer(Parser p, TokenCharStream in, TokenStream ts, CustomTokenizerConfig config) 
     {
-        super(p, in, ts, new DecimalNumberReader('.'), new CustomPropertyResourceBundle(config.keywords));
+        super(p, in, ts, new DecimalNumberReader('.'), BabylGenericTokenizer.arrayToMap(Keywords.en));
     }
 
     protected boolean isStringDelimiter(int ch)

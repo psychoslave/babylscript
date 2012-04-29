@@ -191,7 +191,8 @@ public class Decompiler
         if (lbits != n) {
             // if it's floating point, save as a Double bit pattern.
             // (12/15/97 our scanner only returns Double for f.p.)
-            lbits = Double.doubleToLongBits(n);
+// TODO: bogus fix-up
+//            lbits = Double.doubleToLongBits(n);
             append('D');
             append((char)(lbits >> 48));
             append((char)(lbits >> 32));
@@ -892,7 +893,8 @@ public class Decompiler
                 if (type == 'J') {
                     number = lbits;
                 } else {
-                    number = Double.longBitsToDouble(lbits);
+// TODO: bogus fix-up                    
+//                    number = Double.longBitsToDouble(lbits);
                 }
             }
             offset += 4;

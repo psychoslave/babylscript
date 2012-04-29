@@ -52,6 +52,7 @@ import org.mozilla.javascript.BabylTokenizer;
 import org.mozilla.javascript.Parser;
 import org.mozilla.javascript.TokenCharStream;
 import org.mozilla.javascript.TokenStream;
+import org.mozilla.javascript.babylscript.gen.Keywords;
 
 public class ChineseTokenizer extends BabylGenericTokenizer
 {
@@ -61,7 +62,7 @@ public class ChineseTokenizer extends BabylGenericTokenizer
                 in, 
                 ts, 
                 new BabylTokenizer.DecimalNumberReader(),
-                BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Keywords", new Locale("zh")));
+                BabylGenericTokenizer.arrayToMap(Keywords.zh));
     }
 
     protected int matchSymbol(int c) throws IOException

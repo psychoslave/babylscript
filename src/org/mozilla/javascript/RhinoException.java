@@ -211,12 +211,12 @@ public abstract class RhinoException extends RuntimeException
     private String generateStackTrace()
     {
         // Get stable reference to work properly with concurrent access
-        CharArrayWriter writer = new CharArrayWriter();
-        super.printStackTrace(new PrintWriter(writer));
-        String origStackTrace = writer.toString();
-        Evaluator e = Context.createInterpreter();
-        if (e != null)
-            return e.getPatchedStack(this, origStackTrace);
+//        CharArrayWriter writer = new CharArrayWriter();
+//        super.printStackTrace(new PrintWriter(writer));
+//        String origStackTrace = writer.toString();
+//        Evaluator e = Context.createInterpreter();
+//        if (e != null)
+//            return e.getPatchedStack(this, origStackTrace);
         return null;
     }
 
@@ -229,11 +229,12 @@ public abstract class RhinoException extends RuntimeException
      */
     public String getScriptStackTrace()
     {
-        return getScriptStackTrace(new FilenameFilter() {
-            public boolean accept(File dir, String name) {
-                return name.endsWith(".js");
-            }
-        });
+//        return getScriptStackTrace(new FilenameFilter() {
+//            public boolean accept(File dir, String name) {
+//                return name.endsWith(".js");
+//            }
+//        });
+        return null;
     }
 
     /**
@@ -245,48 +246,48 @@ public abstract class RhinoException extends RuntimeException
      * @return a script stack dump
      * @since 1.6R6
      */
-    public String getScriptStackTrace(FilenameFilter filter)
-    {
-        List<String> interpreterStack = null;
-        Evaluator interpreter = Context.createInterpreter();
-        if (interpreter != null) {
-            interpreterStack = interpreter.getScriptStack(this);
-        }
-        int interpreterStackIndex = 0;
-        StringBuffer buffer = new StringBuffer();
-        String lineSeparator = SecurityUtilities.getSystemProperty("line.separator");
-        StackTraceElement[] stack = getStackTrace();
-        for (int i = 0; i < stack.length; i++) {
-            StackTraceElement e = stack[i];
-            String name = e.getFileName();
-            if (e.getLineNumber() > -1 && name != null &&
-                filter.accept(null, name))
-            {
-                buffer.append("\tat ");
-                buffer.append(e.getFileName());
-                buffer.append(':');
-                buffer.append(e.getLineNumber());
-                buffer.append(lineSeparator);
-            } else if (interpreterStack != null &&
-                interpreterStack.size() > interpreterStackIndex && 
-                "org.mozilla.javascript.Interpreter".equals(e.getClassName()) &&
-                "interpretLoop".equals(e.getMethodName()))
-            {
-                buffer.append(interpreterStack.get(interpreterStackIndex++));
-            }
-        }
-        return buffer.toString();
-    }
+//    public String getScriptStackTrace(FilenameFilter filter)
+//    {
+//        List<String> interpreterStack = null;
+//        Evaluator interpreter = Context.createInterpreter();
+//        if (interpreter != null) {
+//            interpreterStack = interpreter.getScriptStack(this);
+//        }
+//        int interpreterStackIndex = 0;
+//        StringBuffer buffer = new StringBuffer();
+//        String lineSeparator = SecurityUtilities.getSystemProperty("line.separator");
+//        StackTraceElement[] stack = getStackTrace();
+//        for (int i = 0; i < stack.length; i++) {
+//            StackTraceElement e = stack[i];
+//            String name = e.getFileName();
+//            if (e.getLineNumber() > -1 && name != null &&
+//                filter.accept(null, name))
+//            {
+//                buffer.append("\tat ");
+//                buffer.append(e.getFileName());
+//                buffer.append(':');
+//                buffer.append(e.getLineNumber());
+//                buffer.append(lineSeparator);
+//            } else if (interpreterStack != null &&
+//                interpreterStack.size() > interpreterStackIndex && 
+//                "org.mozilla.javascript.Interpreter".equals(e.getClassName()) &&
+//                "interpretLoop".equals(e.getMethodName()))
+//            {
+//                buffer.append(interpreterStack.get(interpreterStackIndex++));
+//            }
+//        }
+//        return buffer.toString();
+//    }
 
-    @Override
-    public void printStackTrace(PrintWriter s)
-    {
-        if (interpreterStackInfo == null) {
-            super.printStackTrace(s);
-        } else {
-            s.print(generateStackTrace());
-        }
-    }
+//    @Override
+//    public void printStackTrace(PrintWriter s)
+//    {
+//        if (interpreterStackInfo == null) {
+//            super.printStackTrace(s);
+//        } else {
+//            s.print(generateStackTrace());
+//        }
+//    }
 
     @Override
     public void printStackTrace(PrintStream s)

@@ -42,7 +42,7 @@ package org.mozilla.javascript;
 
 import org.mozilla.javascript.debug.DebuggableScript;
 
-final class InterpretedFunction extends NativeFunction implements Script
+public final class InterpretedFunction extends NativeFunction implements Script
 {
     static final long serialVersionUID = 541475680333911468L;
 
@@ -59,20 +59,20 @@ final class InterpretedFunction extends NativeFunction implements Script
         // Always get Context from the current thread to
         // avoid security breaches via passing mangled Context instances
         // with bogus SecurityController
-        Context cx = Context.getContext();
-        SecurityController sc = cx.getSecurityController();
-        Object dynamicDomain;
-        if (sc != null) {
-            dynamicDomain = sc.getDynamicSecurityDomain(staticSecurityDomain);
-        } else {
-            if (staticSecurityDomain != null) {
-                throw new IllegalArgumentException();
-            }
-            dynamicDomain = null;
-        }
+//        Context cx = Context.getContext();
+//        SecurityController sc = cx.getSecurityController();
+//        Object dynamicDomain;
+//        if (sc != null) {
+//            dynamicDomain = sc.getDynamicSecurityDomain(staticSecurityDomain);
+//        } else {
+//            if (staticSecurityDomain != null) {
+//                throw new IllegalArgumentException();
+//            }
+//            dynamicDomain = null;
+//        }
 
-        this.securityController = sc;
-        this.securityDomain = dynamicDomain;
+//        this.securityController = sc;
+//        this.securityDomain = dynamicDomain;
     }
 
     private InterpretedFunction(InterpretedFunction parent, int index)

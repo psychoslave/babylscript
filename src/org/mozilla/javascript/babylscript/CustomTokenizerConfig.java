@@ -6,7 +6,7 @@ public class CustomTokenizerConfig
 {
     public CustomTokenizerConfig()
     {
-        keywords = new Properties();
+//        keywords = new Properties();
     }
-    public Properties keywords;    
+//    public Properties keywords;    
 }
