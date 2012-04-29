@@ -139,29 +139,29 @@ public class ScriptRuntime {
      */
 
     public final static Class<?>
-        BooleanClass      = Kit.classOrNull("java.lang.Boolean"),
-        ByteClass         = Kit.classOrNull("java.lang.Byte"),
-        CharacterClass    = Kit.classOrNull("java.lang.Character"),
-        ClassClass        = Kit.classOrNull("java.lang.Class"),
-        DoubleClass       = Kit.classOrNull("java.lang.Double"),
-        FloatClass        = Kit.classOrNull("java.lang.Float"),
-        IntegerClass      = Kit.classOrNull("java.lang.Integer"),
-        LongClass         = Kit.classOrNull("java.lang.Long"),
-        NumberClass       = Kit.classOrNull("java.lang.Number"),
-        ObjectClass       = Kit.classOrNull("java.lang.Object"),
-        ShortClass        = Kit.classOrNull("java.lang.Short"),
-        StringClass       = Kit.classOrNull("java.lang.String"),
-        DateClass         = Kit.classOrNull("java.util.Date");
+        BooleanClass      = Boolean.class,//Kit.classOrNull("java.lang.Boolean"),
+        ByteClass         = Byte.class,//Kit.classOrNull("java.lang.Byte"),
+        CharacterClass    = java.lang.Character.class,//Kit.classOrNull("java.lang.Character"),
+        ClassClass        = Class.class,//Kit.classOrNull("java.lang.Class"),
+        DoubleClass       = Double.class,//Kit.classOrNull("java.lang.Double"),
+        FloatClass        = Float.class,//Kit.classOrNull("java.lang.Float"),
+        IntegerClass      = Integer.class,//Kit.classOrNull("java.lang.Integer"),
+        LongClass         = Long.class,//Kit.classOrNull("java.lang.Long"),
+        NumberClass       = Number.class,//Kit.classOrNull("java.lang.Number"),
+        ObjectClass       = Object.class,//Kit.classOrNull("java.lang.Object"),
+        ShortClass        = Short.class,//Kit.classOrNull("java.lang.Short"),
+        StringClass       = String.class,//Kit.classOrNull("java.lang.String"),
+        DateClass         = java.util.Date.class;//Kit.classOrNull("java.util.Date");
 
     public final static Class<?>
         ContextClass
-            = Kit.classOrNull("org.mozilla.javascript.Context"),
+            = Context.class,//Kit.classOrNull("org.mozilla.javascript.Context"),
         ContextFactoryClass
-            = Kit.classOrNull("org.mozilla.javascript.ContextFactory"),
+            = ContextFactory.class,//Kit.classOrNull("org.mozilla.javascript.ContextFactory"),
         FunctionClass
-            = Kit.classOrNull("org.mozilla.javascript.Function"),
+            = org.mozilla.javascript.Function.class,//Kit.classOrNull("org.mozilla.javascript.Function"),
         ScriptableObjectClass
-            = Kit.classOrNull("org.mozilla.javascript.ScriptableObject");
+            = ScriptableObject.class;//Kit.classOrNull("org.mozilla.javascript.ScriptableObject");
     public static final Class<Scriptable> ScriptableClass =
         Scriptable.class;
 

@@ -843,20 +843,20 @@ public abstract class ScriptableObject implements Scriptable, Serializable,
                 } else if (typeHint == ScriptRuntime.FunctionClass) {
                     hint = "function";
                 } else if (typeHint == ScriptRuntime.BooleanClass
-                           || typeHint == Boolean.TYPE)
+                           )//|| typeHint == Boolean.TYPE)
                 {
                     hint = "boolean";
                 } else if (typeHint == ScriptRuntime.NumberClass ||
                          typeHint == ScriptRuntime.ByteClass ||
-                         typeHint == Byte.TYPE ||
+                         //typeHint == Byte.TYPE ||
                          typeHint == ScriptRuntime.ShortClass ||
-                         typeHint == Short.TYPE ||
+                         //typeHint == Short.TYPE ||
                          typeHint == ScriptRuntime.IntegerClass ||
-                         typeHint == Integer.TYPE ||
+                         //typeHint == Integer.TYPE ||
                          typeHint == ScriptRuntime.FloatClass ||
-                         typeHint == Float.TYPE ||
-                         typeHint == ScriptRuntime.DoubleClass ||
-                         typeHint == Double.TYPE)
+                         //typeHint == Float.TYPE ||
+                         typeHint == ScriptRuntime.DoubleClass //||
+                         )//typeHint == Double.TYPE)
                 {
                     hint = "number";
                 } else {
