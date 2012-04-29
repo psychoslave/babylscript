@@ -288,19 +288,42 @@ public class Interpreter implements Evaluator
         {
             if (!frozen) Kit.codeBug();
 
-            CallFrame copy;
-            try {
-                copy = (CallFrame)clone();
-            } catch (CloneNotSupportedException ex) {
-                throw new IllegalStateException();
-            }
-
+            CallFrame copy = new CallFrame();
+            copy.parentFrame = parentFrame;
+            copy.frameIndex = frameIndex;
+            copy.frozen = frozen;
+            copy.fnOrScript = fnOrScript;
+            copy.idata = idata;
+            copy.stack = stack;
+            copy.stackAttributes = stackAttributes;
+            copy.sDbl = sDbl;
+            copy.varSource = varSource;
+            copy.localShift = localShift;
+            copy.emptyStackTop = emptyStackTop;
+            copy.debuggerFrame = debuggerFrame;
+            copy.useActivation = useActivation;
+            copy.isContinuationsTopFrame = isContinuationsTopFrame;
+            copy.thisObj = thisObj;
+            copy.scriptRegExps = scriptRegExps;
+            copy.result = result;
+            copy.resultDbl = resultDbl;
+            copy.pc = pc;
+            copy.pcPrevBranch = pcPrevBranch;
+            copy.pcSourceLineStart = pcSourceLineStart;
+            copy.scope = scope;
+            copy.savedStackTop = savedStackTop;
+            copy.savedCallOp = savedCallOp;
+            copy.throwable = throwable;
+            
             // clone stack but keep varSource to point to values
             // from this frame to share variables.
 
-            copy.stack = stack.clone();
-            copy.stackAttributes = stackAttributes.clone();
-            copy.sDbl = sDbl.clone();
+            copy.stack = new Object[stack.length];
+            System.arraycopy(stack, 0, copy.stack, 0, stack.length);
+            copy.stackAttributes = new int[stackAttributes.length];
+            System.arraycopy(stackAttributes, 0, copy.stackAttributes, 0, stackAttributes.length);
+            copy.sDbl = new double[sDbl.length];
+            System.arraycopy(sDbl, 0, copy.sDbl, 0, sDbl.length);
 
             copy.frozen = false;
             return copy;
@@ -2098,7 +2121,7 @@ public class Interpreter implements Evaluator
 
         int indexReg = 0;
         for (int pc = 0; pc < iCodeLength; ) {
-            out.flush();
+//            out.flush();
             out.print(" [" + pc + "] ");
             int token = iCode[pc];
             int icodeLength = bytecodeSpan(token);
@@ -2308,7 +2331,7 @@ public class Interpreter implements Evaluator
                             +" exceptionLocal="+exceptionLocal);
             }
         }
-        out.flush();
+//        out.flush();
     }
 
     private static int bytecodeSpan(int bytecode)
