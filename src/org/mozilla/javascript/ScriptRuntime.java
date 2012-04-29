@@ -3288,7 +3288,8 @@ public class ScriptRuntime {
 //                // fall through...
 //            }
 //        }
-        return new ImporterTopLevel(cx);
+//        return new ImporterTopLevel(cx);
+        return null;
     }
 
     public static boolean hasTopCall(Context cx)

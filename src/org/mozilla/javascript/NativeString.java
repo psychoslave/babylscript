@@ -41,6 +41,7 @@
 package org.mozilla.javascript;
 
 import java.text.Collator;
+import org.apache.harmony.Character;
 
 /**
  * This class implements the String native object.

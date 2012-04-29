@@ -868,17 +868,17 @@ public class Context
         Context.reportWarning(message, filename, linep[0], null, 0);
     }
 
-    public static void reportWarning(String message, Throwable t)
-    {
-        int[] linep = { 0 };
-        String filename = getSourcePositionFromStack(linep);
-        Writer sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        pw.println(message);
-        t.printStackTrace(pw);
-        pw.flush();
-        Context.reportWarning(sw.toString(), filename, linep[0], null, 0);
-    }
+//    public static void reportWarning(String message, Throwable t)
+//    {
+//        int[] linep = { 0 };
+//        String filename = getSourcePositionFromStack(linep);
+//        Writer sw = new StringWriter();
+//        PrintWriter pw = new PrintWriter(sw);
+//        pw.println(message);
+//        t.printStackTrace(pw);
+//        pw.flush();
+//        Context.reportWarning(sw.toString(), filename, linep[0], null, 0);
+//    }
 
     /**
      * Report an error using the error reporter for the current thread.

@@ -41,7 +41,7 @@
 package org.mozilla.javascript;
 
 import java.io.Serializable;
-
+import org.apache.harmony.Character;
 import org.mozilla.javascript.xml.XMLLib;
 
 /**
