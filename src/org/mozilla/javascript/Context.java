@@ -1363,7 +1363,7 @@ public class Context
                                Object securityDomain)
     {
         try {
-            return (Script) compileImpl(null, null, source, sourceName, lineno,
+            return (Script) compileImpl(null, source, sourceName, lineno,
                                         securityDomain, false,
                                         compiler, compilationErrorReporter);
         } catch (IOException ex) {
@@ -1404,7 +1404,7 @@ public class Context
                                    Object securityDomain)
     {
         try {
-            return (Function) compileImpl(scope, null, source, sourceName,
+            return (Function) compileImpl(scope, source, sourceName,
                                           lineno, securityDomain, true,
                                           compiler, compilationErrorReporter);
         }
@@ -2351,7 +2351,7 @@ public class Context
     }
 
     private Object compileImpl(Scriptable scope,
-                               Reader sourceReader, String sourceString,
+                               String sourceString,
                                String sourceName, int lineno,
                                Object securityDomain, boolean returnFunction,
                                Evaluator compiler,
@@ -2366,8 +2366,6 @@ public class Context
                 "securityDomain should be null if setSecurityController() was never called");
         }
 
-        // One of sourceReader or sourceString has to be null
-        if (!(sourceReader == null ^ sourceString == null)) Kit.codeBug();
         // scope should be given if and only if compiling function
         if (!(scope == null ^ returnFunction)) Kit.codeBug();
 
