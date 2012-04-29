@@ -2642,17 +2642,17 @@ public class Interpreter implements Evaluator
     {
         if (!ScriptRuntime.hasTopCall(cx)) Kit.codeBug();
 
-        if (cx.interpreterSecurityDomain != ifun.securityDomain) {
-            Object savedDomain = cx.interpreterSecurityDomain;
-            cx.interpreterSecurityDomain = ifun.securityDomain;
-            try {
-                return ifun.securityController.callWithDomain(
-                    ifun.securityDomain, cx, ifun, scope, thisObj, args);
-            } finally {
-                cx.interpreterSecurityDomain = savedDomain;
-            }
-        }
-
+//        if (cx.interpreterSecurityDomain != ifun.securityDomain) {
+//            Object savedDomain = cx.interpreterSecurityDomain;
+//            cx.interpreterSecurityDomain = ifun.securityDomain;
+//            try {
+//                return ifun.securityController.callWithDomain(
+//                    ifun.securityDomain, cx, ifun, scope, thisObj, args);
+//            } finally {
+//                cx.interpreterSecurityDomain = savedDomain;
+//            }
+//        }
+//
         CallFrame frame = new CallFrame();
         initFrame(cx, scope, thisObj, args, null, 0, args.length,
                   ifun, null, frame);

@@ -1762,9 +1762,9 @@ public class Context
      */
     public static RuntimeException throwAsScriptRuntimeEx(Throwable e)
     {
-        while ((e instanceof InvocationTargetException)) {
-            e = ((InvocationTargetException) e).getTargetException();
-        }
+//        while ((e instanceof InvocationTargetException)) {
+//            e = ((InvocationTargetException) e).getTargetException();
+//        }
         // special handling of Error so scripts would not catch them
         if (e instanceof Error) {
             Context cx = getContext();
@@ -2266,52 +2266,52 @@ public class Context
 //        return f.createClassLoader(parent);
 //    }
 
-    public final ClassLoader getApplicationClassLoader()
-    {
-        if (applicationClassLoader == null) {
-            ContextFactory f = getFactory();
-            ClassLoader loader = null;
-            if (loader == null) {
-                ClassLoader threadLoader
-                    = VMBridge.instance.getCurrentThreadClassLoader();
-                if (threadLoader != null
-                    && Kit.testIfCanLoadRhinoClasses(threadLoader))
-                {
-                    // Thread.getContextClassLoader is not cached since
-                    // its caching prevents it from GC which may lead to
-                    // a memory leak and hides updates to
-                    // Thread.getContextClassLoader
-                    return threadLoader;
-                }
-                // Thread.getContextClassLoader can not load Rhino classes,
-                // try to use the loader of ContextFactory or Context
-                // subclasses.
-                Class<?> fClass = f.getClass();
-                if (fClass != ScriptRuntime.ContextFactoryClass) {
-                    loader = fClass.getClassLoader();
-                } else {
-                    loader = getClass().getClassLoader();
-                }
-            }
-            applicationClassLoader = loader;
-        }
-        return applicationClassLoader;
-    }
-
-    public final void setApplicationClassLoader(ClassLoader loader)
-    {
-        if (sealed) onSealedMutation();
-        if (loader == null) {
-            // restore default behaviour
-            applicationClassLoader = null;
-            return;
-        }
-        if (!Kit.testIfCanLoadRhinoClasses(loader)) {
-            throw new IllegalArgumentException(
-                "Loader can not resolve Rhino classes");
-        }
-        applicationClassLoader = loader;
-    }
+//    public final ClassLoader getApplicationClassLoader()
+//    {
+//        if (applicationClassLoader == null) {
+//            ContextFactory f = getFactory();
+//            ClassLoader loader = null;
+//            if (loader == null) {
+//                ClassLoader threadLoader
+//                    = VMBridge.instance.getCurrentThreadClassLoader();
+//                if (threadLoader != null
+//                    && Kit.testIfCanLoadRhinoClasses(threadLoader))
+//                {
+//                    // Thread.getContextClassLoader is not cached since
+//                    // its caching prevents it from GC which may lead to
+//                    // a memory leak and hides updates to
+//                    // Thread.getContextClassLoader
+//                    return threadLoader;
+//                }
+//                // Thread.getContextClassLoader can not load Rhino classes,
+//                // try to use the loader of ContextFactory or Context
+//                // subclasses.
+//                Class<?> fClass = f.getClass();
+//                if (fClass != ScriptRuntime.ContextFactoryClass) {
+//                    loader = fClass.getClassLoader();
+//                } else {
+//                    loader = getClass().getClassLoader();
+//                }
+//            }
+//            applicationClassLoader = loader;
+//        }
+//        return applicationClassLoader;
+//    }
+//
+//    public final void setApplicationClassLoader(ClassLoader loader)
+//    {
+//        if (sealed) onSealedMutation();
+//        if (loader == null) {
+//            // restore default behaviour
+//            applicationClassLoader = null;
+//            return;
+//        }
+//        if (!Kit.testIfCanLoadRhinoClasses(loader)) {
+//            throw new IllegalArgumentException(
+//                "Loader can not resolve Rhino classes");
+//        }
+//        applicationClassLoader = loader;
+//    }
 
     public void setLanguageMode(String mode)
     {
