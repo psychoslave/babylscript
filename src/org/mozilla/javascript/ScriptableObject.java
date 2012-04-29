@@ -1677,14 +1677,14 @@ public abstract class ScriptableObject implements Scriptable, Serializable,
             // Make sure all LazilyLoadedCtors are initialized before sealing.
             Slot slot = firstAdded;
             while (slot != null) {
-                if (slot.value instanceof LazilyLoadedCtor) {
-                    LazilyLoadedCtor initializer = (LazilyLoadedCtor) slot.value;
-                    try {
-                        initializer.init();
-                    } finally {
-                        slot.value = initializer.getValue();
-                    }
-                }
+//                if (slot.value instanceof LazilyLoadedCtor) {
+//                    LazilyLoadedCtor initializer = (LazilyLoadedCtor) slot.value;
+//                    try {
+//                        initializer.init();
+//                    } finally {
+//                        slot.value = initializer.getValue();
+//                    }
+//                }
                 slot = slot.orderedNext;
             }
             count = ~count;
@@ -2238,15 +2238,15 @@ public abstract class ScriptableObject implements Scriptable, Serializable,
             }
         }
         Object value = slot.value;
-        if (value instanceof LazilyLoadedCtor) {
-            LazilyLoadedCtor initializer = (LazilyLoadedCtor)value;
-            try {
-                initializer.init();
-            } finally {
-                value = initializer.getValue();
-                slot.value = value;
-            }
-        }
+//        if (value instanceof LazilyLoadedCtor) {
+//            LazilyLoadedCtor initializer = (LazilyLoadedCtor)value;
+//            try {
+//                initializer.init();
+//            } finally {
+//                value = initializer.getValue();
+//                slot.value = value;
+//            }
+//        }
         return value;
     }
 

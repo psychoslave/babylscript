@@ -388,12 +388,15 @@ final class NativeString extends IdScriptableObject
                     // actually imagine that this'd be slower than caching them
                     // a la ClassCache, so we aren't trying to outsmart ourselves
                     // with a caching mechanism for now.
-                    Collator collator = Collator.getInstance(); // TODO: cx.getLocale());
-                    collator.setStrength(Collator.IDENTICAL);
-                    collator.setDecomposition(Collator.CANONICAL_DECOMPOSITION);
-                    return ScriptRuntime.wrapNumber(collator.compare(
-                            ScriptRuntime.toString(thisObj), 
-                            ScriptRuntime.toString(args, 0)));
+                    return JSNI_localecompare(ScriptRuntime.toString(thisObj), 
+                            ScriptRuntime.toString(args, 0));
+//
+//                    Collator collator = Collator.getInstance(); // TODO: cx.getLocale());
+//                    collator.setStrength(Collator.IDENTICAL);
+//                    collator.setDecomposition(Collator.CANONICAL_DECOMPOSITION);
+//                    return ScriptRuntime.wrapNumber(collator.compare(
+//                            ScriptRuntime.toString(thisObj), 
+//                            ScriptRuntime.toString(args, 0)));
                 }
               case Id_toLocaleLowerCase:
                 {
@@ -410,6 +413,13 @@ final class NativeString extends IdScriptableObject
         }
     }
 
+    // GWT has no collators, so we'll drop down to JS to do the comparison, even
+    // though it may be in the wrong locale
+    public native int JSNI_localecompare(String source, String target) /*-{ 
+        return source.localeCompare(target); 
+    }-*/;
+
+    
     private static NativeString realThis(Scriptable thisObj, IdFunctionObject f)
     {
         if (!(thisObj instanceof NativeString))

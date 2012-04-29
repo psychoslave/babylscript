@@ -52,6 +52,7 @@ import org.mozilla.javascript.ScriptRuntime;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.Undefined;
+import org.apache.harmony.Character;
 
 /**
  * This class implements the RegExp native object.
@@ -2168,7 +2169,9 @@ System.out.println("Testing at " + gData.cp + ", op = " + op);
                     // XXX: If backTrackData will no longer be used, then
                     // there is no need to clone backTrackData.parens
                     if (backTrackData.parens != null) {
-                        gData.parens = backTrackData.parens.clone();
+                        gData.parens = new long[backTrackData.parens.length];
+                        System.arraycopy(backTrackData.parens, 0, gData.parens, 0, backTrackData.parens.length);
+//                        gData.parens = backTrackData.parens.clone();
                     }
 
                     gData.cp = backTrackData.cp;
@@ -2708,7 +2711,9 @@ class REBackTrackData {
         continuation_pc = pc;
         lastParen = gData.lastParen;
         if (gData.parens != null) {
-            parens = gData.parens.clone();
+            parens = new long[gData.parens.length];
+            System.arraycopy(gData.parens, 0, parens, 0, gData.parens.length);
+//            parens = gData.parens.clone();
         }
         cp = gData.cp;
         stateStackTop = gData.stateStackTop;

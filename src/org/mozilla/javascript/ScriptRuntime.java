@@ -59,6 +59,8 @@ import org.mozilla.javascript.babylscript.TranslatedNameBindings;
 import org.apache.harmony.Locale;
 import org.apache.harmony.Character;
 
+import sun.org.mozilla.javascript.internal.regexp.NativeRegExp;
+
 /**
  * This is the class that implements the runtime.
  *
@@ -254,15 +256,22 @@ public class ScriptRuntime {
 
         boolean withXml = cx.hasFeature(Context.FEATURE_E4X);
 
-        for (int i = 0; i != lazilyNames.length; i += 2) {
-            String topProperty = lazilyNames[i];
-            String className = lazilyNames[i + 1];
-            if (!withXml && className.equals("(xml)")) {
-                continue;
-			}
-            new LazilyLoadedCtor(scope, topProperty, className, sealed);
-        }
+//        for (int i = 0; i != lazilyNames.length; i += 2) {
+//            String topProperty = lazilyNames[i];
+//            String className = lazilyNames[i + 1];
+//            if (!withXml && className.equals("(xml)")) {
+//                continue;
+//			}
+//            new LazilyLoadedCtor(scope, topProperty, className, sealed);
+//        }
+        
+        org.mozilla.javascript.regexp.NativeRegExp.init(cx, scope, true);
+        NativeContinuation.init(cx, scope, true);
+//        "RegExp",        "org.mozilla.javascript.regexp.NativeRegExp",
+//      "Continuation",  "org.mozilla.javascript.NativeContinuation",
 
+        
+        
         TranslatedNameBindings.initStandardTranslations(scope);
         
         return scope;
