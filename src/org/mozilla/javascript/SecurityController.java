@@ -130,23 +130,23 @@ public abstract class SecurityController
      *        {@link Context#getApplicationClassLoader()} will be used.
      * @param staticDomain static security domain.
      */
-    public static GeneratedClassLoader createLoader(
-        ClassLoader parent, Object staticDomain)
-    {
-        Context cx = Context.getContext();
-        if (parent == null) {
-            parent = cx.getApplicationClassLoader();
-        }
-        SecurityController sc = cx.getSecurityController();
-        GeneratedClassLoader loader;
-        if (sc == null) {
-            loader = cx.createClassLoader(parent);
-        } else {
-            Object dynamicDomain = sc.getDynamicSecurityDomain(staticDomain);
-            loader = sc.createClassLoader(parent, dynamicDomain);
-        }
-        return loader;
-    }
+//    public static GeneratedClassLoader createLoader(
+//        ClassLoader parent, Object staticDomain)
+//    {
+//        Context cx = Context.getContext();
+//        if (parent == null) {
+//            parent = cx.getApplicationClassLoader();
+//        }
+//        SecurityController sc = cx.getSecurityController();
+//        GeneratedClassLoader loader;
+//        if (sc == null) {
+//            loader = cx.createClassLoader(parent);
+//        } else {
+//            Object dynamicDomain = sc.getDynamicSecurityDomain(staticDomain);
+//            loader = sc.createClassLoader(parent, dynamicDomain);
+//        }
+//        return loader;
+//    }
 
     public static Class<?> getStaticSecurityDomainClass() {
         SecurityController sc = Context.getContext().getSecurityController();

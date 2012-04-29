@@ -315,10 +315,10 @@ public class ContextFactory
      * is installed.
      * Application can override the method to provide custom class loading.
      */
-    protected GeneratedClassLoader createClassLoader(ClassLoader parent)
-    {
-        return new DefiningClassLoader(parent);
-    }
+//    protected GeneratedClassLoader createClassLoader(ClassLoader parent)
+//    {
+//        return new DefiningClassLoader(parent);
+//    }
 
     /**
      * Get ClassLoader to use when searching for Java classes.
@@ -326,10 +326,10 @@ public class ContextFactory
      * {@link #initApplicationClassLoader(ClassLoader)} the method returns
      * null to indicate that Thread.getContextClassLoader() should be used.
      */
-    public final ClassLoader getApplicationClassLoader()
-    {
-        return null;
-    }
+//    public final ClassLoader getApplicationClassLoader()
+//    {
+//        return null;
+//    }
 
 
     /**
