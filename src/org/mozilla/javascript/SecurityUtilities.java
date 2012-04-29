@@ -56,7 +56,9 @@ public class SecurityUtilities
      */
     public static String getSystemProperty(final String name)
     {
-        return System.getProperty(name);
+        if ("line.separator".equals(name)) return "\n";
+        else return null;
+//        return System.getProperty(name);
 //        return (String)AccessController.doPrivileged(
 //            new PrivilegedAction<Object>()
 //            {

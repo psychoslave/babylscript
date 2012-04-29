@@ -144,7 +144,9 @@ final class Arguments extends IdScriptableObject
                 synchronized (this) {
                     if (args[index] != NOT_FOUND) {
                         if (args == activation.originalArgs) {
-                            args = args.clone();
+                            Object[] newargs = new Object[args.length];
+                            System.arraycopy(args, 0, newargs, 0, args.length);
+                            args = newargs;
                         }
                         args[index] = value;
                         return;
@@ -162,7 +164,9 @@ final class Arguments extends IdScriptableObject
             synchronized (this) {
                 if (args[index] != NOT_FOUND) {
                     if (args == activation.originalArgs) {
-                        args = args.clone();
+                        Object[] newargs = new Object[args.length];
+                        System.arraycopy(args, 0, newargs, 0, args.length);
+                        args = newargs;
                     }
                     args[index] = NOT_FOUND;
                     return;

@@ -83,10 +83,10 @@ public class WrapFactory
             return obj;
         }
         if (staticType != null && staticType.isPrimitive()) {
-            if (staticType == Void.TYPE)
-                return Undefined.instance;
-            if (staticType == Character.TYPE)
-                return new Integer(((Character) obj).charValue());
+//            if (staticType == Void.TYPE)
+//                return Undefined.instance;
+//            if (staticType == Character.TYPE)
+//                return new Integer(((Character) obj).charValue());
             return obj;
         }
         if (!isJavaPrimitiveWrap()) {
@@ -98,11 +98,12 @@ public class WrapFactory
                 return String.valueOf(((Character)obj).charValue());
             }
         }
-        Class<?> cls = obj.getClass();
-        if (cls.isArray()) {
-            return NativeJavaArray.wrap(scope, obj);
-        }
-        return wrapAsJavaObject(cx, scope, obj, staticType);
+//        Class<?> cls = obj.getClass();
+//        if (cls.isArray()) {
+//            return NativeJavaArray.wrap(scope, obj);
+//        }
+        return null;
+//        return wrapAsJavaObject(cx, scope, obj, staticType);
     }
 
     /**
@@ -112,17 +113,17 @@ public class WrapFactory
      * @param obj the object to be wrapped
      * @return the wrapped value.
      */
-    public Scriptable wrapNewObject(Context cx, Scriptable scope, Object obj)
-    {
-        if (obj instanceof Scriptable) {
-            return (Scriptable)obj;
-        }
-        Class<?> cls = obj.getClass();
-        if (cls.isArray()) {
-            return NativeJavaArray.wrap(scope, obj);
-        }
-        return wrapAsJavaObject(cx, scope, obj, null);
-    }
+//    public Scriptable wrapNewObject(Context cx, Scriptable scope, Object obj)
+//    {
+//        if (obj instanceof Scriptable) {
+//            return (Scriptable)obj;
+//        }
+//        Class<?> cls = obj.getClass();
+//        if (cls.isArray()) {
+//            return NativeJavaArray.wrap(scope, obj);
+//        }
+//        return wrapAsJavaObject(cx, scope, obj, null);
+//    }
 
     /**
      * Wrap Java object as Scriptable instance to allow full access to its
@@ -142,13 +143,13 @@ public class WrapFactory
                 object based on its class, staticType will be used instead.
      * @return the wrapped value which shall not be null
      */
-    public Scriptable wrapAsJavaObject(Context cx, Scriptable scope,
-                                       Object javaObject, Class<?> staticType)
-    {
-        Scriptable wrap;
-        wrap = new NativeJavaObject(scope, javaObject, staticType);
-        return wrap;
-    }
+//    public Scriptable wrapAsJavaObject(Context cx, Scriptable scope,
+//                                       Object javaObject, Class<?> staticType)
+//    {
+//        Scriptable wrap;
+//        wrap = new NativeJavaObject(scope, javaObject, staticType);
+//        return wrap;
+//    }
 
     /**
      * Return <code>false</code> if result of Java method, which is instance of
@@ -169,15 +170,15 @@ public class WrapFactory
     /**
      * @see #isJavaPrimitiveWrap()
      */
-    public final void setJavaPrimitiveWrap(boolean value)
-    {
-        Context cx = Context.getCurrentContext();
-        if (cx != null && cx.isSealed()) {
-            Context.onSealedMutation();
-        }
-        javaPrimitiveWrap = value;
-    }
-
+//    public final void setJavaPrimitiveWrap(boolean value)
+//    {
+//        Context cx = Context.getCurrentContext();
+//        if (cx != null && cx.isSealed()) {
+//            Context.onSealedMutation();
+//        }
+//        javaPrimitiveWrap = value;
+//    }
+//
     private boolean javaPrimitiveWrap = true;
 
 }

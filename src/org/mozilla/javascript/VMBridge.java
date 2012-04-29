@@ -200,15 +200,15 @@ public class VMBridge
      * @param proxyHelper The result of the previous call to
      *        {@link #getInterfaceProxyHelper(ContextFactory, Class[])}.
      */
-    protected Object newInterfaceProxy(Object proxyHelper,
-                                       ContextFactory cf,
-                                       InterfaceAdapter adapter,
-                                       Object target,
-                                       Scriptable topScope)
-    {
-        throw Context.reportRuntimeError(
-            "VMBridge.newInterfaceProxy is not supported");
-    }
+//    protected Object newInterfaceProxy(Object proxyHelper,
+//                                       ContextFactory cf,
+//                                       InterfaceAdapter adapter,
+//                                       Object target,
+//                                       Scriptable topScope)
+//    {
+//        throw Context.reportRuntimeError(
+//            "VMBridge.newInterfaceProxy is not supported");
+//    }
 //  From Java 1.5 version
 //================
 //  @Override

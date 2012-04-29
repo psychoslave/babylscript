@@ -216,7 +216,7 @@ public class ScriptRuntime {
             scope = new NativeObject();
         }
         scope.associateValue(LIBRARY_SCOPE_KEY, scope);
-        (new ClassCache()).associate(scope);
+//        (new ClassCache()).associate(scope);
 
         BaseFunction.init(scope, sealed);
         NativeObject.init(scope, sealed);
@@ -877,13 +877,19 @@ public class ScriptRuntime {
         }
 
         if (base != 10) {
-            return localizeNumberString(DToA.JS_dtobasestr(base, d), locale);
+            return localizeNumberString(JSNI_numToStringBase(d, base), locale);
         } else {
-            StringBuffer result = new StringBuffer();
-            DToA.JS_dtostr(result, DToA.DTOSTR_STANDARD, 0, d);
-            return localizeNumberString(result.toString(), locale);
+            return localizeNumberString(JSNI_numToString(d), locale);
         }
     }
+    
+    public static native String JSNI_numToString(double x) /*-{
+        return x.toString();
+    }-*/;
+    public static native String JSNI_numToStringBase(double x, int base) /*-{
+        return x.toString(base);
+    }-*/;
+
 
     static String uneval(Context cx, Scriptable scope, Object value)
     {

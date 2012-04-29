@@ -158,49 +158,77 @@ final class NativeNumber extends IdScriptableObject
             return ScriptRuntime.wrapNumber(value);
 
           case Id_toFixed:
-            return num_to(value, args, DToA.DTOSTR_FIXED,
-                          DToA.DTOSTR_FIXED, -20, 0);
+            if (args.length > 0)
+                return JSNI_toFixed1(value, (Integer)args[0]);
+            else
+                return JSNI_toFixed0(value);
 
           case Id_toExponential:
-            return num_to(value, args, DToA.DTOSTR_STANDARD_EXPONENTIAL,
-                          DToA.DTOSTR_EXPONENTIAL, 0, 1);
+              if (args.length > 0)
+                  return JSNI_toExponential1(value, (Integer)args[0]);
+              else
+                  return JSNI_toExponential0(value);
 
           case Id_toPrecision:
-            return num_to(value, args, DToA.DTOSTR_STANDARD,
-                          DToA.DTOSTR_PRECISION, 1, 0);
+              if (args.length > 0)
+                  return JSNI_toPrecision1(value, (Integer)args[0]);
+              else
+                  return JSNI_toPrecision0(value);
 
           default: throw new IllegalArgumentException(String.valueOf(id));
         }
     }
 
+    public static native String JSNI_toFixed0(double x) /*-{
+        return x.toFixed();
+    }-*/;
+    public static native String JSNI_toFixed1(double x, int param1) /*-{
+        return x.toFixed(param1);
+    }-*/;
+
+    public static native String JSNI_toExponential0(double x) /*-{
+        return x.toExponential();
+    }-*/;
+    public static native String JSNI_toExponential1(double x, int param1) /*-{
+        return x.toExponential(param1);
+    }-*/;
+
+    public static native String JSNI_toPrecision0(double x) /*-{
+        return x.toPrecision();
+    }-*/;
+    public static native String JSNI_toPrecision1(double x, int param1) /*-{
+        return x.toPrecision(param1);
+    }-*/;
+
+    
     @Override
     public String toString() {
         return ScriptRuntime.numberToString(doubleValue, 10);
     }
 
-    private static String num_to(double val,
-                                 Object[] args,
-                                 int zeroArgMode, int oneArgMode,
-                                 int precisionMin, int precisionOffset)
-    {
-        int precision;
-        if (args.length == 0) {
-            precision = 0;
-            oneArgMode = zeroArgMode;
-        } else {
-            /* We allow a larger range of precision than
-               ECMA requires; this is permitted by ECMA. */
-            precision = ScriptRuntime.toInt32(args[0]);
-            if (precision < precisionMin || precision > MAX_PRECISION) {
-                String msg = ScriptRuntime.getMessage1(
-                    "msg.bad.precision", ScriptRuntime.toString(args[0]));
-                throw ScriptRuntime.constructError("RangeError", msg);
-            }
-        }
-        StringBuffer sb = new StringBuffer();
-        DToA.JS_dtostr(sb, oneArgMode, precision + precisionOffset, val);
-        return sb.toString();
-    }
+//    private static String num_to(double val,
+//                                 Object[] args,
+//                                 int zeroArgMode, int oneArgMode,
+//                                 int precisionMin, int precisionOffset)
+//    {
+//        int precision;
+//        if (args.length == 0) {
+//            precision = 0;
+//            oneArgMode = zeroArgMode;
+//        } else {
+//            /* We allow a larger range of precision than
+//               ECMA requires; this is permitted by ECMA. */
+//            precision = ScriptRuntime.toInt32(args[0]);
+//            if (precision < precisionMin || precision > MAX_PRECISION) {
+//                String msg = ScriptRuntime.getMessage1(
+//                    "msg.bad.precision", ScriptRuntime.toString(args[0]));
+//                throw ScriptRuntime.constructError("RangeError", msg);
+//            }
+//        }
+//        StringBuffer sb = new StringBuffer();
+//        DToA.JS_dtostr(sb, oneArgMode, precision + precisionOffset, val);
+//        return sb.toString();
+//    }
 
 // #string_id_map#
 

@@ -1718,11 +1718,11 @@ public class Context
      * @return the converted value
      * @throws EvaluatorException if the conversion cannot be performed
      */
-    public static Object jsToJava(Object value, Class<?> desiredType)
-        throws EvaluatorException
-    {
-        return NativeJavaObject.coerceTypeImpl(desiredType, value);
-    }
+//    public static Object jsToJava(Object value, Class<?> desiredType)
+//        throws EvaluatorException
+//    {
+//        return NativeJavaObject.coerceTypeImpl(desiredType, value);
+//    }
 
     /**
      * @deprecated
@@ -1731,18 +1731,18 @@ public class Context
      *         Note that {@link #jsToJava(Object, Class)} throws
      *         {@link EvaluatorException} instead.
      */
-    public static Object toType(Object value, Class<?> desiredType)
-        throws IllegalArgumentException
-    {
-        try {
-            return jsToJava(value, desiredType);
-        } catch (EvaluatorException ex) {
-            IllegalArgumentException
-                ex2 = new IllegalArgumentException(ex.getMessage());
-            Kit.initCause(ex2, ex);
-            throw ex2;
-        }
-    }
+//    public static Object toType(Object value, Class<?> desiredType)
+//        throws IllegalArgumentException
+//    {
+//        try {
+//            return jsToJava(value, desiredType);
+//        } catch (EvaluatorException ex) {
+//            IllegalArgumentException
+//                ex2 = new IllegalArgumentException(ex.getMessage());
+//            Kit.initCause(ex2, ex);
+//            throw ex2;
+//        }
+//    }
 
     /**
      * Rethrow the exception wrapping it as the script runtime exception.

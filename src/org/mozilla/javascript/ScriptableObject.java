@@ -2218,24 +2218,24 @@ public abstract class ScriptableObject implements Scriptable, Serializable,
         }
         Object getterObj = ((GetterSlot)slot).getter;
         if (getterObj != null) {
-            if (getterObj instanceof MemberBox) {
-                MemberBox nativeGetter = (MemberBox)getterObj;
-                Object getterThis;
-                Object[] args;
-                if (nativeGetter.delegateTo == null) {
-                    getterThis = start;
-                    args = ScriptRuntime.emptyArgs;
-                } else {
-                    getterThis = nativeGetter.delegateTo;
-                    args = new Object[] { start };
-                }
-                return nativeGetter.invoke(getterThis, args);
-            } else {
+//            if (getterObj instanceof MemberBox) {
+//                MemberBox nativeGetter = (MemberBox)getterObj;
+//                Object getterThis;
+//                Object[] args;
+//                if (nativeGetter.delegateTo == null) {
+//                    getterThis = start;
+//                    args = ScriptRuntime.emptyArgs;
+//                } else {
+//                    getterThis = nativeGetter.delegateTo;
+//                    args = new Object[] { start };
+//                }
+//                return nativeGetter.invoke(getterThis, args);
+//            } else {
                 Function f = (Function)getterObj;
                 Context cx = Context.getContext();
                 return f.call(cx, f.getParentScope(), start,
                               ScriptRuntime.emptyArgs);
-            }
+//            }
         }
         Object value = slot.value;
 //        if (value instanceof LazilyLoadedCtor) {
@@ -2300,30 +2300,30 @@ public abstract class ScriptableObject implements Scriptable, Serializable,
                 }
             } else {
                 Context cx = Context.getContext();
-                if (setterObj instanceof MemberBox) {
-                    MemberBox nativeSetter = (MemberBox)setterObj;
-                    Class<?> pTypes[] = nativeSetter.argTypes;
-                    // XXX: cache tag since it is already calculated in
-                    // defineProperty ?
-                    Class<?> valueType = pTypes[pTypes.length - 1];
-                    int tag = FunctionObject.getTypeTag(valueType);
-                    Object actualArg = FunctionObject.convertArg(cx, start,
-                                                                 value, tag);
-                    Object setterThis;
-                    Object[] args;
-                    if (nativeSetter.delegateTo == null) {
-                        setterThis = start;
-                        args = new Object[] { actualArg };
-                    } else {
-                        setterThis = nativeSetter.delegateTo;
-                        args = new Object[] { start, actualArg };
-                    }
-                    nativeSetter.invoke(setterThis, args);
-                } else {
+//                if (setterObj instanceof MemberBox) {
+//                    MemberBox nativeSetter = (MemberBox)setterObj;
+//                    Class<?> pTypes[] = nativeSetter.argTypes;
+//                    // XXX: cache tag since it is already calculated in
+//                    // defineProperty ?
+//                    Class<?> valueType = pTypes[pTypes.length - 1];
+//                    int tag = FunctionObject.getTypeTag(valueType);
+//                    Object actualArg = FunctionObject.convertArg(cx, start,
+//                                                                 value, tag);
+//                    Object setterThis;
+//                    Object[] args;
+//                    if (nativeSetter.delegateTo == null) {
+//                        setterThis = start;
+//                        args = new Object[] { actualArg };
+//                    } else {
+//                        setterThis = nativeSetter.delegateTo;
+//                        args = new Object[] { start, actualArg };
+//                    }
+//                    nativeSetter.invoke(setterThis, args);
+//                } else {
                     Function f = (Function)setterObj;
                     f.call(cx, f.getParentScope(), start,
                            new Object[] { value });
-                }
+//                }
                 return true;
             }
         }
