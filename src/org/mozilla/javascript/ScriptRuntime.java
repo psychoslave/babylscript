@@ -56,8 +56,6 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.mozilla.javascript.babylscript.TranslatedNameBindings;
-import org.mozilla.javascript.xml.XMLObject;
-import org.mozilla.javascript.xml.XMLLib;
 import org.apache.harmony.Locale;
 import org.apache.harmony.Character;
 
@@ -254,17 +252,13 @@ public class ScriptRuntime {
         
         NativeIterator.init(scope, sealed); // Also initializes NativeGenerator
 
-        boolean withXml = cx.hasFeature(Context.FEATURE_E4X) && 
-                          cx.getE4xImplementationFactory() != null;
+        boolean withXml = cx.hasFeature(Context.FEATURE_E4X);
 
         for (int i = 0; i != lazilyNames.length; i += 2) {
             String topProperty = lazilyNames[i];
             String className = lazilyNames[i + 1];
             if (!withXml && className.equals("(xml)")) {
                 continue;
-            } else if (withXml && className.equals("(xml)")) {
-				className = cx.getE4xImplementationFactory().
-                               getImplementationClassName();
 			}
             new LazilyLoadedCtor(scope, topProperty, className, sealed);
         }
@@ -1245,24 +1239,6 @@ public class ScriptRuntime {
 
     public static Object setDefaultNamespace(Object namespace, Context cx)
     {
-        Scriptable scope = cx.currentActivationCall;
-        if (scope == null) {
-            scope = getTopCallScope(cx);
-        }
-
-        XMLLib xmlLib = currentXMLLib(cx);
-        Object ns = xmlLib.toDefaultXmlNamespace(cx, namespace);
-
-        // XXX : this should be in separated namesapce from Scriptable.get/put
-        if (!scope.has(DEFAULT_NS_TAG, scope)) {
-            // XXX: this is racy of cause
-            ScriptableObject.defineProperty(scope, DEFAULT_NS_TAG, ns,
-                                            ScriptableObject.PERMANENT
-                                            | ScriptableObject.DONTENUM);
-        } else {
-            scope.put(DEFAULT_NS_TAG, scope, ns);
-        }
-
         return Undefined.instance;
     }
 
@@ -1486,11 +1462,6 @@ public class ScriptRuntime {
     public static Object getObjectElem(Scriptable obj, String lang, Object elem,
                                        Context cx)
     {
-        if (obj instanceof XMLObject) {
-            XMLObject xmlObject = (XMLObject)obj;
-            return xmlObject.ecmaGet(cx, elem);
-        }
-
         Object result;
 
         String s = toStringIdOrIndex(cx, elem);
@@ -1538,14 +1509,6 @@ public class ScriptRuntime {
                                        String lang, String property,
                                        Context cx)
     {
-        if (obj instanceof XMLObject) {
-            // TODO: Change XMLObject to just use Scriptable interface
-            // to avoid paying cost of instanceof check on *every property
-            // lookup* !
-            XMLObject xmlObject = (XMLObject)obj;
-            return xmlObject.ecmaGet(cx, property);
-        }
-
         Object result = ScriptableObject.getProperty(obj, lang, property);
         if (result == Scriptable.NOT_FOUND) {
             if (cx.hasFeature(Context.FEATURE_STRICT_MODE)) {
@@ -1564,10 +1527,6 @@ public class ScriptRuntime {
         Scriptable sobj = toObjectOrNull(cx, obj);
         if (sobj == null) {
             throw undefReadError(obj, property);
-        }
-        if (obj instanceof XMLObject) {
-            // TODO: fix as mentioned in note in method above
-            getObjectProp(sobj, property, cx);
         }
         Object result = ScriptableObject.getProperty(sobj, lang, property);
         if (result == Scriptable.NOT_FOUND) {
@@ -1600,11 +1559,6 @@ public class ScriptRuntime {
     public static Object getObjectIndex(Scriptable obj, int index,
                                         Context cx)
     {
-        if (obj instanceof XMLObject) {
-            XMLObject xmlObject = (XMLObject)obj;
-            return xmlObject.ecmaGet(cx, new Integer(index));
-        }
-
         Object result = ScriptableObject.getProperty(obj, index);
         if (result == Scriptable.NOT_FOUND) {
             result = Undefined.instance;
@@ -1678,12 +1632,6 @@ public class ScriptRuntime {
                                        Object elem,
                                        Object value, Context cx)
     {
-        if (obj instanceof XMLObject) {
-            XMLObject xmlObject = (XMLObject)obj;
-            xmlObject.ecmaPut(cx, elem, value);
-            return value;
-        }
-
         String s = toStringIdOrIndex(cx, elem);
         if (s == null) {
             int index = lastIndexResult(cx);
@@ -1711,12 +1659,7 @@ public class ScriptRuntime {
     public static Object setObjectProp(Scriptable obj, String lang, String property,
                                        Object value, Context cx)
     {
-        if (obj instanceof XMLObject) {
-            XMLObject xmlObject = (XMLObject)obj;
-            xmlObject.ecmaPut(cx, property, value);
-        } else {
-            ScriptableObject.putProperty(obj, lang, property, value);
-        }
+        ScriptableObject.putProperty(obj, lang, property, value);
         return value;
     }
 
@@ -1744,12 +1687,7 @@ public class ScriptRuntime {
     public static Object setObjectIndex(Scriptable obj, int index, Object value,
                                         Context cx)
     {
-        if (obj instanceof XMLObject) {
-            XMLObject xmlObject = (XMLObject)obj;
-            xmlObject.ecmaPut(cx, new Integer(index), value);
-        } else {
-            ScriptableObject.putProperty(obj, index, value);
-        }
+        ScriptableObject.putProperty(obj, index, value);
         return value;
     }
 
@@ -1757,17 +1695,12 @@ public class ScriptRuntime {
                                            Context cx)
     {
         boolean result;
-        if (target instanceof XMLObject) {
-            XMLObject xmlObject = (XMLObject)target;
-            result = xmlObject.ecmaDelete(cx, elem);
+        String s = toStringIdOrIndex(cx, elem);
+        if (s == null) {
+            int index = lastIndexResult(cx);
+            result = ScriptableObject.deleteProperty(target, index);
         } else {
-            String s = toStringIdOrIndex(cx, elem);
-            if (s == null) {
-                int index = lastIndexResult(cx);
-                result = ScriptableObject.deleteProperty(target, index);
-            } else {
-                result = ScriptableObject.deleteProperty(target, lang, s);
-            }
+            result = ScriptableObject.deleteProperty(target, lang, s);
         }
         return result;
     }
@@ -1777,17 +1710,12 @@ public class ScriptRuntime {
     {
         boolean result;
 
-        if (target instanceof XMLObject) {
-            XMLObject xmlObject = (XMLObject)target;
-            result = xmlObject.ecmaHas(cx, elem);
+        String s = toStringIdOrIndex(cx, elem);
+        if (s == null) {
+            int index = lastIndexResult(cx);
+            result = ScriptableObject.hasProperty(target, index);
         } else {
-            String s = toStringIdOrIndex(cx, elem);
-            if (s == null) {
-                int index = lastIndexResult(cx);
-                result = ScriptableObject.hasProperty(target, index);
-            } else {
-                result = ScriptableObject.hasProperty(target, toStringOrNull(lang), s);
-            }
+            result = ScriptableObject.hasProperty(target, toStringOrNull(lang), s);
         }
 
         return result;
@@ -1865,28 +1793,14 @@ public class ScriptRuntime {
         Object result;
         Scriptable thisObj = scope; // It is used only if asFunctionCall==true.
 
-        XMLObject firstXMLObject = null;
         for (;;) {
             if (scope instanceof NativeWith) {
                 Scriptable withObj = scope.getPrototype();
-                if (withObj instanceof XMLObject) {
-                    XMLObject xmlObj = (XMLObject)withObj;
-                    if (xmlObj.ecmaHas(cx, name)) {
-                        // function this should be the target object of with
-                        thisObj = xmlObj;
-                        result = xmlObj.ecmaGet(cx, name);
-                        break;
-                    }
-                    if (firstXMLObject == null) {
-                        firstXMLObject = xmlObj;
-                    }
-                } else {
-                    result = ScriptableObject.getProperty(withObj, lang, name);
-                    if (result != Scriptable.NOT_FOUND) {
-                        // function this should be the target object of with
-                        thisObj = withObj;
-                        break;
-                    }
+                result = ScriptableObject.getProperty(withObj, lang, name);
+                if (result != Scriptable.NOT_FOUND) {
+                    // function this should be the target object of with
+                    thisObj = withObj;
+                    break;
                 }
             } else if (scope instanceof NativeCall) {
                 // NativeCall does not prototype chain and Scriptable.get
@@ -1915,14 +1829,7 @@ public class ScriptRuntime {
             if (parentScope == null) {
                 result = topScopeName(cx, scope, lang, name);
                 if (result == Scriptable.NOT_FOUND) {
-                    if (firstXMLObject == null || asFunctionCall) {
                         throw notFoundError(scope, name);
-                    }
-                    // The name was not found, but we did find an XML
-                    // object in the scope chain and we are looking for name,
-                    // not function. The result should be an empty XMLList
-                    // in name context.
-                    result = firstXMLObject.ecmaGet(cx, name);
                 }
                 // For top scope thisObj for functions is always scope itself.
                 thisObj = scope;
@@ -1971,18 +1878,8 @@ public class ScriptRuntime {
             // Check for possibly nested "with" scopes first
             while (scope instanceof NativeWith) {
                 Scriptable withObj = scope.getPrototype();
-                if (withObj instanceof XMLObject) {
-                    XMLObject xmlObject = (XMLObject)withObj;
-                    if (xmlObject.ecmaHas(cx, id)) {
-                        return xmlObject;
-                    }
-                    if (firstXMLObject == null) {
-                        firstXMLObject = xmlObject;
-                    }
-                } else {
-                    if (ScriptableObject.hasProperty(withObj, lang, id)) {
-                        return withObj;
-                    }
+                if (ScriptableObject.hasProperty(withObj, lang, id)) {
+                    return withObj;
                 }
                 scope = parent;
                 parent = parent.getParentScope();
@@ -2031,20 +1928,10 @@ public class ScriptRuntime {
             // Check for possibly nested "with" scopes first
             while (scope instanceof NativeWith) {
                 Scriptable withObj = scope.getPrototype();
-                if (withObj instanceof XMLObject) {
-                    XMLObject xmlObject = (XMLObject)withObj;
-                    if (xmlObject.ecmaHas(cx, id)) {
-                        return id;
-                    }
-                    if (firstXMLObject == null) {
-                        firstXMLObject = xmlObject;
-                    }
-                } else {
-                    if (ScriptableObject.hasProperty(withObj, lang, id)) {
-                        String trans = ScriptableObject.getTranslatedNameWithPrototype(withObj, lang, id);
-                        if (trans != null) return trans;
-                        return id;
-                    }
+                if (ScriptableObject.hasProperty(withObj, lang, id)) {
+                    String trans = ScriptableObject.getTranslatedNameWithPrototype(withObj, lang, id);
+                    if (trans != null) return trans;
+                    return id;
                 }
                 scope = parent;
                 parent = parent.getParentScope();
@@ -2083,12 +1970,7 @@ public class ScriptRuntime {
                                  Context cx, Scriptable scope, String lang, String id)
     {
         if (bound != null) {
-            if (bound instanceof XMLObject) {
-                XMLObject xmlObject = (XMLObject)bound;
-                xmlObject.ecmaPut(cx, id, value);
-            } else {
-                ScriptableObject.putProperty(bound, lang, id, value);
-            }
+            ScriptableObject.putProperty(bound, lang, id, value);
         } else {
             // "newname = 7;", where 'newname' has not yet
             // been defined, creates a new property in the
@@ -2112,12 +1994,7 @@ public class ScriptRuntime {
     public static Object setConst(Scriptable bound, Object value,
                                  Context cx, String id)
     {
-        if (bound instanceof XMLObject) {
-            XMLObject xmlObject = (XMLObject)bound;
-            xmlObject.ecmaPut(cx, id, value);
-        } else {
-            ScriptableObject.putConstProperty(bound, id, value);
-        }
+        ScriptableObject.putConstProperty(bound, id, value);
         return value;
     }
 
@@ -2409,15 +2286,7 @@ public class ScriptRuntime {
             if (value != Scriptable.NOT_FOUND) {
                 break;
             }
-            if (!(thisObj instanceof XMLObject)) {
-                break;
-            }
-            XMLObject xmlObject = (XMLObject)thisObj;
-            Scriptable extra = xmlObject.getExtraMethodSource(cx);
-            if (extra == null) {
-                break;
-            }
-            thisObj = extra;
+            break;
         }
         if (!(value instanceof Callable)) {
             throw notFunctionError(value, elem);
@@ -2474,15 +2343,7 @@ public class ScriptRuntime {
             if (value != Scriptable.NOT_FOUND) {
                 break;
             }
-            if (!(thisObj instanceof XMLObject)) {
-                break;
-            }
-            XMLObject xmlObject = (XMLObject)thisObj;
-            Scriptable extra = xmlObject.getExtraMethodSource(cx);
-            if (extra == null) {
-                break;
-            }
-            thisObj = extra;
+            break;
         }
 
         if (!(value instanceof Callable)) {
@@ -2748,8 +2609,6 @@ public class ScriptRuntime {
             {
                 return "undefined";
             }
-            if (value instanceof XMLObject)
-                return "xml";
             return (value instanceof Callable) ? "function" : "object";
         }
         if (value instanceof String)
@@ -2790,18 +2649,6 @@ public class ScriptRuntime {
         if(val1 instanceof Number && val2 instanceof Number) {
             return wrapNumber(((Number)val1).doubleValue() +
                               ((Number)val2).doubleValue());
-        }
-        if (val1 instanceof XMLObject) {
-            Object test = ((XMLObject)val1).addValues(cx, true, val2);
-            if (test != Scriptable.NOT_FOUND) {
-                return test;
-            }
-        }
-        if (val2 instanceof XMLObject) {
-            Object test = ((XMLObject)val2).addValues(cx, false, val1);
-            if (test != Scriptable.NOT_FOUND) {
-                return test;
-            }
         }
         if (val1 instanceof Scriptable)
             val1 = ((Scriptable) val1).getDefaultValue(null);
@@ -3323,7 +3170,6 @@ public class ScriptRuntime {
         } finally {
             cx.topCallScope = null;
             // Cleanup cached references
-            cx.cachedXMLLib = null;
 
             if (cx.currentActivationCall != null) {
                 // Function should always call exitActivationFunction
@@ -3570,10 +3416,6 @@ public class ScriptRuntime {
         if (sobj == null) {
             throw typeError1("msg.undef.with", toString(obj));
         }
-        if (sobj instanceof XMLObject) {
-            XMLObject xmlObject = (XMLObject)sobj;
-            return xmlObject.enterWith(scope);
-        }
         return new NativeWith(scope, sobj);
     }
 
@@ -3585,11 +3427,7 @@ public class ScriptRuntime {
 
     public static Scriptable enterDotQuery(Object value, Scriptable scope)
     {
-        if (!(value instanceof XMLObject)) {
             throw notXmlError(value);
-        }
-        XMLObject object = (XMLObject)value;
-        return object.enterDotQuery(scope);
     }
 
     public static Object updateDotQuery(boolean value, Scriptable scope)
@@ -4006,22 +3844,6 @@ public class ScriptRuntime {
         return result;
     }
 
-    private static XMLLib currentXMLLib(Context cx)
-    {
-        // Scripts should be running to access this
-        if (cx.topCallScope == null)
-            throw new IllegalStateException();
-
-        XMLLib xmlLib = cx.cachedXMLLib;
-        if (xmlLib == null) {
-            xmlLib = XMLLib.extractFromScope(cx.topCallScope);
-            if (xmlLib == null)
-                throw new IllegalStateException();
-            cx.cachedXMLLib = xmlLib;
-        }
-
-        return xmlLib;
-    }
 
     /**
      * Escapes the reserved characters in a value of an attribute
@@ -4031,8 +3853,8 @@ public class ScriptRuntime {
      */
     public static String escapeAttributeValue(Object value, Context cx)
     {
-        XMLLib xmlLib = currentXMLLib(cx);
-        return xmlLib.escapeAttributeValue(value);
+
+        return "";
     }
 
     /**
@@ -4043,42 +3865,31 @@ public class ScriptRuntime {
      */
     public static String escapeTextValue(Object value, Context cx)
     {
-        XMLLib xmlLib = currentXMLLib(cx);
-        return xmlLib.escapeTextValue(value);
+        return "";
     }
 
     public static Ref memberRef(Object obj, Object elem,
                                 Context cx, int memberTypeFlags)
     {
-        if (!(obj instanceof XMLObject)) {
             throw notXmlError(obj);
-        }
-        XMLObject xmlObject = (XMLObject)obj;
-        return xmlObject.memberRef(cx, elem, memberTypeFlags);
     }
 
     public static Ref memberRef(Object obj, Object namespace, Object elem,
                                 Context cx, int memberTypeFlags)
     {
-        if (!(obj instanceof XMLObject)) {
-            throw notXmlError(obj);
-        }
-        XMLObject xmlObject = (XMLObject)obj;
-        return xmlObject.memberRef(cx, namespace, elem, memberTypeFlags);
+        throw notXmlError(obj);
     }
 
     public static Ref nameRef(Object name, Context cx,
                               Scriptable scope, int memberTypeFlags)
     {
-        XMLLib xmlLib = currentXMLLib(cx);
-        return xmlLib.nameRef(cx, name, scope, memberTypeFlags);
+        return null;
     }
 
     public static Ref nameRef(Object namespace, Object name, Context cx,
                               Scriptable scope, int memberTypeFlags)
     {
-        XMLLib xmlLib = currentXMLLib(cx);
-        return xmlLib.nameRef(cx, namespace, name, scope, memberTypeFlags);
+        return null;
     }
 
     private static void storeIndexResult(Context cx, int index)

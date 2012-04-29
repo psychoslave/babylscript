@@ -42,7 +42,6 @@ package org.mozilla.javascript;
 
 import java.io.Serializable;
 import org.apache.harmony.Character;
-import org.mozilla.javascript.xml.XMLLib;
 
 /**
  * This class implements the global native object (function and value
@@ -214,11 +213,7 @@ public class NativeGlobal implements Serializable, IdFunctionCall
                 }
 
                 case Id_isXMLName: {
-                    Object name = (args.length == 0)
-                                  ? Undefined.instance : args[0];
-                    XMLLib xmlLib = XMLLib.extractFromScope(scope);
-                    return ScriptRuntime.wrapBoolean(
-                        xmlLib.isXMLName(cx, name));
+                    return ScriptRuntime.wrapBoolean(false);
                 }
 
                 case Id_parseFloat:

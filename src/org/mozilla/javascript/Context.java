@@ -59,7 +59,6 @@ import java.util.HashSet;
 import org.mozilla.javascript.babylscript.CustomTokenizerConfig;
 import org.mozilla.javascript.debug.DebuggableScript;
 import org.mozilla.javascript.debug.Debugger;
-import org.mozilla.javascript.xml.XMLLib;
 import org.apache.harmony.Locale;
 
 /**
@@ -2179,9 +2178,6 @@ public class Context
 		@return An XMLLib.Factory.  Should not return <code>null</code> if
 			{@link #FEATURE_E4X} is enabled.  See {@link #hasFeature}.
 	 */
-	public XMLLib.Factory getE4xImplementationFactory() {
-		return getFactory().getE4xImplementationFactory();
-	}
 
     /**
      * Get threshold of executed instructions counter that triggers call to
@@ -2606,7 +2602,6 @@ public class Context
     Scriptable topCallScope;
     boolean isContinuationsTopCall;
     NativeCall currentActivationCall;
-    XMLLib cachedXMLLib;
 
     // for Objects, Arrays to tag themselves as being printed out,
     // so they don't print themselves out recursively.
