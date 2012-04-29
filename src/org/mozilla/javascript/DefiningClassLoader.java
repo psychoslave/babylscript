@@ -59,8 +59,8 @@ public class DefiningClassLoader extends ClassLoader
         // Use our own protection domain for the generated classes.
         // TODO: we might want to use a separate protection domain for classes
         // compiled from scripts, based on where the script was loaded from.
-        return super.defineClass(name, data, 0, data.length, 
-                SecurityUtilities.getProtectionDomain(getClass()));
+        return super.defineClass(name, data, 0, data.length, null);
+//                SecurityUtilities.getProtectionDomain(getClass()));
     }
 
     public void linkClass(Class<?> cl) {

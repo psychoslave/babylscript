@@ -237,14 +237,14 @@ public final class Locale implements Cloneable, Serializable {
      * @return a shallow copy of this {@code Locale}.
      * @see java.lang.Cloneable
      */
-    @Override
-    public Object clone() {
-        try {
-            return super.clone();
-        } catch (CloneNotSupportedException e) {
-            return null;
-        }
-    }
+//    @Override
+//    public Object clone() {
+//        try {
+//            return super.clone();
+//        } catch (CloneNotSupportedException e) {
+//            return null;
+//        }
+//    }
 
     /**
      * Compares the specified object to this {@code Locale} and returns whether they are
@@ -549,26 +549,26 @@ public final class Locale implements Cloneable, Serializable {
         return result.toString();
     }
 
-    private static final ObjectStreamField[] serialPersistentFields = {
-            new ObjectStreamField("country", String.class), //$NON-NLS-1$
-            new ObjectStreamField("hashcode", Integer.TYPE), //$NON-NLS-1$
-            new ObjectStreamField("language", String.class), //$NON-NLS-1$
-            new ObjectStreamField("variant", String.class) }; //$NON-NLS-1$
-
-    private void writeObject(ObjectOutputStream stream) throws IOException {
-        ObjectOutputStream.PutField fields = stream.putFields();
-        fields.put("country", countryCode); //$NON-NLS-1$
-        fields.put("hashcode", -1); //$NON-NLS-1$
-        fields.put("language", languageCode); //$NON-NLS-1$
-        fields.put("variant", variantCode); //$NON-NLS-1$
-        stream.writeFields();
-    }
-
-    private void readObject(ObjectInputStream stream) throws IOException,
-            ClassNotFoundException {
-        ObjectInputStream.GetField fields = stream.readFields();
-        countryCode = (String) fields.get("country", ""); //$NON-NLS-1$//$NON-NLS-2$
-        languageCode = (String) fields.get("language", ""); //$NON-NLS-1$//$NON-NLS-2$
-        variantCode = (String) fields.get("variant", ""); //$NON-NLS-1$//$NON-NLS-2$
-    }
+//    private static final ObjectStreamField[] serialPersistentFields = {
+//            new ObjectStreamField("country", String.class), //$NON-NLS-1$
+//            new ObjectStreamField("hashcode", Integer.TYPE), //$NON-NLS-1$
+//            new ObjectStreamField("language", String.class), //$NON-NLS-1$
+//            new ObjectStreamField("variant", String.class) }; //$NON-NLS-1$
+//
+//    private void writeObject(ObjectOutputStream stream) throws IOException {
+//        ObjectOutputStream.PutField fields = stream.putFields();
+//        fields.put("country", countryCode); //$NON-NLS-1$
+//        fields.put("hashcode", -1); //$NON-NLS-1$
+//        fields.put("language", languageCode); //$NON-NLS-1$
+//        fields.put("variant", variantCode); //$NON-NLS-1$
+//        stream.writeFields();
+//    }
+//
+//    private void readObject(ObjectInputStream stream) throws IOException,
+//            ClassNotFoundException {
+//        ObjectInputStream.GetField fields = stream.readFields();
+//        countryCode = (String) fields.get("country", ""); //$NON-NLS-1$//$NON-NLS-2$
+//        languageCode = (String) fields.get("language", ""); //$NON-NLS-1$//$NON-NLS-2$
+//        variantCode = (String) fields.get("variant", ""); //$NON-NLS-1$//$NON-NLS-2$
+//    }
 }

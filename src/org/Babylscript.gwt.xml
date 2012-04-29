@@ -16,11 +16,11 @@
   <entry-point class='org.mozilla.javascript.gwt.Test'/>
 
   <!-- Specify the paths for translatable code                    -->
-  <source path='org/mozilla/javascript'/>
-  <source path='org/mozilla/javascript/jdk15'/>
-  <source path='org/mozilla/javascript/gwt'/>
-  <source path='org/mozilla/javascript/babylscript'/>
-  <source path='org/mozilla/javascript/babylscript/resources'/>
-  <source path='org/apache/harmony'/>
+  <source path='mozilla/javascript'/>
+  <source path='mozilla/javascript/jdk15'/>
+  <source path='mozilla/javascript/gwt'/>
+  <source path='mozilla/javascript/babylscript'/>
+  <source path='mozilla/javascript/babylscript/resources'/>
+  <source path='apache/harmony'/>    
 
 </module>

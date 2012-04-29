@@ -56,25 +56,26 @@ public class SecurityUtilities
      */
     public static String getSystemProperty(final String name)
     {
-        return (String)AccessController.doPrivileged(
-            new PrivilegedAction<Object>()
-            {
-                public Object run()
-                {
-                    return System.getProperty(name);
-                }
-            });
+        return System.getProperty(name);
+//        return (String)AccessController.doPrivileged(
+//            new PrivilegedAction<Object>()
+//            {
+//                public Object run()
+//                {
+//                    return System.getProperty(name);
+//                }
+//            });
     }
     
-    public static ProtectionDomain getProtectionDomain(final Class<?> clazz)
-    {
-        return (ProtectionDomain)AccessController.doPrivileged(
-                new PrivilegedAction<Object>()
-                {
-                    public Object run()
-                    {
-                        return clazz.getProtectionDomain();
-                    }
-                });
-    }
+//    public static ProtectionDomain getProtectionDomain(final Class<?> clazz)
+//    {
+//        return (ProtectionDomain)AccessController.doPrivileged(
+//                new PrivilegedAction<Object>()
+//                {
+//                    public Object run()
+//                    {
+//                        return clazz.getProtectionDomain();
+//                    }
+//                });
+//    }
 }
