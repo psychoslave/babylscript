@@ -1292,13 +1292,13 @@ public class Context
      * @see #compileReader(Reader in, String sourceName, int lineno,
      *                     Object securityDomain)
      */
-    public final Script compileReader(Scriptable scope, Reader in,
-                                      String sourceName, int lineno,
-                                      Object securityDomain)
-        throws IOException
-    {
-        return compileReader(in, sourceName, lineno, securityDomain);
-    }
+//    public final Script compileReader(Scriptable scope, Reader in,
+//                                      String sourceName, int lineno,
+//                                      Object securityDomain)
+//        throws IOException
+//    {
+//        return compileReader(in, sourceName, lineno, securityDomain);
+//    }
 
     /**
      * Compiles the source in the given reader.
@@ -1972,7 +1972,7 @@ public class Context
         if (sealed) onSealedMutation();
         if (shutter == null) throw new IllegalArgumentException();
         if (classShutter != null) {
-            throw new SecurityException("Cannot overwrite existing " +
+            throw new RuntimeException("Cannot overwrite existing " +
                                         "ClassShutter object");
         }
         classShutter = shutter;

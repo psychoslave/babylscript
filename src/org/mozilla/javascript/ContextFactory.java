@@ -146,7 +146,6 @@ public class ContextFactory
     private final Object listenersLock = new Object();
     private volatile Object listeners;
     private boolean disabledListening;
-    private ClassLoader applicationClassLoader;
 
     /**
      * Listener of {@link Context} creation and release events.
@@ -293,18 +292,18 @@ public class ContextFactory
         throw new IllegalArgumentException(String.valueOf(featureIndex));
     }
 
-    private boolean isDom3Present() {
-        Class<?> nodeClass = Kit.classOrNull("org.w3c.dom.Node");
-        if (nodeClass == null) return false;
-        // Check to see whether DOM3 is present; use a new method defined in
-        // DOM3 that is vital to our implementation
-        try {
-            nodeClass.getMethod("getUserData", new Class<?>[] { String.class });
-            return true;
-        } catch (NoSuchMethodException e) {
-            return false;
-        }
-    }
+//    private boolean isDom3Present() {
+//        Class<?> nodeClass = Kit.classOrNull("org.w3c.dom.Node");
+//        if (nodeClass == null) return false;
+//        // Check to see whether DOM3 is present; use a new method defined in
+//        // DOM3 that is vital to our implementation
+//        try {
+//            nodeClass.getMethod("getUserData", new Class<?>[] { String.class });
+//            return true;
+//        } catch (NoSuchMethodException e) {
+//            return false;
+//        }
+//    }
 
 
 
@@ -329,29 +328,9 @@ public class ContextFactory
      */
     public final ClassLoader getApplicationClassLoader()
     {
-        return applicationClassLoader;
+        return null;
     }
 
-    /**
-     * Set explicit class loader to use when searching for Java classes.
-     *
-     * @see #getApplicationClassLoader()
-     */
-    public final void initApplicationClassLoader(ClassLoader loader)
-    {
-        if (loader == null)
-            throw new IllegalArgumentException("loader is null");
-        if (!Kit.testIfCanLoadRhinoClasses(loader))
-            throw new IllegalArgumentException(
-                "Loader can not resolve Rhino classes");
-
-        if (this.applicationClassLoader != null)
-            throw new IllegalStateException(
-                "applicationClassLoader can only be set once");
-        checkNotSealed();
-
-        this.applicationClassLoader = loader;
-    }
 
     /**
      * Execute top call to script or function.
