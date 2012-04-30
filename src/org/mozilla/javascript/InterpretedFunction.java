@@ -47,7 +47,7 @@ public final class InterpretedFunction extends NativeFunction implements Script
     static final long serialVersionUID = 541475680333911468L;
 
     InterpreterData idata;
-    SecurityController securityController;
+//    SecurityController securityController;
     Object securityDomain;
     Scriptable[] functionRegExps;
 
@@ -78,7 +78,7 @@ public final class InterpretedFunction extends NativeFunction implements Script
     private InterpretedFunction(InterpretedFunction parent, int index)
     {
         this.idata = parent.idata.itsNestedFunctions[index];
-        this.securityController = parent.securityController;
+//        this.securityController = parent.securityController;
         this.securityDomain = parent.securityDomain;
     }
 

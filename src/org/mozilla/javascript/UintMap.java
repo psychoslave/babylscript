@@ -53,7 +53,7 @@ import java.io.ObjectOutputStream;
  *
  */
 
-public class UintMap implements Serializable
+public class UintMap 
 {
     static final long serialVersionUID = 4242698212885848444L;
 
@@ -368,71 +368,71 @@ public class UintMap implements Serializable
         return index;
     }
 
-    private void writeObject(ObjectOutputStream out)
-        throws IOException
-    {
-        out.defaultWriteObject();
-
-        int count = keyCount;
-        if (count != 0) {
-            boolean hasIntValues = (ivaluesShift != 0);
-            boolean hasObjectValues = (values != null);
-            out.writeBoolean(hasIntValues);
-            out.writeBoolean(hasObjectValues);
-
-            for (int i = 0; count != 0; ++i) {
-                int key = keys[i];
-                if (key != EMPTY && key != DELETED) {
-                    --count;
-                    out.writeInt(key);
-                    if (hasIntValues) {
-                        out.writeInt(keys[ivaluesShift + i]);
-                    }
-                    if (hasObjectValues) {
-                        out.writeObject(values[i]);
-                    }
-                }
-            }
-        }
-    }
-
-    private void readObject(ObjectInputStream in)
-        throws IOException, ClassNotFoundException
-    {
-        in.defaultReadObject();
-
-        int writtenKeyCount = keyCount;
-        if (writtenKeyCount != 0) {
-            keyCount = 0;
-            boolean hasIntValues = in.readBoolean();
-            boolean hasObjectValues = in.readBoolean();
-
-            int N = 1 << power;
-            if (hasIntValues) {
-                keys = new int[2 * N];
-                ivaluesShift = N;
-            }else {
-                keys = new int[N];
-            }
-            for (int i = 0; i != N; ++i) {
-                keys[i] = EMPTY;
-            }
-            if (hasObjectValues) {
-                values = new Object[N];
-            }
-            for (int i = 0; i != writtenKeyCount; ++i) {
-                int key = in.readInt();
-                int index = insertNewKey(key);
-                if (hasIntValues) {
-                    int ivalue = in.readInt();
-                    keys[ivaluesShift + index] = ivalue;
-                }
-                if (hasObjectValues) {
-                    values[index] = in.readObject();
-                }
-            }
-        }
-    }
+//    private void writeObject(ObjectOutputStream out)
+//        throws IOException
+//    {
+//        out.defaultWriteObject();
+//
+//        int count = keyCount;
+//        if (count != 0) {
+//            boolean hasIntValues = (ivaluesShift != 0);
+//            boolean hasObjectValues = (values != null);
+//            out.writeBoolean(hasIntValues);
+//            out.writeBoolean(hasObjectValues);
+//
+//            for (int i = 0; count != 0; ++i) {
+//                int key = keys[i];
+//                if (key != EMPTY && key != DELETED) {
+//                    --count;
+//                    out.writeInt(key);
+//                    if (hasIntValues) {
+//                        out.writeInt(keys[ivaluesShift + i]);
+//                    }
+//                    if (hasObjectValues) {
+//                        out.writeObject(values[i]);
+//                    }
+//                }
+//            }
+//        }
+//    }
+//
+//    private void readObject(ObjectInputStream in)
+//        throws IOException, ClassNotFoundException
+//    {
+//        in.defaultReadObject();
+//
+//        int writtenKeyCount = keyCount;
+//        if (writtenKeyCount != 0) {
+//            keyCount = 0;
+//            boolean hasIntValues = in.readBoolean();
+//            boolean hasObjectValues = in.readBoolean();
+//
+//            int N = 1 << power;
+//            if (hasIntValues) {
+//                keys = new int[2 * N];
+//                ivaluesShift = N;
+//            }else {
+//                keys = new int[N];
+//            }
+//            for (int i = 0; i != N; ++i) {
+//                keys[i] = EMPTY;
+//            }
+//            if (hasObjectValues) {
+//                values = new Object[N];
+//            }
+//            for (int i = 0; i != writtenKeyCount; ++i) {
+//                int key = in.readInt();
+//                int index = insertNewKey(key);
+//                if (hasIntValues) {
+//                    int ivalue = in.readInt();
+//                    keys[ivaluesShift + index] = ivalue;
+//                }
+//                if (hasObjectValues) {
+//                    values[index] = in.readObject();
+//                }
+//            }
+//        }
+//    }
 
 // A == golden_ratio * (1 << 32) = ((sqrt(5) - 1) / 2) * (1 << 32)
 // See Knuth etc.

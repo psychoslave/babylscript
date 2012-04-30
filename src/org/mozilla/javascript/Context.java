@@ -1947,18 +1947,18 @@ public class Context
      * @see SecurityController#initGlobal(SecurityController controller)
      * @see SecurityController#hasGlobal()
      */
-    public final void setSecurityController(SecurityController controller)
-    {
-        if (sealed) onSealedMutation();
-        if (controller == null) throw new IllegalArgumentException();
-        if (securityController != null) {
-//            throw new SecurityException("Can not overwrite existing SecurityController object");
-        }
-        if (SecurityController.hasGlobal()) {
-//            throw new SecurityException("Can not overwrite existing global SecurityController object");
-        }
-        securityController = controller;
-    }
+//    public final void setSecurityController(SecurityController controller)
+//    {
+//        if (sealed) onSealedMutation();
+//        if (controller == null) throw new IllegalArgumentException();
+//        if (securityController != null) {
+////            throw new SecurityException("Can not overwrite existing SecurityController object");
+//        }
+//        if (SecurityController.hasGlobal()) {
+////            throw new SecurityException("Can not overwrite existing global SecurityController object");
+//        }
+//        securityController = controller;
+//    }
 
     /**
      * Set the LiveConnect access filter for this context.
@@ -2362,10 +2362,10 @@ public class Context
         if(sourceName == null) {
             sourceName = "unnamed script";
         }
-        if (securityDomain != null && getSecurityController() == null) {
-            throw new IllegalArgumentException(
-                "securityDomain should be null if setSecurityController() was never called");
-        }
+//        if (securityDomain != null && getSecurityController() == null) {
+//            throw new IllegalArgumentException(
+//                "securityDomain should be null if setSecurityController() was never called");
+//        }
 
         // scope should be given if and only if compiling function
         if (!(scope == null ^ returnFunction)) Kit.codeBug();
@@ -2526,14 +2526,14 @@ public class Context
     }
 
 // The method must NOT be public or protected
-    SecurityController getSecurityController()
-    {
-        SecurityController global = SecurityController.global();
-        if (global != null) {
-            return global;
-        }
-        return securityController;
-    }
+//    SecurityController getSecurityController()
+//    {
+//        SecurityController global = SecurityController.global();
+//        if (global != null) {
+//            return global;
+//        }
+//        return securityController;
+//    }
 
     public final boolean isGeneratingDebugChanged()
     {
@@ -2599,7 +2599,7 @@ public class Context
 
     int version;
 
-    private SecurityController securityController;
+//    private SecurityController securityController;
     private ClassShutter classShutter;
     private ErrorReporter errorReporter;
     RegExpProxy regExpProxy;
