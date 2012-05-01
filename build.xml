@@ -201,6 +201,25 @@
 	</jar>
   </target>
 
+  <target name="babylgwt" depends="init">
+  	<mkdir dir="${build.dir}/gwtclasses"/>
+  	<javac destdir="${build.dir}/gwtclasses" srcdir="src"
+  		encoding="UTF-8">
+ 	  <classpath >
+  	    <path path="${gwtdir}/gwt-user.jar"/>
+  	    <path path="${gwtdir}/gwt-dev.jar"/>
+	  </classpath>
+  	  <include name="org/**/*.java"/>
+  	</javac>
+    <jar destfile="${dist.dir}/babylscriptgwt.jar">
+	  <zipfileset dir="src" >
+	  </zipfileset>
+  	  <zipfileset dir="${build.dir}/gwtclasses" >
+  	  </zipfileset>
+    	
+  	</jar>
+  </target>
+	
   <target name="babylpkg" depends="babylscriptrun">
 	<tstamp>
 		<format property="DSTAMP" pattern="yyyy-MM-dd"/>
@@ -336,6 +355,8 @@
   <target name="help" depends="properties">
 <echo>The following targets are available with this build file:
 
+ babylgwt    packages up Babylscript as a gwt module .jar file
+	
 babylscriptrun  creates a simple command-line tool for running 
 	            Babylscript programs
 
