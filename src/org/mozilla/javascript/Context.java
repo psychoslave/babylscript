@@ -2638,6 +2638,24 @@ public class Context
     int instructionCount;
     int instructionThreshold;
 
+    // For cooperative multithreading
+    final static int TIMESLICE_NONE = 20000;
+    int timeSliceSize = TIMESLICE_NONE;
+    int timeSliceUsed = 0;
+    public static class TimeSliceExpiredClass {
+        String stringReg;
+        String langStringReg;
+        int indexReg;
+        public TimeSliceExpiredClass(String stringReg, String langStringReg, int indexReg)
+        {
+            this.stringReg = stringReg; this.langStringReg = langStringReg; this.indexReg = indexReg;
+        }
+    }
+    public void setTimeSliceSize(int size) {
+        if (size == TIMESLICE_NONE) size = TIMESLICE_NONE - 1;
+        timeSliceSize = size;
+    }
+    
     // It can be used to return the second index-like result from function
     int scratchIndex;
 

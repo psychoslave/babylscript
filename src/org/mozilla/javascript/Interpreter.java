@@ -2780,13 +2780,27 @@ public class Interpreter implements Evaluator
             withoutExceptions: try {
 
                 if (throwable != null) {
-                    // Need to return both 'frame' and 'throwable' from
-                    // 'processThrowable', so just added a 'throwable'
-                    // member in 'frame'.
-                    frame = processThrowable(cx, throwable, frame, indexReg,
-                                             instructionCounting);
-                    throwable = frame.throwable;
-                    frame.throwable = null;
+                    if (throwable instanceof ContinuationJump) {
+                        ContinuationJump cj = (ContinuationJump)throwable;
+                        frame = processContinuationRestore(cx, throwable, frame);
+                        throwable = frame.throwable;
+                        frame.throwable = null;
+                        if (cj.result instanceof Context.TimeSliceExpiredClass)
+                        {
+                            Context.TimeSliceExpiredClass localStateRestore = (Context.TimeSliceExpiredClass)cj.result;
+                            stringReg = localStateRestore.stringReg;
+                            langStringReg = localStateRestore.langStringReg;
+                            indexReg = localStateRestore.indexReg;
+                        }
+                    } else {
+                        // Need to return both 'frame' and 'throwable' from
+                        // 'processThrowable', so just added a 'throwable'
+                        // member in 'frame'.
+                        frame = processThrowable(cx, throwable, frame, indexReg,
+                                                 instructionCounting);
+                        throwable = frame.throwable;
+                        frame.throwable = null;
+                    }
                 } else {
                     if (generatorState == null && frame.frozen) Kit.codeBug();
                 }
@@ -2811,7 +2825,12 @@ public class Interpreter implements Evaluator
                 cx.lastInterpreterFrame = frame;
 
                 Loop: for (;;) {
-
+                    // This is sort of heavy-weight, but whatever. Here, I'll 
+                    // increment the instruction count and see if we've 
+                    // exceeded the time slice, meaning we should trigger
+                    // a continuation to do cooperative multithreading
+                    useTimeSlice(cx, frame, stringReg, langStringReg, indexReg, stackTop);
+                    
                     // Exception handler assumes that PC is already incremented
                     // pass the instruction start when it searches the
                     // exception handler
@@ -4127,6 +4146,12 @@ switch (op) {
             } else if (throwable instanceof EvaluatorException) {
                 exState = EX_CATCH_STATE;
             } else if (throwable instanceof RuntimeException) {
+                if (throwable instanceof ContinuationPending
+                        && ((ContinuationPending)throwable).getApplicationState() instanceof Context.TimeSliceExpiredClass) {
+                    // If we're using continuations for time slicing, then don't
+                    // let any JavaScript code run. Just fall right out
+                    exState = EX_NO_JS_STATE; 
+                }
                 exState = cx.hasFeature(Context.FEATURE_ENHANCED_JAVA_ACCESS)
                           ? EX_CATCH_STATE
                           : EX_FINALLY_STATE;
@@ -4356,68 +4381,79 @@ switch (op) {
             frame.stack[exLocal] = throwable;
 
             throwable = null;
+            frame.throwable = throwable;
+            return frame;
         } else {
-            // Continuation restoration
-            ContinuationJump cjump = (ContinuationJump)throwable;
-
-            // Clear throwable to indicate that exceptions are OK
-            throwable = null;
-
-            if (cjump.branchFrame != frame) Kit.codeBug();
-
-            // Check that we have at least one frozen frame
-            // in the case of detached continuation restoration:
-            // unwind code ensure that
-            if (cjump.capturedFrame == null) Kit.codeBug();
-
-            // Need to rewind branchFrame, capturedFrame
-            // and all frames in between
-            int rewindCount = cjump.capturedFrame.frameIndex + 1;
-            if (cjump.branchFrame != null) {
-                rewindCount -= cjump.branchFrame.frameIndex;
-            }
-
-            int enterCount = 0;
-            CallFrame[] enterFrames = null;
-
-            CallFrame x = cjump.capturedFrame;
-            for (int i = 0; i != rewindCount; ++i) {
-                if (!x.frozen) Kit.codeBug();
-                if (isFrameEnterExitRequired(x)) {
-                    if (enterFrames == null) {
-                        // Allocate enough space to store the rest
-                        // of rewind frames in case all of them
-                        // would require to enter
-                        enterFrames = new CallFrame[rewindCount
-                                                    - i];
-                    }
-                    enterFrames[enterCount] = x;
-                    ++enterCount;
-                }
-                x = x.parentFrame;
-            }
-
-            while (enterCount != 0) {
-                // execute enter: walk enterFrames in the reverse
-                // order since they were stored starting from
-                // the capturedFrame, not branchFrame
-                --enterCount;
-                x = enterFrames[enterCount];
-                enterFrame(cx, x, ScriptRuntime.emptyArgs, true);
-            }
-
-            // Continuation jump is almost done: capturedFrame
-            // points to the call to the function that captured
-            // continuation, so clone capturedFrame and
-            // emulate return that function with the suplied result
-            frame = cjump.capturedFrame.cloneFrozen();
-            setCallResult(frame, cjump.result, cjump.resultDbl);
-            // restart the execution
+            return processContinuationRestore(cx, throwable, frame);
         }
+    }
+
+    private static CallFrame processContinuationRestore(Context cx,
+            Object throwable, CallFrame frame)
+    {
+        // Continuation restoration
+        ContinuationJump cjump = (ContinuationJump)throwable;
+
+        // Clear throwable to indicate that exceptions are OK
+        throwable = null;
+
+        if (cjump.branchFrame != frame) Kit.codeBug();
+
+        // Check that we have at least one frozen frame
+        // in the case of detached continuation restoration:
+        // unwind code ensure that
+        if (cjump.capturedFrame == null) Kit.codeBug();
+
+        // Need to rewind branchFrame, capturedFrame
+        // and all frames in between
+        int rewindCount = cjump.capturedFrame.frameIndex + 1;
+        if (cjump.branchFrame != null) {
+            rewindCount -= cjump.branchFrame.frameIndex;
+        }
+
+        int enterCount = 0;
+        CallFrame[] enterFrames = null;
+
+        CallFrame x = cjump.capturedFrame;
+        for (int i = 0; i != rewindCount; ++i) {
+            if (!x.frozen) Kit.codeBug();
+            if (isFrameEnterExitRequired(x)) {
+                if (enterFrames == null) {
+                    // Allocate enough space to store the rest
+                    // of rewind frames in case all of them
+                    // would require to enter
+                    enterFrames = new CallFrame[rewindCount
+                                                - i];
+                }
+                enterFrames[enterCount] = x;
+                ++enterCount;
+            }
+            x = x.parentFrame;
+        }
+
+        while (enterCount != 0) {
+            // execute enter: walk enterFrames in the reverse
+            // order since they were stored starting from
+            // the capturedFrame, not branchFrame
+            --enterCount;
+            x = enterFrames[enterCount];
+            enterFrame(cx, x, ScriptRuntime.emptyArgs, true);
+        }
+
+        // Continuation jump is almost done: capturedFrame
+        // points to the call to the function that captured
+        // continuation, so clone capturedFrame and
+        // emulate return that function with the suplied result
+        frame = cjump.capturedFrame.cloneFrozen();
+        if (frame.savedCallOp != Token.EOL)
+            setCallResult(frame, cjump.result, cjump.resultDbl);
+        // restart the execution
         frame.throwable = throwable;
         return frame;
     }
 
+    
+    
     private static Object freezeGenerator(Context cx, CallFrame frame,
                                           int stackTop,
                                           GeneratorState generatorState)
@@ -4807,17 +4843,22 @@ switch (op) {
                 x.stack[i] = null;
                 x.stackAttributes[i] = ScriptableObject.EMPTY;
             }
+            outermost = x;
             if (x.savedCallOp == Token.CALL) {
                 // the call will always overwrite the stack top with the result
                 x.stack[x.savedStackTop] = null;
+                x = x.parentFrame;
+            } else if (x.savedCallOp == Token.EOL) {
+                // We're using continuations to do cooperative multithreading, so
+                // we want to resume exactly where we left off and not
+                // unwind the top of the stack
             } else {
                 if (x.savedCallOp != Token.NEW) Kit.codeBug();
                 // the new operator uses stack top to store the constructed
                 // object so it shall not be cleared: see comments in
                 // setCallResult
+                x = x.parentFrame;
             }
-            outermost = x;
-            x = x.parentFrame;
         }
         
         if (requireContinuationsTopFrame) {
@@ -4964,6 +5005,30 @@ switch (op) {
         return args;
     }
 
+    final private static void useTimeSlice(Context cx, CallFrame frame, String stringReg, String langStringReg, int indexReg, int stackTop)
+    {
+        System.out.println(frame.pc);
+        cx.timeSliceUsed++;
+        if (cx.timeSliceUsed >= cx.timeSliceSize)
+        {
+            cx.timeSliceUsed = 0;
+            if (cx.timeSliceSize != Context.TIMESLICE_NONE)
+            {
+                frame.savedCallOp = Token.EOL;  
+                frame.savedStackTop = stackTop;
+                cx.lastInterpreterFrame = frame;
+                ContinuationPending pending = cx.captureContinuation();
+                pending.setApplicationState(new Context.TimeSliceExpiredClass(stringReg, langStringReg, indexReg));
+                // This isn't a real continuation (i.e. it is not invoked though
+                // a function call), but we're reusing the mechanism to do
+                // cooperative multithreading. So we need to set some
+                // indicator to show that when resuming the continuation
+                // we're not in the context of a function call.
+                throw pending;
+            }
+        }
+    }
+    
     private static void addInstructionCount(Context cx, CallFrame frame,
                                             int extra)
     {

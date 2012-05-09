@@ -173,7 +173,7 @@ public class Test implements EntryPoint
 //            }
 //             tree;
 //            String sourceString = "22 + 23; alert('hi'); continuationTest()";
-            String sourceString = "22 + 23; result = sleep(5000); alert(result);";
+            String sourceString = "for (n = 0; n < 100; n++) if ((n % 10) == 9) alert(n);";
             int lineno = 0;
             String sourceName = "hey";
             if (sourceString != null) {
@@ -188,13 +188,17 @@ public class Test implements EntryPoint
 
                 InterpretedFunction resultScript;
                 resultScript = (InterpretedFunction) compiler.createScriptObject(bytecode, null);
+                cx.setTimeSliceSize(10);
                 try {
                     result = "" + cx.executeScriptWithContinuations(resultScript, scope);
                 } catch (ContinuationPending pending) {
                     if (pending.getApplicationState() instanceof AsynchronousToBlockingFunction)
                     {
                         restartContinuationInTimer(pending);
-
+                    }
+                    else if (pending.getApplicationState() instanceof Context.TimeSliceExpiredClass)
+                    {
+                        restartTimeSliceInTimer(pending);
                     }
                     else
                         result = "" + cx.resumeContinuation(pending.getContinuation(), scope, 5);
@@ -224,6 +228,24 @@ public class Test implements EntryPoint
         
         Element el = Document.get().getElementById("fillin");
         el.setInnerHTML(result);
+    }
+
+    void restartTimeSliceInTimer(final ContinuationPending pending)
+    {
+        System.out.println("===");
+        Timer t = new Timer() {
+            public void run() {
+                try {
+                    cx.resumeContinuation(pending.getContinuation(), scope, pending.getApplicationState());
+                } catch (ContinuationPending pending) {
+                    if (pending.getApplicationState() instanceof Context.TimeSliceExpiredClass)
+                    {
+                        restartTimeSliceInTimer(pending);
+                    }
+                }
+            }
+        };
+        t.schedule(1);
     }
 
     void restartContinuationInTimer(final ContinuationPending pending)
