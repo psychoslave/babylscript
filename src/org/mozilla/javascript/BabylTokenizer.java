@@ -602,6 +602,8 @@ public class BabylTokenizer
         languageModeCodes.put("\u0939\u093f", TokenStream.LanguageMode.hi);
         languageModeCodes.put("ja", TokenStream.LanguageMode.ja);
         languageModeCodes.put("\u65e5\u672c\u8a9e", TokenStream.LanguageMode.ja);
+        languageModeCodes.put("ru", TokenStream.LanguageMode.ru);
+        languageModeCodes.put("\u0420\u0443", TokenStream.LanguageMode.ru);
     }
     
     private int scanLanguageMode() throws IOException
