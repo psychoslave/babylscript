@@ -41,8 +41,8 @@ public class TranslatedNameBindings
         EquivalentLanguageNames.put("ja", new String[] {"ja", "\u65e5\u672c\u8a9e"});
         EquivalentLanguageNames.put("\u65e5\u672c\u8a9e", new String[] {"ja", "\u65e5\u672c\u8a9e"});
 
-        EquivalentLanguageNames.put("ru", new String[] {"ru", "\u0420\u0443"});
-        EquivalentLanguageNames.put("\u0420\u0443", new String[] {"ru", "\u0420\u0443"});
+        EquivalentLanguageNames.put("ru", new String[] {"ru", "\u0440\u0443"});
+        EquivalentLanguageNames.put("\u0440\u0443", new String[] {"ru", "\u0440\u0443"});
 
         EquivalentLanguageNames = Collections.unmodifiableMap(EquivalentLanguageNames);
     }
