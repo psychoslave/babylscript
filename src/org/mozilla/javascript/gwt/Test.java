@@ -45,7 +45,7 @@ public class Test implements EntryPoint
         public Object call(Context cx, Scriptable scope, Scriptable thisObj, Object[] args)
         {
             System.out.println("enter continuation");
-            ContinuationPending pending = cx.captureContinuation();
+            ContinuationPending pending = cx.captureSystemContinuation();
             throw pending;
         }
     }
@@ -92,7 +92,7 @@ public class Test implements EntryPoint
             startCall(savedCx, savedScope, savedThisObj, savedArgs);
             if (!isCallDone()) 
             {
-                ContinuationPending pending = cx.captureContinuation();
+                ContinuationPending pending = cx.captureSystemContinuation();
                 pending.setApplicationState(this);
                 throw pending;
             }
@@ -232,7 +232,6 @@ public class Test implements EntryPoint
 
     void restartTimeSliceInTimer(final ContinuationPending pending)
     {
-        System.out.println("===");
         Timer t = new Timer() {
             public void run() {
                 try {

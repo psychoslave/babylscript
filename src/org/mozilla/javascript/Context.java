@@ -1223,6 +1223,11 @@ public class Context
                 Interpreter.captureContinuation(this));
     }
     
+    public ContinuationPending captureSystemContinuation() {
+        return new ContinuationPending(
+                Interpreter.captureContinuation(this), true);
+    }
+    
     /**
      * Restarts execution of the JavaScript suspended at the call
      * to {@link #captureContinuation()}. Execution of the code will resume

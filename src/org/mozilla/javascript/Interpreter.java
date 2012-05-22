@@ -4147,11 +4147,12 @@ switch (op) {
                 exState = EX_CATCH_STATE;
             } else if (throwable instanceof RuntimeException) {
                 if (throwable instanceof ContinuationPending
-                        && ((ContinuationPending)throwable).getApplicationState() instanceof Context.TimeSliceExpiredClass) {
+                        && ((ContinuationPending)throwable).isSystemContinuation()) {
                     // If we're using continuations for time slicing, then don't
                     // let any JavaScript code run. Just fall right out
                     exState = EX_NO_JS_STATE; 
                 }
+
                 exState = cx.hasFeature(Context.FEATURE_ENHANCED_JAVA_ACCESS)
                           ? EX_CATCH_STATE
                           : EX_FINALLY_STATE;
@@ -5007,7 +5008,6 @@ switch (op) {
 
     final private static void useTimeSlice(Context cx, CallFrame frame, String stringReg, String langStringReg, int indexReg, int stackTop)
     {
-        System.out.println(frame.pc);
         cx.timeSliceUsed++;
         if (cx.timeSliceUsed >= cx.timeSliceSize)
         {
@@ -5017,7 +5017,7 @@ switch (op) {
                 frame.savedCallOp = Token.EOL;  
                 frame.savedStackTop = stackTop;
                 cx.lastInterpreterFrame = frame;
-                ContinuationPending pending = cx.captureContinuation();
+                ContinuationPending pending = cx.captureSystemContinuation();
                 pending.setApplicationState(new Context.TimeSliceExpiredClass(stringReg, langStringReg, indexReg));
                 // This isn't a real continuation (i.e. it is not invoked though
                 // a function call), but we're reusing the mechanism to do

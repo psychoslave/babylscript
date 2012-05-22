@@ -52,6 +52,7 @@ public class ContinuationPending extends RuntimeException {
     private static final long serialVersionUID = 4956008116771118856L;
     private NativeContinuation continuationState;
     private Object applicationState;
+    private boolean isSystemContinuation; 
     
     /**
      * Construct a ContinuationPending exception. Internal call only;
@@ -61,7 +62,23 @@ public class ContinuationPending extends RuntimeException {
      * @param continuationState Internal Continuation object
      */
     ContinuationPending(NativeContinuation continuationState) {
+        this(continuationState, false);
+    }
+    ContinuationPending(NativeContinuation continuationState, boolean isSystemContinuation) {
         this.continuationState = continuationState;
+        this.isSystemContinuation = isSystemContinuation;
+    }
+
+    // Denotes whether a continuation is being used for system purposes (e.g. to simulate
+    // time-slicing or blocking calls), meaning that the continuation cannot be captured
+    // by JavaScript code in an exception handler and finally clauses should not be run
+    public void setIsSystemContinuation(boolean isSystem)
+    {
+        isSystemContinuation = isSystem;
+    }
+    public boolean isSystemContinuation()
+    {
+        return isSystemContinuation;
     }
     
     /**
