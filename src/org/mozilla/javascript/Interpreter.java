@@ -4853,6 +4853,7 @@ switch (op) {
                 // We're using continuations to do cooperative multithreading, so
                 // we want to resume exactly where we left off and not
                 // unwind the top of the stack
+                x = x.parentFrame;
             } else {
                 if (x.savedCallOp != Token.NEW) Kit.codeBug();
                 // the new operator uses stack top to store the constructed
