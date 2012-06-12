@@ -298,6 +298,37 @@ public class TokenStream
             return LanguageMode.test;
         return LanguageMode.en;
     }
+    public static String languageModeToString(LanguageMode lang)
+    {
+        switch(lang)
+        {
+        case ar:
+            return "ar";
+        case de:
+            return "de";
+        case en:
+            return "en";
+        case es:
+            return "es";
+        case fr:
+            return "fr";
+        case hi:
+            return "hi";
+        case ja:
+            return "ja";
+        case pt:
+            return "pt";
+        case ro:
+            return "ro";
+        case ru:
+            return "ru";
+        case zh:
+            return "zh";
+        case test:
+            return "test";
+        }
+        return null;
+    }
     public void setLanguage(LanguageMode language)
     {
         languageMode = language;
@@ -344,34 +375,7 @@ public class TokenStream
 
     public String getLastLanguageString()
     {
-        switch(languageMode)
-        {
-        case ar:
-            return "ar";
-        case de:
-            return "de";
-        case en:
-            return "en";
-        case es:
-            return "es";
-        case fr:
-            return "fr";
-        case hi:
-            return "hi";
-        case ja:
-            return "ja";
-        case pt:
-            return "pt";
-        case ro:
-            return "ro";
-        case ru:
-            return "ru";
-        case zh:
-            return "zh";
-        case test:
-            return "test";
-        }
-        return null;
+        return languageModeToString(languageMode);
     }
 
     String regExpFlags;

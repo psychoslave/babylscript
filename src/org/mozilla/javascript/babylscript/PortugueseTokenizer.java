@@ -60,7 +60,7 @@ public class PortugueseTokenizer extends BabylGenericTokenizer
                 in, 
                 ts, 
                 new BabylTokenizer.DecimalNumberReader(','),
-                ResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Keywords", new Locale("pt")));
+                BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Keywords", new Locale("pt")));
     }
 
     protected boolean isStringDelimiter(int ch)

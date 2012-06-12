@@ -60,7 +60,7 @@ public class RomanianTokenizer extends BabylGenericTokenizer
                 in, 
                 ts, 
                 new BabylTokenizer.DecimalNumberReader(','),
-                ResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Keywords", new Locale("ro")));
+                BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Keywords", new Locale("ro")));
     }
 
     protected boolean isStringDelimiter(int ch)

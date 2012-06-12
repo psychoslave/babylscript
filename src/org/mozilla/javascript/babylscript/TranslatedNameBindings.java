@@ -15,6 +15,7 @@ import java.util.ResourceBundle;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
+import org.mozilla.javascript.TokenStream;
 
 /**
  * This class holds all the translated names used in the JavaScript standard
@@ -24,6 +25,25 @@ import org.mozilla.javascript.ScriptableObject;
 
 public class TranslatedNameBindings
 {
+    /**
+     * On the Programming Basics website, we run code using a lower security permission. This
+     * lack of permissions prevent us from using our custom resource bundle loader because
+     * it requires high security permissions (we need a custom resource bundle loader because
+     * we need to override the loading order, but Java didn't allow people to do this until
+     * Java 1.6). This method lets you preload these resource bundles while you still have
+     * higher security permissions
+     */
+    public static void preloadLanguageKeywords()
+    {
+        for (TokenStream.LanguageMode lang: TokenStream.LanguageMode.values())
+        {
+            BabylscriptNoDefaultResourceBundle.getBundle(
+                    "org/mozilla/javascript/babylscript/resources/Keywords", 
+                    new Locale(TokenStream.languageModeToString(lang)));
+        }
+    }
+
+    
     public static Map<String, String[]> EquivalentLanguageNames;  // read-only
     static {
         EquivalentLanguageNames = new HashMap<String, String[]>();

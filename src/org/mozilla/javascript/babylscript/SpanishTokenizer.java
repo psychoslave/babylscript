@@ -61,7 +61,7 @@ public class SpanishTokenizer extends BabylGenericTokenizer
                 ts, 
                 // Different regions use either , or . as the decimal separator
                 new BabylTokenizer.DecimalNumberReader(',', '0', '.'),
-                ResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Keywords", new Locale("es")));
+                BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Keywords", new Locale("es")));
     }
 
     protected boolean isStringDelimiter(int ch)

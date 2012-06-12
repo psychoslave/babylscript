@@ -60,7 +60,7 @@ public class RussianTokenizer extends BabylGenericTokenizer
                 in, 
                 ts, 
                 new BabylTokenizer.DecimalNumberReader(','),
-                ResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Keywords", new Locale("ru")));
+                BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Keywords", new Locale("ru")));
     }
 
     protected boolean isStringDelimiter(int ch)
