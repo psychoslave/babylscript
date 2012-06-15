@@ -41,8 +41,11 @@ class DefaultMessageProvider implements MessageProvider {
     {
         // in GWT, there is no MessageFormat object, but the Rhino error messages only
         // need simple string substitution, so we can just emulate that
-        for (int n = 0; n < arguments.length; n++)
-            messageId = messageId.replace("{" + n + "}", (String)arguments[n]);
+        if (arguments != null)
+        {
+            for (int n = 0; n < arguments.length; n++)
+                messageId = messageId.replace("{" + n + "}", (String)arguments[n]);
+        }
         return messageId;
     }
     
