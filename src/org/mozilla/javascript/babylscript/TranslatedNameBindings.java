@@ -16,6 +16,8 @@ import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.TokenStream;
+import org.mozilla.javascript.babylscript.gen.Keywords;
+import org.mozilla.javascript.babylscript.gen.Objects;
 
 /**
  * This class holds all the translated names used in the JavaScript standard
@@ -25,25 +27,6 @@ import org.mozilla.javascript.TokenStream;
 
 public class TranslatedNameBindings
 {
-    /**
-     * On the Programming Basics website, we run code using a lower security permission. This
-     * lack of permissions prevent us from using our custom resource bundle loader because
-     * it requires high security permissions (we need a custom resource bundle loader because
-     * we need to override the loading order, but Java didn't allow people to do this until
-     * Java 1.6). This method lets you preload these resource bundles while you still have
-     * higher security permissions
-     */
-    public static void preloadLanguageKeywords()
-    {
-        for (TokenStream.LanguageMode lang: TokenStream.LanguageMode.values())
-        {
-            BabylscriptNoDefaultResourceBundle.getBundle(
-                    "org/mozilla/javascript/babylscript/resources/Keywords", 
-                    new Locale(TokenStream.languageModeToString(lang)));
-        }
-    }
-
-    
     public static Map<String, String[]> EquivalentLanguageNames;  // read-only
     static {
         EquivalentLanguageNames = new HashMap<String, String[]>();
@@ -67,35 +50,38 @@ public class TranslatedNameBindings
         EquivalentLanguageNames = Collections.unmodifiableMap(EquivalentLanguageNames);
     }
 
-    static ResourceBundle romanian = BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Objects", new Locale("ro"));
-    static ResourceBundle french = BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Objects", new Locale("fr"));
-    static ResourceBundle arabic = BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Objects", new Locale("ar"));
-    static ResourceBundle portuguese = BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Objects", new Locale("pt"));
-    static ResourceBundle chineseSimplified = BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Objects", new Locale("zh"));
-    static ResourceBundle hindi = BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Objects", new Locale("hi"));
-    static ResourceBundle spanish = BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Objects", new Locale("es"));
-    static ResourceBundle japanese = BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Objects", new Locale("ja"));
-    static ResourceBundle german = BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Objects", new Locale("de"));
-    static ResourceBundle russian = BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Objects", new Locale("ru"));
-
-    static Map<String, ResourceBundle> langResourceMap = new HashMap<String, ResourceBundle>();
+    static Map<String, Map<String, String>> keywordResourceMap = new HashMap<String, Map<String, String>>();
+    static Map<String, Map<String, String>> langResourceMap = new HashMap<String, Map<String, String>>();
     static {
-        langResourceMap.put("fr", french);
-        langResourceMap.put("ro", romanian);
-        langResourceMap.put("pt", portuguese);
-        langResourceMap.put("ar", arabic);
-        langResourceMap.put("zh", chineseSimplified);
-        langResourceMap.put("hi", hindi);
-        langResourceMap.put("es", spanish);
-        langResourceMap.put("ja", japanese);
-        langResourceMap.put("de", german);
-        langResourceMap.put("ru", russian);
+        langResourceMap.put("en", arrayToMap(Objects.en));
+        langResourceMap.put("fr", arrayToMap(Objects.fr));
+        langResourceMap.put("ro", arrayToMap(Objects.ro));
+        langResourceMap.put("pt", arrayToMap(Objects.pt));
+        langResourceMap.put("ar", arrayToMap(Objects.ar));
+        langResourceMap.put("zh", arrayToMap(Objects.zh));
+        langResourceMap.put("hi", arrayToMap(Objects.hi));
+        langResourceMap.put("es", arrayToMap(Objects.es));
+        langResourceMap.put("ja", arrayToMap(Objects.ja));
+        langResourceMap.put("de", arrayToMap(Objects.de));
+        langResourceMap.put("ru", arrayToMap(Objects.ru));
+
+        keywordResourceMap.put("en", arrayToMap(Keywords.en));
+        keywordResourceMap.put("fr", arrayToMap(Keywords.fr));
+        keywordResourceMap.put("ro", arrayToMap(Keywords.ro));
+        keywordResourceMap.put("pt", arrayToMap(Keywords.pt));
+        keywordResourceMap.put("ar", arrayToMap(Keywords.ar));
+        keywordResourceMap.put("zh", arrayToMap(Keywords.zh));
+        keywordResourceMap.put("hi", arrayToMap(Keywords.hi));
+        keywordResourceMap.put("es", arrayToMap(Keywords.es));
+        keywordResourceMap.put("ja", arrayToMap(Keywords.ja));
+        keywordResourceMap.put("de", arrayToMap(Keywords.de));
+        keywordResourceMap.put("ru", arrayToMap(Keywords.ru));
     }
     
-    private static void fillTranslationsFromResourceBundle(Scriptable obj, String lang, ResourceBundle res, String[] english)
+    private static void fillTranslationsFromResourceBundle(Scriptable obj, String lang, Map<String, String> res, String[] english)
     {
         for (String key: english)
-            obj.putTranslatedName(lang, res.getString(key), obj, key);
+            obj.putTranslatedName(lang, res.get(key), obj, key);
     }
 
     static class CustomPropertyResourceBundle extends PropertyResourceBundle
@@ -115,7 +101,7 @@ public class TranslatedNameBindings
 
     public static void initStandardTranslations(Scriptable scope)
     {
-        for (Map.Entry<String, ResourceBundle> entry: langResourceMap.entrySet())
+        for (Map.Entry<String, Map<String, String>> entry: langResourceMap.entrySet())
         {
             configureAllTranslations(scope, entry.getKey(), entry.getValue());
         }
@@ -124,17 +110,11 @@ public class TranslatedNameBindings
     public static void initCustomTranslation(Scriptable scope, Properties translations)
     {
         String lang = "test";
-        try {
-            ResourceBundle res = new CustomPropertyResourceBundle(translations,
-                ResourceBundle.getBundle("org.mozilla.javascript.babylscript.resources.Objects", new Locale("")));
-            configureAllTranslations(scope, lang, res);
-        } catch (IOException e)
-        {
-        
-        }
+        Map<String, String> map = propertiesToMap(translations, langResourceMap.get("en"));
+        configureAllTranslations(scope, lang, map);
     }
     
-    public static void configureAllTranslations(Scriptable scope, String lang, ResourceBundle res)
+    public static void configureAllTranslations(Scriptable scope, String lang, Map<String, String> res)
     {
         ScriptableObject.clearTranslations(scope, lang);
         configureGlobalScopeTranslations(scope, lang, res);
@@ -196,7 +176,7 @@ public class TranslatedNameBindings
     // +length
     // +caller
 
-    protected static void configureGlobalScopeTranslations(Scriptable scope, String lang, ResourceBundle res)
+    protected static void configureGlobalScopeTranslations(Scriptable scope, String lang, Map<String, String> res)
     {
         Scriptable obj = scope;
         String [] names = new String[] {
@@ -249,7 +229,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureBaseFunctionPrototypeTranslations(Scriptable obj, String lang, ResourceBundle res)
+    protected static void configureBaseFunctionPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "name",
@@ -269,7 +249,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureObjectPrototypeTranslations(Scriptable obj, String lang, ResourceBundle res)
+    protected static void configureObjectPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "constructor",
@@ -288,7 +268,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureErrorPrototypeTranslations(Scriptable obj, String lang, ResourceBundle res)
+    protected static void configureErrorPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "name",
@@ -299,7 +279,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureArrayConstructorTranslations(Function obj, String lang, ResourceBundle res)
+    protected static void configureArrayConstructorTranslations(Function obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "join",
@@ -323,7 +303,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureArrayPrototypeTranslations(Scriptable obj, String lang, ResourceBundle res)
+    protected static void configureArrayPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "length",
@@ -348,7 +328,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureStringConstructorTranslations(Function obj, String lang, ResourceBundle res)
+    protected static void configureStringConstructorTranslations(Function obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "fromCharCode",
@@ -378,7 +358,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureStringPrototypeTranslations(Scriptable obj, String lang, ResourceBundle res)
+    protected static void configureStringPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "length",
@@ -419,7 +399,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureBooleanPrototypeTranslations(Scriptable obj, String lang, ResourceBundle res)
+    protected static void configureBooleanPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "valueOf",
@@ -427,7 +407,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureNumberConstructurTranslations(Function obj, String lang, ResourceBundle res)
+    protected static void configureNumberConstructurTranslations(Function obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "NaN",
@@ -439,7 +419,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureNumberPrototypeTranslations(Scriptable obj, String lang, ResourceBundle res)
+    protected static void configureNumberPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "valueOf",
@@ -450,7 +430,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureDateConstructorTranslations(Function obj, String lang, ResourceBundle res)
+    protected static void configureDateConstructorTranslations(Function obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "now",
@@ -460,7 +440,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureDatePrototypeTranslations(Scriptable obj, String lang, ResourceBundle res)
+    protected static void configureDatePrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "toTimeString",
@@ -508,7 +488,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureMathTranslations(Scriptable obj, String lang, ResourceBundle res)
+    protected static void configureMathTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "abs",
@@ -541,7 +521,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureCallPrototypeTranslations(Scriptable obj, String lang, ResourceBundle res)
+    protected static void configureCallPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
         // TODO: arguments are usually handled specially
         String [] names = new String[] {
@@ -550,7 +530,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureScriptPrototypeTranslations(Scriptable obj, String lang, ResourceBundle res)
+    protected static void configureScriptPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "exec",
@@ -559,7 +539,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureIteratorPrototypeTranslations(Scriptable obj, String lang, ResourceBundle res)
+    protected static void configureIteratorPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 "next",
@@ -568,7 +548,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureRegExpPrototypeTranslations(Scriptable obj, String lang, ResourceBundle res)
+    protected static void configureRegExpPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 // TODO: Ignoring RegExp constructor translations for now
@@ -585,7 +565,7 @@ public class TranslatedNameBindings
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
-    protected static void configureRegExpMatchesPrototypeTranslations(Scriptable obj, String lang, ResourceBundle res)
+    protected static void configureRegExpMatchesPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
         String [] names = new String[] {
                 // TODO: JavaScript might not have a prototype for its match objects (uses Array objects)
@@ -593,5 +573,35 @@ public class TranslatedNameBindings
                 "input",
         };
         fillTranslationsFromResourceBundle(obj, lang, res, names);
+    }
+    
+    static Map<String, String> getKeywordMap(String language)
+    {
+        if (keywordResourceMap.containsKey(language))
+            return keywordResourceMap.get(language);
+        else
+            return keywordResourceMap.get("en");
+    }
+
+    static Map<String, String> propertiesToMap(Properties translations, Map<String, String> base)
+    {
+        Map<String, String> map = new HashMap<String, String>();
+        for (String key: base.keySet())
+        {
+            if (translations.containsKey(key))
+                map.put(key, translations.getProperty(key));
+            else
+                map.put(key, key);
+        }
+        return map;
+    }
+
+    
+    static Map<String, String> arrayToMap(String [] arr)
+    {
+        Map<String, String> map = new HashMap<String, String>();
+        for (int n = 0; n < arr.length; n+= 2)
+            map.put(arr[n], arr[n+1]);
+        return map;
     }
 }

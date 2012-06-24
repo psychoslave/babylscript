@@ -55,8 +55,9 @@ Requires Ant version 1.2
            excludes="org/**/jdk15/*.java"
            deprecation="on"
            debug="${debug}"
-       target="${target-jvm}"
-       source="${source-level}"
+           target="${target-jvm}"
+           source="${source-level}"
+    	   encoding="UTF-8"
        >
     </javac>
     <copy todir="${classes}">

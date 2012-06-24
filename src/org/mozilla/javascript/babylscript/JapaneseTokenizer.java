@@ -61,8 +61,7 @@ public class JapaneseTokenizer extends BabylGenericTokenizer
                 in, 
                 ts, 
                 new BabylTokenizer.DecimalNumberReader(),
-                BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Keywords", new Locale("ja")));
-
+                TranslatedNameBindings.getKeywordMap("ja"));
 }
 
     protected int matchSymbol(int c) throws IOException

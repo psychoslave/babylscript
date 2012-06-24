@@ -60,7 +60,7 @@ public class HindiTokenizer extends BabylGenericTokenizer
                 in, 
                 ts, 
                 new BabylTokenizer.DecimalNumberReader('.', '\u0966', '.'),
-                BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Keywords", new Locale("hi")));
+                TranslatedNameBindings.getKeywordMap("hi"));
     }
 
 }

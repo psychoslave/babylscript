@@ -60,7 +60,7 @@ public class EnglishTokenizer extends BabylGenericTokenizer
                 in, 
                 ts, 
                 new BabylTokenizer.DecimalNumberReader(),
-                BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Keywords", new Locale("en")));
+                TranslatedNameBindings.getKeywordMap("en"));
     }
 
 }

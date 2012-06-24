@@ -61,7 +61,7 @@ public class ArabicTokenizer extends BabylGenericTokenizer
                 in, 
                 ts, 
                 new BabylTokenizer.DecimalNumberReader('.', ',', '\u0660', '\u066B'),
-                BabylscriptNoDefaultResourceBundle.getBundle("org/mozilla/javascript/babylscript/resources/Keywords", new Locale("ar")));
+                TranslatedNameBindings.getKeywordMap("ar"));
     }
 
     protected int matchSymbol(int c) throws IOException

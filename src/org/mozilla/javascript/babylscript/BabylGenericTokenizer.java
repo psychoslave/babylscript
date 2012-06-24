@@ -44,6 +44,7 @@
 
 package org.mozilla.javascript.babylscript;
 
+import java.util.Map;
 import java.util.ResourceBundle;
 
 import org.mozilla.javascript.BabylTokenizer;
@@ -53,71 +54,71 @@ import org.mozilla.javascript.TokenStream;
 
 public class BabylGenericTokenizer extends BabylTokenizer
 {
-    BabylGenericTokenizer(Parser p, TokenCharStream in, TokenStream ts, DecimalNumberReader numberReader, ResourceBundle keywords)
+    BabylGenericTokenizer(Parser p, TokenCharStream in, TokenStream ts, DecimalNumberReader numberReader, Map<String, String> keywords)
     {
         super(p, in, ts, numberReader);
         
-        keywordLookup.put(keywords.getString("function"), Id_function);
-        keywordLookup.put(keywords.getString("if"), Id_if);
-        keywordLookup.put(keywords.getString("else"), Id_else);
-        keywordLookup.put(keywords.getString("for"), Id_for);
-        keywordLookup.put(keywords.getString("while"), Id_while);
-        keywordLookup.put(keywords.getString("return"), Id_return);  
-        keywordLookup.put(keywords.getString("do"), Id_do);
-        keywordLookup.put(keywords.getString("true"), Id_true);
-        keywordLookup.put(keywords.getString("false"), Id_false);
-        keywordLookup.put(keywords.getString("var"), Id_var);
-        keywordLookup.put(keywords.getString("break"), Id_break);
-        keywordLookup.put(keywords.getString("try"), Id_try);
-        keywordLookup.put(keywords.getString("switch"), Id_switch);
-        keywordLookup.put(keywords.getString("case"), Id_case);
-        keywordLookup.put(keywords.getString("null"), Id_null);
+        keywordLookup.put(keywords.get("function"), Id_function);
+        keywordLookup.put(keywords.get("if"), Id_if);
+        keywordLookup.put(keywords.get("else"), Id_else);
+        keywordLookup.put(keywords.get("for"), Id_for);
+        keywordLookup.put(keywords.get("while"), Id_while);
+        keywordLookup.put(keywords.get("return"), Id_return);  
+        keywordLookup.put(keywords.get("do"), Id_do);
+        keywordLookup.put(keywords.get("true"), Id_true);
+        keywordLookup.put(keywords.get("false"), Id_false);
+        keywordLookup.put(keywords.get("var"), Id_var);
+        keywordLookup.put(keywords.get("break"), Id_break);
+        keywordLookup.put(keywords.get("try"), Id_try);
+        keywordLookup.put(keywords.get("switch"), Id_switch);
+        keywordLookup.put(keywords.get("case"), Id_case);
+        keywordLookup.put(keywords.get("null"), Id_null);
 
-        keywordLookup.put(keywords.getString("in"), Id_in);
-        keywordLookup.put(keywords.getString("int"), Id_int);
-        keywordLookup.put(keywords.getString("let"), Id_let);
-        keywordLookup.put(keywords.getString("new"), Id_new);
-        keywordLookup.put(keywords.getString("byte"), Id_byte);
-        keywordLookup.put(keywords.getString("char"), Id_char);
-        keywordLookup.put(keywords.getString("enum"), Id_enum);
-        keywordLookup.put(keywords.getString("goto"), Id_goto);
-        keywordLookup.put(keywords.getString("long"), Id_long);
-        keywordLookup.put(keywords.getString("this"), Id_this);
-        keywordLookup.put(keywords.getString("void"), Id_void);
-        keywordLookup.put(keywords.getString("with"), Id_with);
-        keywordLookup.put(keywords.getString("class"), Id_class);
-        keywordLookup.put(keywords.getString("yield"), Id_yield);
-        keywordLookup.put(keywords.getString("const"), Id_const);
-        keywordLookup.put(keywords.getString("final"), Id_final);
-        keywordLookup.put(keywords.getString("float"), Id_float);
-        keywordLookup.put(keywords.getString("short"), Id_short);
-        keywordLookup.put(keywords.getString("super"), Id_super);
-        keywordLookup.put(keywords.getString("throw"), Id_throw);
-        keywordLookup.put(keywords.getString("catch"), Id_catch);
-        keywordLookup.put(keywords.getString("native"), Id_native);
-        keywordLookup.put(keywords.getString("delete"), Id_delete);
-        keywordLookup.put(keywords.getString("throws"), Id_throws);
-        keywordLookup.put(keywords.getString("import"), Id_import);
-        keywordLookup.put(keywords.getString("double"), Id_double);
-        keywordLookup.put(keywords.getString("static"), Id_static);
-        keywordLookup.put(keywords.getString("public"), Id_public);
-        keywordLookup.put(keywords.getString("export"), Id_export);
-        keywordLookup.put(keywords.getString("typeof"), Id_typeof);
-        keywordLookup.put(keywords.getString("package"), Id_package);
-        keywordLookup.put(keywords.getString("default"), Id_default);
-        keywordLookup.put(keywords.getString("finally"), Id_finally);
-        keywordLookup.put(keywords.getString("boolean"), Id_boolean);
-        keywordLookup.put(keywords.getString("private"), Id_private);
-        keywordLookup.put(keywords.getString("extends"), Id_extends);
-        keywordLookup.put(keywords.getString("abstract"), Id_abstract);
-        keywordLookup.put(keywords.getString("continue"), Id_continue);
-        keywordLookup.put(keywords.getString("debugger"), Id_debugger);
-        keywordLookup.put(keywords.getString("volatile"), Id_volatile);
-        keywordLookup.put(keywords.getString("interface"), Id_interface);
-        keywordLookup.put(keywords.getString("protected"), Id_protected);
-        keywordLookup.put(keywords.getString("transient"), Id_transient);
-        keywordLookup.put(keywords.getString("implements"), Id_implements);
-        keywordLookup.put(keywords.getString("instanceof"), Id_instanceof);
-        keywordLookup.put(keywords.getString("synchronized"), Id_synchronized);    
+        keywordLookup.put(keywords.get("in"), Id_in);
+        keywordLookup.put(keywords.get("int"), Id_int);
+        keywordLookup.put(keywords.get("let"), Id_let);
+        keywordLookup.put(keywords.get("new"), Id_new);
+        keywordLookup.put(keywords.get("byte"), Id_byte);
+        keywordLookup.put(keywords.get("char"), Id_char);
+        keywordLookup.put(keywords.get("enum"), Id_enum);
+        keywordLookup.put(keywords.get("goto"), Id_goto);
+        keywordLookup.put(keywords.get("long"), Id_long);
+        keywordLookup.put(keywords.get("this"), Id_this);
+        keywordLookup.put(keywords.get("void"), Id_void);
+        keywordLookup.put(keywords.get("with"), Id_with);
+        keywordLookup.put(keywords.get("class"), Id_class);
+        keywordLookup.put(keywords.get("yield"), Id_yield);
+        keywordLookup.put(keywords.get("const"), Id_const);
+        keywordLookup.put(keywords.get("final"), Id_final);
+        keywordLookup.put(keywords.get("float"), Id_float);
+        keywordLookup.put(keywords.get("short"), Id_short);
+        keywordLookup.put(keywords.get("super"), Id_super);
+        keywordLookup.put(keywords.get("throw"), Id_throw);
+        keywordLookup.put(keywords.get("catch"), Id_catch);
+        keywordLookup.put(keywords.get("native"), Id_native);
+        keywordLookup.put(keywords.get("delete"), Id_delete);
+        keywordLookup.put(keywords.get("throws"), Id_throws);
+        keywordLookup.put(keywords.get("import"), Id_import);
+        keywordLookup.put(keywords.get("double"), Id_double);
+        keywordLookup.put(keywords.get("static"), Id_static);
+        keywordLookup.put(keywords.get("public"), Id_public);
+        keywordLookup.put(keywords.get("export"), Id_export);
+        keywordLookup.put(keywords.get("typeof"), Id_typeof);
+        keywordLookup.put(keywords.get("package"), Id_package);
+        keywordLookup.put(keywords.get("default"), Id_default);
+        keywordLookup.put(keywords.get("finally"), Id_finally);
+        keywordLookup.put(keywords.get("boolean"), Id_boolean);
+        keywordLookup.put(keywords.get("private"), Id_private);
+        keywordLookup.put(keywords.get("extends"), Id_extends);
+        keywordLookup.put(keywords.get("abstract"), Id_abstract);
+        keywordLookup.put(keywords.get("continue"), Id_continue);
+        keywordLookup.put(keywords.get("debugger"), Id_debugger);
+        keywordLookup.put(keywords.get("volatile"), Id_volatile);
+        keywordLookup.put(keywords.get("interface"), Id_interface);
+        keywordLookup.put(keywords.get("protected"), Id_protected);
+        keywordLookup.put(keywords.get("transient"), Id_transient);
+        keywordLookup.put(keywords.get("implements"), Id_implements);
+        keywordLookup.put(keywords.get("instanceof"), Id_instanceof);
+        keywordLookup.put(keywords.get("synchronized"), Id_synchronized);    
     }
 }

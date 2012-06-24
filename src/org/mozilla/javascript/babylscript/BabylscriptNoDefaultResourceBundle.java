@@ -16,7 +16,7 @@ import java.util.ResourceBundle;
  * bundle and which uses its own caching system.
  */
 
-public class BabylscriptNoDefaultResourceBundle 
+@Deprecated public class BabylscriptNoDefaultResourceBundle 
 {
     static HashMap<String, PropertyResourceBundle> cache = 
             new HashMap<String, PropertyResourceBundle>();

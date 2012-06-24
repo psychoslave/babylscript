@@ -76,7 +76,7 @@ public class CustomTokenizer extends BabylGenericTokenizer
     
     public CustomTokenizer(Parser p, TokenCharStream in, TokenStream ts, CustomTokenizerConfig config) 
     {
-        super(p, in, ts, new DecimalNumberReader('.'), new CustomPropertyResourceBundle(config.keywords));
+        super(p, in, ts, new DecimalNumberReader('.'), TranslatedNameBindings.propertiesToMap(config.keywords, TranslatedNameBindings.getKeywordMap("en")));
     }
 
     protected boolean isStringDelimiter(int ch)
