@@ -2656,6 +2656,9 @@ public class Context
             this.stringReg = stringReg; this.langStringReg = langStringReg; this.indexReg = indexReg;
         }
     }
+    public void resetTimeSlice() {
+        timeSliceUsed = 0;
+    }
     public void setTimeSliceSize(int size) {
         if (size == TIMESLICE_NONE) size = TIMESLICE_NONE - 1;
         timeSliceSize = size;
