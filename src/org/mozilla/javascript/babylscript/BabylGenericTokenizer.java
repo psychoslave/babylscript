@@ -122,12 +122,4 @@ public class BabylGenericTokenizer extends BabylTokenizer
         keywordLookup.put(keywords.get("instanceof"), Id_instanceof);
         keywordLookup.put(keywords.get("synchronized"), Id_synchronized);    
     }
-    
-    static Map<String, String> arrayToMap(String [] arr)
-    {
-        Map<String, String> map = new HashMap<String, String>();
-        for (int n = 0; n < arr.length; n+= 2)
-            map.put(arr[n], arr[n+1]);
-        return map;
-    }
 }

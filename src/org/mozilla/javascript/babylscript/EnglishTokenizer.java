@@ -61,7 +61,7 @@ public class EnglishTokenizer extends BabylGenericTokenizer
                 in, 
                 ts, 
                 new BabylTokenizer.DecimalNumberReader(),
-                BabylGenericTokenizer.arrayToMap(Keywords.en));
+                TranslatedNameBindings.getKeywordMap("en"));
     }
 
 }

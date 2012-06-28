@@ -61,7 +61,7 @@ public class PortugueseTokenizer extends BabylGenericTokenizer
                 in, 
                 ts, 
                 new BabylTokenizer.DecimalNumberReader(','),
-                BabylGenericTokenizer.arrayToMap(Keywords.pt));
+                TranslatedNameBindings.getKeywordMap("pt"));
     }
 
     protected boolean isStringDelimiter(int ch)

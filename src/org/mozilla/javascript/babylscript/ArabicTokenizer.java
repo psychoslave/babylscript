@@ -61,8 +61,8 @@ public class ArabicTokenizer extends BabylGenericTokenizer
         super(p, 
                 in, 
                 ts, 
-                new BabylTokenizer.DecimalNumberReader('.', '\u0660', '\u066B'),
-                BabylGenericTokenizer.arrayToMap(Keywords.ar));
+                new BabylTokenizer.DecimalNumberReader('.', ',', '\u0660', '\u066B'),
+                TranslatedNameBindings.getKeywordMap("ar"));
     }
 
     protected int matchSymbol(int c) throws IOException

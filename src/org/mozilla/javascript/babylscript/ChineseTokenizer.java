@@ -62,7 +62,7 @@ public class ChineseTokenizer extends BabylGenericTokenizer
                 in, 
                 ts, 
                 new BabylTokenizer.DecimalNumberReader(),
-                BabylGenericTokenizer.arrayToMap(Keywords.zh));
+                TranslatedNameBindings.getKeywordMap("zh"));
     }
 
     protected int matchSymbol(int c) throws IOException

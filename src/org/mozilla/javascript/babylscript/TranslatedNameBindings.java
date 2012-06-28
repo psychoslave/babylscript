@@ -14,6 +14,8 @@ import java.util.PropertyResourceBundle;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
+import org.mozilla.javascript.TokenStream;
+import org.mozilla.javascript.babylscript.gen.Keywords;
 import org.mozilla.javascript.babylscript.gen.Objects;
 
 /**
@@ -35,24 +37,44 @@ public class TranslatedNameBindings
         EquivalentLanguageNames.put("\u4e2d\u6587", new String[] {"zh", "\u4e2d\u6587", "\u7b80\u4f53"});
         EquivalentLanguageNames.put("\u7b80\u4f53", new String[] {"zh", "\u4e2d\u6587", "\u7b80\u4f53"});
 
+        EquivalentLanguageNames.put("hi", new String[] {"hi", "\u0939\u093f"});
+        EquivalentLanguageNames.put("\u0939\u093f", new String[] {"hi", "\u0939\u093f"});
+
+        EquivalentLanguageNames.put("ja", new String[] {"ja", "\u65e5\u672c\u8a9e"});
+        EquivalentLanguageNames.put("\u65e5\u672c\u8a9e", new String[] {"ja", "\u65e5\u672c\u8a9e"});
+
+        EquivalentLanguageNames.put("ru", new String[] {"ru", "\u0440\u0443"});
+        EquivalentLanguageNames.put("\u0440\u0443", new String[] {"ru", "\u0440\u0443"});
+
         EquivalentLanguageNames = Collections.unmodifiableMap(EquivalentLanguageNames);
     }
 
-    static Map<String, String> romanian = BabylGenericTokenizer.arrayToMap(Objects.ro);
-    static Map<String, String> french = BabylGenericTokenizer.arrayToMap(Objects.fr);
-    static Map<String, String> arabic = BabylGenericTokenizer.arrayToMap(Objects.ar);
-    static Map<String, String> portuguese = BabylGenericTokenizer.arrayToMap(Objects.pt);
-    static Map<String, String> chineseSimplified = BabylGenericTokenizer.arrayToMap(Objects.zh);
-    static Map<String, String> hindi = BabylGenericTokenizer.arrayToMap(Objects.hi);
-
+    static Map<String, Map<String, String>> keywordResourceMap = new HashMap<String, Map<String, String>>();
     static Map<String, Map<String, String>> langResourceMap = new HashMap<String, Map<String, String>>();
     static {
-        langResourceMap.put("fr", french);
-        langResourceMap.put("ro", romanian);
-        langResourceMap.put("pt", portuguese);
-        langResourceMap.put("ar", arabic);
-        langResourceMap.put("zh", chineseSimplified);
-        langResourceMap.put("hi", hindi);
+        langResourceMap.put("en", arrayToMap(Objects.en));
+        langResourceMap.put("fr", arrayToMap(Objects.fr));
+        langResourceMap.put("ro", arrayToMap(Objects.ro));
+        langResourceMap.put("pt", arrayToMap(Objects.pt));
+        langResourceMap.put("ar", arrayToMap(Objects.ar));
+        langResourceMap.put("zh", arrayToMap(Objects.zh));
+        langResourceMap.put("hi", arrayToMap(Objects.hi));
+        langResourceMap.put("es", arrayToMap(Objects.es));
+        langResourceMap.put("ja", arrayToMap(Objects.ja));
+        langResourceMap.put("de", arrayToMap(Objects.de));
+        langResourceMap.put("ru", arrayToMap(Objects.ru));
+
+        keywordResourceMap.put("en", arrayToMap(Keywords.en));
+        keywordResourceMap.put("fr", arrayToMap(Keywords.fr));
+        keywordResourceMap.put("ro", arrayToMap(Keywords.ro));
+        keywordResourceMap.put("pt", arrayToMap(Keywords.pt));
+        keywordResourceMap.put("ar", arrayToMap(Keywords.ar));
+        keywordResourceMap.put("zh", arrayToMap(Keywords.zh));
+        keywordResourceMap.put("hi", arrayToMap(Keywords.hi));
+        keywordResourceMap.put("es", arrayToMap(Keywords.es));
+        keywordResourceMap.put("ja", arrayToMap(Keywords.ja));
+        keywordResourceMap.put("de", arrayToMap(Keywords.de));
+        keywordResourceMap.put("ru", arrayToMap(Keywords.ru));
     }
     
     private static void fillTranslationsFromResourceBundle(Scriptable obj, String lang, Map<String, String> res, String[] english)
@@ -72,15 +94,9 @@ public class TranslatedNameBindings
 
     public static void initCustomTranslation(Scriptable scope, Map<String, String> translations)
     {
-//        String lang = "test";
-//        try {
-//            Map<String, String> res = new CustomPropertyResourceBundle(translations,
-//                Map<String, String>.getBundle("org.mozilla.javascript.babylscript.resources.Objects", new Locale("")));
-//            configureAllTranslations(scope, lang, res);
-//        } catch (IOException e)
-//        {
-//        
-//        }
+        String lang = "test";
+        Map<String, String> map = propertiesToMap(translations, langResourceMap.get("en"));
+        configureAllTranslations(scope, lang, map);
     }
     
     public static void configureAllTranslations(Scriptable scope, String lang, Map<String, String> res)
@@ -545,5 +561,35 @@ public class TranslatedNameBindings
                 "input",
         };
         fillTranslationsFromResourceBundle(obj, lang, res, names);
+    }
+    
+    static Map<String, String> getKeywordMap(String language)
+    {
+        if (keywordResourceMap.containsKey(language))
+            return keywordResourceMap.get(language);
+        else
+            return keywordResourceMap.get("en");
+    }
+
+    static Map<String, String> propertiesToMap(Map<String, String> translations, Map<String, String> base)
+    {
+        Map<String, String> map = new HashMap<String, String>();
+        for (String key: base.keySet())
+        {
+            if (translations.containsKey(key))
+                map.put(key, translations.get(key));
+            else
+                map.put(key, key);
+        }
+        return map;
+    }
+
+    
+    static Map<String, String> arrayToMap(String [] arr)
+    {
+        Map<String, String> map = new HashMap<String, String>();
+        for (int n = 0; n < arr.length; n+= 2)
+            map.put(arr[n], arr[n+1]);
+        return map;
     }
 }

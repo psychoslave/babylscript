@@ -828,8 +828,9 @@ public class ScriptRuntime {
         str = str.replace('\u066B', '.');
         for (int n = 0; n < 10; n++)
         {
-            str = str.replace((char)('\u0660'+n), (char)('0' + n));
-            str = str.replace((char)('\u0966'+n), (char)('0' + n));
+            str = str.replace((char)('\u0660'+n), (char)('0' + n));  // Eastern Arabic
+            str = str.replace((char)('\u0966'+n), (char)('0' + n));  // Devanagari
+            str = str.replace((char)('\uff10'+n), (char)('0' + n));  // full-width western
         }
         return str;
     }

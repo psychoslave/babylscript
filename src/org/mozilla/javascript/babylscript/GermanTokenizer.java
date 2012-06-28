@@ -51,27 +51,34 @@ import org.mozilla.javascript.BabylTokenizer;
 import org.mozilla.javascript.Parser;
 import org.mozilla.javascript.TokenCharStream;
 import org.mozilla.javascript.TokenStream;
-import org.mozilla.javascript.babylscript.gen.Keywords;
 
-public class FrenchTokenizer extends BabylGenericTokenizer
+public class GermanTokenizer extends BabylGenericTokenizer
 {
-    public FrenchTokenizer(Parser p, TokenCharStream in, TokenStream ts)
+    public GermanTokenizer(Parser p, TokenCharStream in, TokenStream ts)
     {
         super(p, 
                 in, 
                 ts, 
                 new BabylTokenizer.DecimalNumberReader(','),
-                TranslatedNameBindings.getKeywordMap("fr"));
+                TranslatedNameBindings.getKeywordMap("de"));
     }
 
     protected boolean isStringDelimiter(int ch)
     {
-        return (ch == '\'' || ch == '\"' || ch == '\u00AB');
+        return (ch == '\'' || ch == '\"'
+                || ch == '\u201a' || ch == '\u201e'
+                || ch == '\u00AB' || ch == '\u00BB'
+                || ch == '\u2039' || ch == '\u203a');
     }
     protected int getMatchingStringDelimiter(int ch)
     {
         if (ch == '\'') return '\'';
         if (ch == '\u00AB') return '\u00BB';
+        if (ch == '\u00BB') return '\u00AB';
+        if (ch == '\u2039') return '\u203a';
+        if (ch == '\u203a') return '\u2039';
+        if (ch == '\u201a') return '\u2018';
+        if (ch == '\u201e') return '\u201c';
         return '\"';
     }
 }

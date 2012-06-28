@@ -152,7 +152,8 @@
 
       <include name="org/mozilla/javascript/debug/*.class"/>
       <include name="org/mozilla/javascript/babylscript/*.class"/>
-      <include name="org/mozilla/javascript/babylscript/resources/*.properties"/>
+      <include name="org/mozilla/javascript/babylscript/gen/*.class"/>
+      <!--<include name="org/mozilla/javascript/babylscript/resources/*.properties"/>-->
       <include name="org/mozilla/javascript/resources/*.properties"/>
       <include name="org/mozilla/javascript/xml/*.class"/>
       <include name="org/mozilla/javascript/continuations/*.class"/>
@@ -235,6 +236,21 @@
       <fileset dir="." includes="deprecatedsrc/**"/>
       <fileset dir="." includes="*.properties,build-date,build.xml,LICENSE.txt,README.html,README.Babylscript.txt"/>
     </zip>
+  </target>
+
+  <target name="babylgen" depends="properties">
+    <mkdir dir="${build.dir}/babyltools"/>
+    <javac srcdir="babyltools"
+           destdir="${build.dir}/babyltools"
+           includes="**/*.java"
+           deprecation="on"
+           debug="${debug}"
+           includeantruntime="false"
+       >
+    </javac>
+    <java classname="com.babylscript.gen.PropertiesToArrayGenerator"
+    	classpath="${build.dir}/babyltools">
+  	</java>
   </target>
 
   <target name="copy-examples" depends="init">

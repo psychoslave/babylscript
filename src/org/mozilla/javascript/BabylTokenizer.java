@@ -588,7 +588,9 @@ public class BabylTokenizer
         languageModeCodes  = new HashMap<String, TokenStream.LanguageMode>();
         languageModeCodes.put("\u0639\u0631\u0628\u064a", TokenStream.LanguageMode.ar);
         languageModeCodes.put("ar", TokenStream.LanguageMode.ar);
+        languageModeCodes.put("de", TokenStream.LanguageMode.de);
         languageModeCodes.put("en", TokenStream.LanguageMode.en);
+        languageModeCodes.put("es", TokenStream.LanguageMode.es);
         languageModeCodes.put("fr", TokenStream.LanguageMode.fr);
         languageModeCodes.put("pt", TokenStream.LanguageMode.pt);
         languageModeCodes.put("test", TokenStream.LanguageMode.test);
@@ -597,6 +599,11 @@ public class BabylTokenizer
         languageModeCodes.put("\u4e2d\u6587", TokenStream.LanguageMode.zh);
         languageModeCodes.put("\u7b80\u4f53", TokenStream.LanguageMode.zh);
         languageModeCodes.put("hi", TokenStream.LanguageMode.hi);
+        languageModeCodes.put("\u0939\u093f", TokenStream.LanguageMode.hi);
+        languageModeCodes.put("ja", TokenStream.LanguageMode.ja);
+        languageModeCodes.put("\u65e5\u672c\u8a9e", TokenStream.LanguageMode.ja);
+        languageModeCodes.put("ru", TokenStream.LanguageMode.ru);
+        languageModeCodes.put("\u0440\u0443", TokenStream.LanguageMode.ru);
     }
     
     private int scanLanguageMode() throws IOException
@@ -639,14 +646,20 @@ public class BabylTokenizer
         protected double readValue;
         protected StringBuilder stringBuffer = new StringBuilder(128);
         protected char decimalSeparator;
+        protected char tertiaryDecimalSeparator;
         protected char altNumbers0Base;
         protected char altDecimalSeparator;
 
-        public DecimalNumberReader(char decimalSeparator, char altNumbers0Base, char altDecimalSeparator)
+        public DecimalNumberReader(char decimalSeparator, char tertiaryDecimalSeparator, char altNumbers0Base, char altDecimalSeparator)
         {
             this.decimalSeparator = decimalSeparator;
+            this.tertiaryDecimalSeparator = tertiaryDecimalSeparator;
             this.altNumbers0Base = altNumbers0Base;
             this.altDecimalSeparator = altDecimalSeparator;
+        }
+        public DecimalNumberReader(char decimalSeparator, char altNumbers0Base, char altDecimalSeparator)
+        {
+            this(decimalSeparator, decimalSeparator, altNumbers0Base, altDecimalSeparator);
         }
         public DecimalNumberReader(char decimalSeparator)
         {
@@ -774,7 +787,7 @@ public class BabylTokenizer
         
         protected boolean isDecimalSeparator(int c)
         {
-            return c == decimalSeparator || c == altDecimalSeparator;
+            return c == decimalSeparator || c == altDecimalSeparator || c == tertiaryDecimalSeparator;
         }
     }
  

@@ -61,7 +61,7 @@ public class RomanianTokenizer extends BabylGenericTokenizer
                 in, 
                 ts, 
                 new BabylTokenizer.DecimalNumberReader(','),
-                BabylGenericTokenizer.arrayToMap(Keywords.ro));
+                TranslatedNameBindings.getKeywordMap("ro"));
     }
 
     protected boolean isStringDelimiter(int ch)

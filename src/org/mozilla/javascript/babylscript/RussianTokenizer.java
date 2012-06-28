@@ -51,27 +51,27 @@ import org.mozilla.javascript.BabylTokenizer;
 import org.mozilla.javascript.Parser;
 import org.mozilla.javascript.TokenCharStream;
 import org.mozilla.javascript.TokenStream;
-import org.mozilla.javascript.babylscript.gen.Keywords;
 
-public class FrenchTokenizer extends BabylGenericTokenizer
+public class RussianTokenizer extends BabylGenericTokenizer
 {
-    public FrenchTokenizer(Parser p, TokenCharStream in, TokenStream ts)
+    public RussianTokenizer(Parser p, TokenCharStream in, TokenStream ts)
     {
         super(p, 
                 in, 
                 ts, 
                 new BabylTokenizer.DecimalNumberReader(','),
-                TranslatedNameBindings.getKeywordMap("fr"));
+                TranslatedNameBindings.getKeywordMap("ru"));
     }
 
     protected boolean isStringDelimiter(int ch)
     {
-        return (ch == '\'' || ch == '\"' || ch == '\u00AB');
+        return (ch == '\'' || ch == '\"' || ch == '\u00AB' || ch == '\u201e');
     }
     protected int getMatchingStringDelimiter(int ch)
     {
         if (ch == '\'') return '\'';
         if (ch == '\u00AB') return '\u00BB';
+        if (ch == '\u201e') return '\u201d';
         return '\"';
     }
 }

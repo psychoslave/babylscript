@@ -52,10 +52,15 @@ import org.mozilla.javascript.babylscript.CustomTokenizer;
 import org.mozilla.javascript.babylscript.CustomTokenizerConfig;
 import org.mozilla.javascript.babylscript.EnglishTokenizer;
 import org.mozilla.javascript.babylscript.FrenchTokenizer;
+import org.mozilla.javascript.babylscript.GermanTokenizer;
 import org.mozilla.javascript.babylscript.HindiTokenizer;
+import org.mozilla.javascript.babylscript.JapaneseTokenizer;
 import org.mozilla.javascript.babylscript.PortugueseTokenizer;
 import org.mozilla.javascript.babylscript.RomanianTokenizer;
 import org.apache.harmony.Character;
+import org.mozilla.javascript.babylscript.RussianTokenizer;
+import org.mozilla.javascript.babylscript.SpanishTokenizer;
+
 
 /**
  * This class implements the JavaScript scanner.
@@ -252,12 +257,16 @@ public class TokenStream
     public static enum LanguageMode
     {
         ar,
+        de,
         en,
+        es,
         fr,
+        ja,
         hi,
         pt,
         test,
         ro,
+        ru,
         zh
     }
     public static LanguageMode stringToLanguageMode(String str)
@@ -266,21 +275,60 @@ public class TokenStream
             return LanguageMode.en;
         if ("ar".equals(str))
             return LanguageMode.ar;
+        else if ("de".equals(str))
+            return LanguageMode.de;
         else if ("en".equals(str))
             return LanguageMode.en;
+        else if ("es".equals(str))
+            return LanguageMode.es;
         else if ("fr".equals(str))
             return LanguageMode.fr;
         else if ("hi".equals(str))
             return LanguageMode.hi;
+        else if ("ja".equals(str))
+            return LanguageMode.ja;
         else if ("pt".equals(str))
             return LanguageMode.pt;
         else if ("ro".equals(str))
             return LanguageMode.ro;
+        else if ("ru".equals(str))
+            return LanguageMode.ru;
         else if ("zh".equals(str))
             return LanguageMode.zh;
         else if ("test".equals(str))
             return LanguageMode.test;
         return LanguageMode.en;
+    }
+    public static String languageModeToString(LanguageMode lang)
+    {
+        switch(lang)
+        {
+        case ar:
+            return "ar";
+        case de:
+            return "de";
+        case en:
+            return "en";
+        case es:
+            return "es";
+        case fr:
+            return "fr";
+        case hi:
+            return "hi";
+        case ja:
+            return "ja";
+        case pt:
+            return "pt";
+        case ro:
+            return "ro";
+        case ru:
+            return "ru";
+        case zh:
+            return "zh";
+        case test:
+            return "test";
+        }
+        return null;
     }
     public void setLanguage(LanguageMode language)
     {
@@ -290,8 +338,14 @@ public class TokenStream
         case ar:
             currentTokenizer = new ArabicTokenizer(parser, in, this);
             break;
+        case de:
+            currentTokenizer = new GermanTokenizer(parser, in, this);
+            break;
         case en:
             currentTokenizer = this.englishTokenizer;
+            break;
+        case es:
+            currentTokenizer = new SpanishTokenizer(parser, in, this);
             break;
         case fr:
             currentTokenizer = new FrenchTokenizer(parser, in, this);
@@ -299,11 +353,17 @@ public class TokenStream
         case hi:
             currentTokenizer = new HindiTokenizer(parser, in, this);
             break;
+        case ja:
+            currentTokenizer = new JapaneseTokenizer(parser, in, this);
+            break;
         case pt:
             currentTokenizer = new PortugueseTokenizer(parser, in, this);
             break;
         case ro:
             currentTokenizer = new RomanianTokenizer(parser, in, this);
+            break;
+        case ru:
+            currentTokenizer = new RussianTokenizer(parser, in, this);
             break;
         case zh:
             currentTokenizer = new ChineseTokenizer(parser, in, this);
@@ -316,26 +376,7 @@ public class TokenStream
 
     public String getLastLanguageString()
     {
-        switch(languageMode)
-        {
-        case ar:
-            return "ar";
-        case en:
-            return "en";
-        case fr:
-            return "fr";
-        case hi:
-            return "hi";
-        case pt:
-            return "pt";
-        case ro:
-            return "ro";
-        case zh:
-            return "zh";
-        case test:
-            return "test";
-        }
-        return null;
+        return languageModeToString(languageMode);
     }
 
     String regExpFlags;

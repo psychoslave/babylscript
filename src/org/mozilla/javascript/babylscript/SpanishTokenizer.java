@@ -51,17 +51,17 @@ import org.mozilla.javascript.BabylTokenizer;
 import org.mozilla.javascript.Parser;
 import org.mozilla.javascript.TokenCharStream;
 import org.mozilla.javascript.TokenStream;
-import org.mozilla.javascript.babylscript.gen.Keywords;
 
-public class FrenchTokenizer extends BabylGenericTokenizer
+public class SpanishTokenizer extends BabylGenericTokenizer
 {
-    public FrenchTokenizer(Parser p, TokenCharStream in, TokenStream ts)
+    public SpanishTokenizer(Parser p, TokenCharStream in, TokenStream ts)
     {
         super(p, 
                 in, 
                 ts, 
-                new BabylTokenizer.DecimalNumberReader(','),
-                TranslatedNameBindings.getKeywordMap("fr"));
+                // Different regions use either , or . as the decimal separator
+                new BabylTokenizer.DecimalNumberReader(',', '0', '.'),
+                TranslatedNameBindings.getKeywordMap("es"));
     }
 
     protected boolean isStringDelimiter(int ch)

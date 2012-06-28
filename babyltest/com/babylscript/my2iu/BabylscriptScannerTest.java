@@ -89,7 +89,7 @@ public class BabylscriptScannerTest
    @Test
    public void basic8() 
    {
-      assertEquals("8.25", evalStringToString("---ar---\n\ufeff\u062f\u0627\u0644\u0629 \u0623\u064a_\u0634\u0626 (\u0623\u060c\u0628\u200e)\n{\n\u0623\u0631\u062c\u0639 \"\u0623\u0647\u0644\u0627\".\u0637\u0648\u0644 + (1.25 + 3)\u061b\n\u200e}\n\u200e \u0623\u064a_\u0634\u0626(0\u060c0)\u061b"));
+      assertEquals("8.25", evalStringToString("---ar---\n\u062f\u0627\u0644\u0629 \u0623\u064a_\u0634\u0626 (\u0623\u060c\u0628\u200e)\n{\n\u0627\u0631\u062c\u0639 \"\u0623\u0647\u0644\u0627\".\u0637\u0648\u0644 + (1.25 + 3)\u061b\n\u200e}\n\u200e \u0623\u064a_\u0634\u0626(0\u060c0)\u061b"));
    }
 
    @Test

@@ -44,6 +44,7 @@
 
 package org.mozilla.javascript.babylscript;
 
+import java.io.IOException;
 import java.util.Locale;
 import java.util.ResourceBundle;
 
@@ -51,27 +52,41 @@ import org.mozilla.javascript.BabylTokenizer;
 import org.mozilla.javascript.Parser;
 import org.mozilla.javascript.TokenCharStream;
 import org.mozilla.javascript.TokenStream;
-import org.mozilla.javascript.babylscript.gen.Keywords;
 
-public class FrenchTokenizer extends BabylGenericTokenizer
+public class JapaneseTokenizer extends BabylGenericTokenizer
 {
-    public FrenchTokenizer(Parser p, TokenCharStream in, TokenStream ts)
+    public JapaneseTokenizer(Parser p, TokenCharStream in, TokenStream ts)
     {
         super(p, 
                 in, 
                 ts, 
-                new BabylTokenizer.DecimalNumberReader(','),
-                TranslatedNameBindings.getKeywordMap("fr"));
-    }
+                new BabylTokenizer.DecimalNumberReader(),
+                TranslatedNameBindings.getKeywordMap("ja"));
+}
 
+    protected int matchSymbol(int c) throws IOException
+    {
+        // For single-character symbols, we'll substitute kanji symbols with
+        // their English equivalents
+
+        if (c == '\u3002')
+            c = '.';
+        else if (c == '\u3001')
+            c = ',';
+        
+        return super.matchSymbol(c);
+    }
+    
     protected boolean isStringDelimiter(int ch)
     {
-        return (ch == '\'' || ch == '\"' || ch == '\u00AB');
+        return (ch == '\'' || ch == '\"' || ch == '\u300c' 
+                || ch == '\u300e');
     }
     protected int getMatchingStringDelimiter(int ch)
     {
         if (ch == '\'') return '\'';
-        if (ch == '\u00AB') return '\u00BB';
+        if (ch == '\u300c') return '\u300d';
+        if (ch == '\u300e') return '\u300f';
         return '\"';
     }
 }
