@@ -46,6 +46,11 @@ class DefaultMessageProvider implements MessageProvider {
             for (int n = 0; n < arguments.length; n++)
                 messageId = messageId.replace("{" + n + "}", (String)arguments[n]);
         }
+        
+        // Java has some complicated rules where '' is replaced by ' but only sometimes.
+        // (And they are sometimes replaced by " maybe). Here, I'll just do a simple
+        // substitution to handle apostrophes in French and other languages
+        messageId = messageId.replace("''", "'");
         return messageId;
     }
     
