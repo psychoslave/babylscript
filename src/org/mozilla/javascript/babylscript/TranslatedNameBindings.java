@@ -47,6 +47,12 @@ public class TranslatedNameBindings
         EquivalentLanguageNames.put("ru", new String[] {"ru", "\u0440\u0443"});
         EquivalentLanguageNames.put("\u0440\u0443", new String[] {"ru", "\u0440\u0443"});
 
+        EquivalentLanguageNames.put("bn", new String[] {"bn", "\u09AC\u09BE\u0982"});
+        EquivalentLanguageNames.put("\u09AC\u09BE\u0982", new String[] {"bn", "\u09AC\u09BE\u0982"});
+        
+        EquivalentLanguageNames.put("ko", new String[] {"ko", "\uD55C\uAD6D\uC5B4"});
+        EquivalentLanguageNames.put("\uD55C\uAD6D\uC5B4", new String[] {"ko", "\uD55C\uAD6D\uC5B4"});
+        
         EquivalentLanguageNames = Collections.unmodifiableMap(EquivalentLanguageNames);
     }
 
@@ -64,6 +70,8 @@ public class TranslatedNameBindings
         langResourceMap.put("ja", arrayToMap(Objects.ja));
         langResourceMap.put("de", arrayToMap(Objects.de));
         langResourceMap.put("ru", arrayToMap(Objects.ru));
+        langResourceMap.put("bn", arrayToMap(Objects.bn));
+        langResourceMap.put("ko", arrayToMap(Objects.ko));
 
         keywordResourceMap.put("en", arrayToMap(Keywords.en));
         keywordResourceMap.put("fr", arrayToMap(Keywords.fr));
@@ -76,6 +84,8 @@ public class TranslatedNameBindings
         keywordResourceMap.put("ja", arrayToMap(Keywords.ja));
         keywordResourceMap.put("de", arrayToMap(Keywords.de));
         keywordResourceMap.put("ru", arrayToMap(Keywords.ru));
+        keywordResourceMap.put("bn", arrayToMap(Keywords.bn));
+        keywordResourceMap.put("ko", arrayToMap(Keywords.ko));
     }
     
     private static void fillTranslationsFromResourceBundle(Scriptable obj, String lang, Map<String, String> res, String[] english)
