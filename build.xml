@@ -213,7 +213,7 @@
 	</zip>
     <zip destfile="${dist.dir}/babylscript-src-${DSTAMP}.zip">
       <fileset dir="." includes="examples/**,testsrc/**,src/**,toolsrc/**,xmlimplsrc/**"/>
-      <fileset dir="." includes="babyltest/**,babylrunner/**"/>
+      <fileset dir="." includes="babyltest/**,babylrunner/**,babyltools/**"/>
       <fileset dir="." includes="deprecatedsrc/**"/>
       <fileset dir="." includes="*.properties,build-date,build.xml,LICENSE.txt,README.html,README.Babylscript.txt"/>
     </zip>
@@ -355,6 +355,9 @@
 babylscriptrun  creates a simple command-line tool for running 
 	            Babylscript programs
 
+babylgen     regenerates some internal java files of translations 
+	         for different languages from property files
+	
 babylpkg     packages up Babylscript in distributable form
 	
  clean       remove all compiled classes and copied property files
@@ -378,6 +381,7 @@ babylpkg     packages up Babylscript in distributable form
  smalljar    create ${small-rhino.jar} in ${dist.dir} with
              minimalist set of Rhino classes. See footprint.html
              from the doc directory for details.
+	         (you can use this to make a Babylscript jar)
 
  javadoc     generate Rhino API documentation
              in ${dist.dir}/javadoc
