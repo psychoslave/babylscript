@@ -139,7 +139,9 @@ public abstract class ScriptableObject implements Scriptable, Serializable,
         REMOVED.wasDeleted = true;
     }
 
-    private transient Slot[] slots;
+    //private transient Slot[] slots;
+    private HashMap<String, Slot> stringSlots = new HashMap<String, Slot>();
+    private HashMap<Integer, Slot> intSlots = new HashMap<Integer, Slot>();
     // If count >= 0, it gives number of keys or if count < 0,
     // it indicates sealed object where ~count gives number of keys
     private int count;
@@ -2389,7 +2391,68 @@ public abstract class ScriptableObject implements Scriptable, Serializable,
 
     private Slot accessSlot(String name, int index, int accessType)
     {
-        int indexOrHash = (name != null ? name.hashCode() : index);
+        if (name == null)
+            return accessIntSlot(index, accessType);
+        else
+            return accessStringSlot(name, accessType);
+    }
+    private Slot accessStringSlot(String name, int accessType)
+    {
+        if (accessType == SLOT_QUERY ||
+            accessType == SLOT_MODIFY ||
+            accessType == SLOT_MODIFY_CONST ||
+            accessType == SLOT_MODIFY_GETTER_SETTER)
+        {
+            // Check the hashtable without using synchronization
+            Slot slot = stringSlots.get(name);
+            if (accessType == SLOT_QUERY) {
+                return slot;
+            } else if (accessType == SLOT_MODIFY) {
+                if (slot != null)
+                    return slot;
+            } else if (accessType == SLOT_MODIFY_GETTER_SETTER) {
+                if (slot instanceof GetterSlot)
+                    return slot;
+            } else if (accessType == SLOT_MODIFY_CONST) {
+                if (slot != null)
+                    return slot;
+            }
+
+            // A new slot has to be inserted or the old has to be replaced
+            // by GetterSlot. Time to synchronize.
+
+            synchronized (this) {
+                Slot newSlot = (accessType == SLOT_MODIFY_GETTER_SETTER
+                                ? new GetterSlot(name, 0, 0)
+                                : new Slot(name, 0, 0));
+                if (accessType == SLOT_MODIFY_CONST)
+                    newSlot.setAttributes(CONST);
+                ++count;
+                // add new slot to linked list
+                stringSlots.put(name, newSlot);
+                return newSlot;
+            }
+
+        } else if (accessType == SLOT_REMOVE) {
+            synchronized (this) {
+                if (count != 0) {
+                    Slot slot = stringSlots.get(name);
+                    if (slot != null && (slot.getAttributes() & PERMANENT) == 0) {
+                        count--;
+                        stringSlots.remove(name);
+                    }
+                }
+            }
+            return null;
+
+        } else {
+            throw Kit.codeBug();
+        }
+    }
+
+    private Slot accessIntSlot(int index, int accessType)
+    {
+        int indexOrHash = index;
 
         if (accessType == SLOT_QUERY ||
             accessType == SLOT_MODIFY ||
@@ -2398,179 +2461,43 @@ public abstract class ScriptableObject implements Scriptable, Serializable,
         {
             // Check the hashtable without using synchronization
 
-            Slot[] slotsLocalRef = slots; // Get stable local reference
-            if (slotsLocalRef == null) {
-                if (accessType == SLOT_QUERY)
-                    return null;
-            } else {
-                int tableSize = slotsLocalRef.length;
-                int slotIndex = getSlotIndex(tableSize, indexOrHash);
-                Slot slot = slotsLocalRef[slotIndex];
-                while (slot != null) {
-                    String sname = slot.name;
-                    if (sname != null) {
-                        if (sname == name)
-                            break;
-                        if (name != null && indexOrHash == slot.indexOrHash) {
-                            if (name.equals(sname)) {
-                                // This will avoid calling String.equals when
-                                // slot is accessed with same string object
-                                // next time.
-                                slot.name = name;
-                                break;
-                            }
-                        }
-                    } else if (name == null &&
-                               indexOrHash == slot.indexOrHash) {
-                        break;
-                    }
-                    slot = slot.next;
-                }
-                if (accessType == SLOT_QUERY) {
+            Slot slot = intSlots.get(index);
+            if (accessType == SLOT_QUERY) {
+                return slot;
+            } else if (accessType == SLOT_MODIFY) {
+                if (slot != null)
                     return slot;
-                } else if (accessType == SLOT_MODIFY) {
-                    if (slot != null)
-                        return slot;
-                } else if (accessType == SLOT_MODIFY_GETTER_SETTER) {
-                    if (slot instanceof GetterSlot)
-                        return slot;
-                } else if (accessType == SLOT_MODIFY_CONST) {
-                    if (slot != null)
-                        return slot;
-                }
+            } else if (accessType == SLOT_MODIFY_GETTER_SETTER) {
+                if (slot instanceof GetterSlot)
+                    return slot;
+            } else if (accessType == SLOT_MODIFY_CONST) {
+                if (slot != null)
+                    return slot;
             }
 
             // A new slot has to be inserted or the old has to be replaced
             // by GetterSlot. Time to synchronize.
 
             synchronized (this) {
-                // Refresh local ref if another thread triggered grow
-                slotsLocalRef = slots;
-                int insertPos;
-                if (count == 0) {
-                    // Always throw away old slots if any on empty insert
-                    slotsLocalRef = new Slot[5];
-                    slots = slotsLocalRef;
-                    insertPos = getSlotIndex(slotsLocalRef.length, indexOrHash);
-                } else {
-                    int tableSize = slotsLocalRef.length;
-                    insertPos = getSlotIndex(tableSize, indexOrHash);
-                    Slot prev = slotsLocalRef[insertPos];
-                    Slot slot = prev;
-                    while (slot != null) {
-                        if (slot.indexOrHash == indexOrHash &&
-                            (slot.name == name ||
-                             (name != null && name.equals(slot.name))))
-                        {
-                            break;
-                        }
-                        prev = slot;
-                        slot = slot.next;
-                    }
-
-                    if (slot != null) {
-                        // Another thread just added a slot with same
-                        // name/index before this one entered synchronized
-                        // block. This is a race in application code and
-                        // probably indicates bug there. But for the hashtable
-                        // implementation it is harmless with the only
-                        // complication is the need to replace the added slot
-                        // if we need GetterSlot and the old one is not.
-                        if (accessType == SLOT_MODIFY_GETTER_SETTER &&
-                            !(slot instanceof GetterSlot))
-                        {
-                            GetterSlot newSlot = new GetterSlot(name,
-                                    indexOrHash, slot.getAttributes());
-                            newSlot.value = slot.value;
-                            newSlot.next = slot.next;
-                            // add new slot to linked list
-                            if (lastAdded != null)
-                                lastAdded.orderedNext = newSlot;
-                            if (firstAdded == null)
-                                firstAdded = newSlot;
-                            lastAdded = newSlot;
-                            // add new slot to hash table
-                            if (prev == slot) {
-                                slotsLocalRef[insertPos] = newSlot;
-                            } else {
-                                prev.next = newSlot;
-                            }
-                            // other housekeeping
-                            slot.wasDeleted = true;
-                            slot.value = null;
-                            slot.name = null;
-                            if (slot == lastAccess) {
-                                lastAccess = REMOVED;
-                            }
-                            slot = newSlot;
-                        } else if (accessType == SLOT_MODIFY_CONST) {
-                            return null;
-                        }
-                        return slot;
-                    }
-
-                    // Check if the table is not too full before inserting.
-                    if (4 * (count + 1) > 3 * slotsLocalRef.length) {
-                        slotsLocalRef = new Slot[slotsLocalRef.length * 2 + 1];
-                        copyTable(slots, slotsLocalRef, count);
-                        slots = slotsLocalRef;
-                        insertPos = getSlotIndex(slotsLocalRef.length,
-                                indexOrHash);
-                    }
-                }
-
                 Slot newSlot = (accessType == SLOT_MODIFY_GETTER_SETTER
-                                ? new GetterSlot(name, indexOrHash, 0)
-                                : new Slot(name, indexOrHash, 0));
+                                ? new GetterSlot(null, indexOrHash, 0)
+                                : new Slot(null, indexOrHash, 0));
                 if (accessType == SLOT_MODIFY_CONST)
                     newSlot.setAttributes(CONST);
                 ++count;
                 // add new slot to linked list
-                if (lastAdded != null)
-                    lastAdded.orderedNext = newSlot;
-                if (firstAdded == null)
-                    firstAdded = newSlot;
-                lastAdded = newSlot;
-                // add new slot to hash table, return it
-                addKnownAbsentSlot(slotsLocalRef, newSlot, insertPos);
+                intSlots.put(index, newSlot);
                 return newSlot;
             }
 
         } else if (accessType == SLOT_REMOVE) {
             synchronized (this) {
-                Slot[] slotsLocalRef = slots;
                 if (count != 0) {
-                    int tableSize = slots.length;
-                    int slotIndex = getSlotIndex(tableSize, indexOrHash);
-                    Slot prev = slotsLocalRef[slotIndex];
-                    Slot slot = prev;
-                    while (slot != null) {
-                        if (slot.indexOrHash == indexOrHash &&
-                            (slot.name == name ||
-                             (name != null && name.equals(slot.name))))
-                        {
-                            break;
-                        }
-                        prev = slot;
-                        slot = slot.next;
-                    }
+                    Slot slot = intSlots.get(index);
                     if (slot != null && (slot.getAttributes() & PERMANENT) == 0) {
                         count--;
                         // remove slot from hash table
-                        if (prev == slot) {
-                            slotsLocalRef[slotIndex] = slot.next;
-                        } else {
-                            prev.next = slot.next;
-                        }
-                        // Mark the slot as removed. It is still referenced
-                        // from the order-added linked list, but will be
-                        // cleaned up later
-                        slot.wasDeleted = true;
-                        slot.value = null;
-                        slot.name = null;
-                        if (slot == lastAccess) {
-                            lastAccess = REMOVED;
-                        }
+                        stringSlots.remove(index);
                     }
                 }
             }
@@ -2587,26 +2514,26 @@ public abstract class ScriptableObject implements Scriptable, Serializable,
     }
 
     // Must be inside synchronized (this)
-    private static void copyTable(Slot[] slots, Slot[] newSlots, int count)
-    {
-        if (count == 0) throw Kit.codeBug();
-
-        int tableSize = newSlots.length;
-        int i = slots.length;
-        for (;;) {
-            --i;
-            Slot slot = slots[i];
-            while (slot != null) {
-                int insertPos = getSlotIndex(tableSize, slot.indexOrHash);
-                Slot next = slot.next;
-                addKnownAbsentSlot(newSlots, slot, insertPos);
-                slot.next = null;
-                slot = next;
-                if (--count == 0)
-                    return;
-            }
-        }
-    }
+//    private static void copyTable(Slot[] slots, Slot[] newSlots, int count)
+//    {
+//        if (count == 0) throw Kit.codeBug();
+//
+//        int tableSize = newSlots.length;
+//        int i = slots.length;
+//        for (;;) {
+//            --i;
+//            Slot slot = slots[i];
+//            while (slot != null) {
+//                int insertPos = getSlotIndex(tableSize, slot.indexOrHash);
+//                Slot next = slot.next;
+//                addKnownAbsentSlot(newSlots, slot, insertPos);
+//                slot.next = null;
+//                slot = next;
+//                if (--count == 0)
+//                    return;
+//            }
+//        }
+//    }
 
     /**
      * Add slot with keys that are known to absent from the table.
@@ -2628,40 +2555,12 @@ public abstract class ScriptableObject implements Scriptable, Serializable,
     }
 
     Object[] getIds(boolean getAll) {
-        Slot[] s = slots;
-        Object[] a = ScriptRuntime.emptyArgs;
-        if (s == null)
-            return a;
+        Object[] a = new Object[intSlots.size() + stringSlots.size()];
         int c = 0;
-        Slot slot = firstAdded; 
-        while (slot != null && slot.wasDeleted) {
-            // as long as we're traversing the order-added linked list,
-            // remove deleted slots
-            slot = slot.orderedNext;
-        }
-        firstAdded = slot;
-        if (slot != null) {
-            for (;;) {
-                if (getAll || (slot.getAttributes() & DONTENUM) == 0) {
-                    if (c == 0)
-                        a = new Object[s.length];
-                    a[c++] = slot.name != null
-                                 ? (Object) slot.name
-                                 : Integer.valueOf(slot.indexOrHash);
-                }
-                Slot next = slot.orderedNext;
-                while (next != null && next.wasDeleted) {
-                    // remove deleted slots
-                    next = next.orderedNext;
-                }
-                slot.orderedNext = next;
-                if (next == null) {
-                    break;
-                }
-                slot = next;
-            }
-        }
-        lastAdded = slot;
+        for (Integer key: intSlots.keySet())
+            a[c++] = key;
+        for (String key: stringSlots.keySet())
+            a[c++] = key;
         if (c == a.length)
             return a;
         Object[] result = new Object[c];

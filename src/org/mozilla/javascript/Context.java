@@ -2644,7 +2644,7 @@ public class Context
     int instructionThreshold;
 
     // For cooperative multithreading
-    public final static int TIMESLICE_NONE = 20000;
+    public final static int TIMESLICE_NONE = 20000000;
     int timeSliceSize = TIMESLICE_NONE;
     int timeSliceUsed = 0;
     public static class TimeSliceExpiredClass {
