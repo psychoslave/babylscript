@@ -200,4 +200,19 @@ public class NumberConversionsTest
       // numerals (they're only *rendered* using different digits) 
       assertEquals("1", evalStringToString(ar, "---ar---a= {}; a['2.5'] = 1; a[\u0662\u066B\u0665];"));
    }
+
+   // Rhino seems to cast things to numbers unnecessarily, which is 
+   // normally fine because integers and their string representations
+   // are normally bijective, but that's not the case in Babylscript
+   @Test
+   public void getSetElem0()
+   {
+       assertEquals("3", evalStringToString(en, "a= {}; a[2] = 3; a['\u0662'] = 1; a['2']"));
+   }
+
+   @Test
+   public void getSetElem1()
+   {
+       assertEquals("1", evalStringToString(en, "a= []; a[2] = 3; a['\u0662'] = 1; a['2']"));
+   }
 }
