@@ -65,6 +65,22 @@ import java.util.Map;
 
 public class ParserToJS extends ParserErrorReportingBase
 {
+	private static class JSRecompilerNodeFactory
+	{
+		JSNode createNode(String str)
+		{
+			return new JSNode(str);
+		}
+	}
+	private static class JSNode
+	{
+		JSNode(String data) 
+		{
+			this.data = data;
+		}
+		String data;
+	}
+	
     // TokenInformation flags : currentFlaggedToken stores them together
     // with token type
     final static int
@@ -76,6 +92,7 @@ public class ParserToJS extends ParserErrorReportingBase
 
     private int currentFlaggedToken;
     private IRFactory nf;
+    private JSRecompilerNodeFactory jsFactory = new JSRecompilerNodeFactory();
 
     private int nestingOfFunction;
 

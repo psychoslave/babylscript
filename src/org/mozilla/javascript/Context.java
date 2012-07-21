@@ -1372,6 +1372,22 @@ public class Context
             throw new RuntimeException();
         }
     }
+    
+    public final String compileStringToJS(String source, String sourceName,
+            int lineno) 
+    {
+    	if (lineno < 0) {
+    		// For compatibility IllegalArgumentException can not be thrown here
+    		lineno = 0;
+    	}
+        try {
+        	return compileToJSImpl(null, source, sourceName, lineno, null);
+        } catch (IOException ex) {
+            // Should not happen when dealing with source as string
+            throw new RuntimeException();
+        }
+    }
+
 
     /**
      * Compile a JavaScript function.
@@ -2353,6 +2369,45 @@ public class Context
         }
         return cx;
     }
+
+    private String compileToJSImpl(
+            Reader sourceReader, String sourceString,
+            String sourceName, int lineno,
+            ErrorReporter compilationErrorReporter) throws IOException
+    {
+    	if(sourceName == null) {
+    		sourceName = "unnamed script";
+    	}
+
+    	// One of sourceReader or sourceString has to be null
+    	if (!(sourceReader == null ^ sourceString == null)) Kit.codeBug();
+
+    	CompilerEnvirons compilerEnv = new CompilerEnvirons();
+    	compilerEnv.initFromContext(this);
+    	if (compilationErrorReporter == null) {
+    		compilationErrorReporter = compilerEnv.getErrorReporter();
+    	}
+
+    	if (debugger != null) {
+    		if (sourceReader != null) {
+    			sourceString = Kit.readReader(sourceReader);
+    			sourceReader = null;
+    		}
+    	}
+
+    	ParserToJS p = new ParserToJS(compilerEnv, compilationErrorReporter);
+    	ScriptOrFnNode tree;
+    	if (sourceString != null) {
+    		tree = p.parse(sourceString, sourceName, lineno);
+    	} else {
+    		tree = p.parse(sourceReader, sourceName, lineno);
+    	}
+
+    	String result = "";
+    	return result;
+    }
+
+
 
     private Object compileImpl(Scriptable scope,
                                Reader sourceReader, String sourceString,
