@@ -48,13 +48,13 @@ import java.util.Map;
 import java.util.ResourceBundle;
 
 import org.mozilla.javascript.BabylTokenizer;
-import org.mozilla.javascript.Parser;
+import org.mozilla.javascript.ParserErrorReportingBase;
 import org.mozilla.javascript.TokenCharStream;
 import org.mozilla.javascript.TokenStream;
 
 public class BabylGenericTokenizer extends BabylTokenizer
 {
-    BabylGenericTokenizer(Parser p, TokenCharStream in, TokenStream ts, DecimalNumberReader numberReader, Map<String, String> keywords)
+    BabylGenericTokenizer(ParserErrorReportingBase p, TokenCharStream in, TokenStream ts, DecimalNumberReader numberReader, Map<String, String> keywords)
     {
         super(p, in, ts, numberReader);
         

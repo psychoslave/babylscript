@@ -77,7 +77,7 @@ import org.mozilla.javascript.babylscript.SpanishTokenizer;
 
 public class TokenStream
 {
-    TokenStream(Parser parser, Reader sourceReader, String sourceString,
+    TokenStream(ParserErrorReportingBase parser, Reader sourceReader, String sourceString,
                 int lineno, LanguageMode startLanguageMode, CustomTokenizerConfig customLanguageConfig)
     {
         this.parser = parser;
@@ -417,5 +417,5 @@ public class TokenStream
     private CustomTokenizerConfig customLanguageConfig;
     private XMLTokenizer xmlTokenizer;
     
-    private Parser parser;
+    private ParserErrorReportingBase parser;
 }

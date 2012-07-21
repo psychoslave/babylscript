@@ -90,10 +90,10 @@ public class BabylTokenizer
     // Input stream management
     TokenCharStream in;
 
-    Parser parser;
+    ParserErrorReportingBase parser;
     TokenStream ts;
     DecimalNumberReader numberReader;
-    public BabylTokenizer(Parser p, TokenCharStream in, TokenStream ts, DecimalNumberReader numberReader)
+    public BabylTokenizer(ParserErrorReportingBase p, TokenCharStream in, TokenStream ts, DecimalNumberReader numberReader)
     {
         this.parser = p;
         this.ts = ts;
@@ -678,7 +678,7 @@ public class BabylTokenizer
         // character in the stream). Returns Token.EMPTY (for no match), Token.ERROR,
         // or Token.NUMBER. If it returns Token.EMPTY, then the state of the stream
         // will not be modified, but it will be modified in the other cases.
-        public int matchNumber(int c, TokenCharStream in, Parser parser) throws IOException {
+        public int matchNumber(int c, TokenCharStream in, ParserErrorReportingBase parser) throws IOException {
             // is it a number?
             if (!isDigit(c) && !(isDecimalSeparator(c) && isDigit(in.peekChar()))) 
                 return Token.EMPTY;

@@ -63,7 +63,7 @@ import java.util.Map;
  * @author Brendan Eich
  */
 
-public class Parser extends ParserErrorReportingBase
+public class ParserToJS extends ParserErrorReportingBase
 {
     // TokenInformation flags : currentFlaggedToken stores them together
     // with token type
@@ -98,7 +98,7 @@ public class Parser extends ParserErrorReportingBase
         return ts.getLineno();
     }
 
-    public Parser(CompilerEnvirons compilerEnv, ErrorReporter errorReporter)
+    public ParserToJS(CompilerEnvirons compilerEnv, ErrorReporter errorReporter)
     {
         this.compilerEnv = compilerEnv;
         this.errorReporter = errorReporter;
@@ -326,7 +326,7 @@ public class Parser extends ParserErrorReportingBase
         throws IOException
     {
         this.decompiler = createDecompiler(compilerEnv);
-        this.nf = new IRFactory(this);
+        //this.nf = new IRFactory(this);
         currentScriptOrFn = nf.createScript();
         currentScope = currentScriptOrFn;
         int sourceStartOffset = decompiler.getCurrentOffset();

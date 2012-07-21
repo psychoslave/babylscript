@@ -48,13 +48,13 @@ import java.util.Locale;
 import java.util.ResourceBundle;
 
 import org.mozilla.javascript.BabylTokenizer;
-import org.mozilla.javascript.Parser;
+import org.mozilla.javascript.ParserErrorReportingBase;
 import org.mozilla.javascript.TokenCharStream;
 import org.mozilla.javascript.TokenStream;
 
 public class PortugueseTokenizer extends BabylGenericTokenizer
 {
-    public PortugueseTokenizer(Parser p, TokenCharStream in, TokenStream ts)
+    public PortugueseTokenizer(ParserErrorReportingBase p, TokenCharStream in, TokenStream ts)
     {
         super(p, 
                 in, 
