@@ -96,4 +96,15 @@ public class BabylscriptToJSTest
 	   assertEquals("24", evalStringToString("16+8"));
    }
 
+   @Test
+   public void simpleOperators2() 
+   {
+	   assertEquals("5", evalStringToString("15%10"));
+   }
+
+   @Test
+   public void simpleOperators3() 
+   {
+	   assertEquals("15", evalStringToString("'1' + 5"));
+   }
 }

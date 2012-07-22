@@ -90,6 +90,16 @@ public class ParserToJS extends ParserErrorReportingBase
 		{
 			return new JSFunction(name);
 		}
+		JSNode createSimpleBinaryOperator(String operator, JSNode left, JSNode right)
+		{
+            return createNode()
+            		.add("babylwrap(")
+            		.add("(").add(left).add(").obj")
+            		.add(operator)
+            		.add("(").add(right).add(").obj")
+            		.add(")");
+			
+		}
 		JSNode createNumber(String str)
 		{
 			return new JSNode("babylwrap(" + str + ")");
@@ -1762,11 +1772,11 @@ public class ParserToJS extends ParserErrorReportingBase
         throws IOException, ParserException
     {
         JSNode pn = andExpr(inForInit);
-// TODO: Fill this in        
-//        if (matchToken(Token.OR)) {
-//            decompiler.addToken(Token.OR);
+        if (matchToken(Token.OR)) {
+            decompiler.addToken(Token.OR);
+            pn = jsFactory.createSimpleBinaryOperator(tokenToString(Token.OR), pn, orExpr(inForInit));
 //            pn = nf.createBinary(Token.OR, pn, orExpr(inForInit));
-//        }
+        }
 
         return pn;
     }
@@ -1775,11 +1785,11 @@ public class ParserToJS extends ParserErrorReportingBase
         throws IOException, ParserException
     {
         JSNode pn = bitOrExpr(inForInit);
-// TODO: fill this in        
-//        if (matchToken(Token.AND)) {
-//            decompiler.addToken(Token.AND);
+        if (matchToken(Token.AND)) {
+            decompiler.addToken(Token.AND);
+            pn = jsFactory.createSimpleBinaryOperator(tokenToString(Token.AND), pn, andExpr(inForInit));
 //            pn = nf.createBinary(Token.AND, pn, andExpr(inForInit));
-//        }
+        }
 
         return pn;
     }
@@ -1788,11 +1798,11 @@ public class ParserToJS extends ParserErrorReportingBase
         throws IOException, ParserException
     {
         JSNode pn = bitXorExpr(inForInit);
-// TODO: Fill this in        
-//        while (matchToken(Token.BITOR)) {
-//            decompiler.addToken(Token.BITOR);
+        while (matchToken(Token.BITOR)) {
+            decompiler.addToken(Token.BITOR);
+            pn = jsFactory.createSimpleBinaryOperator(tokenToString(Token.BITXOR), pn, bitXorExpr(inForInit));
 //            pn = nf.createBinary(Token.BITOR, pn, bitXorExpr(inForInit));
-//        }
+        }
         return pn;
     }
 
@@ -1800,11 +1810,11 @@ public class ParserToJS extends ParserErrorReportingBase
         throws IOException, ParserException
     {
         JSNode pn = bitAndExpr(inForInit);
-// TODO: fill this in        
-//        while (matchToken(Token.BITXOR)) {
-//            decompiler.addToken(Token.BITXOR);
+        while (matchToken(Token.BITXOR)) {
+            decompiler.addToken(Token.BITXOR);
+            pn = jsFactory.createSimpleBinaryOperator(tokenToString(Token.BITXOR), pn, bitAndExpr(inForInit));
 //            pn = nf.createBinary(Token.BITXOR, pn, bitAndExpr(inForInit));
-//        }
+        }
         return pn;
     }
 
@@ -1812,11 +1822,11 @@ public class ParserToJS extends ParserErrorReportingBase
         throws IOException, ParserException
     {
         JSNode pn = eqExpr(inForInit);
-// TODO: Fill this in        
-//        while (matchToken(Token.BITAND)) {
-//            decompiler.addToken(Token.BITAND);
+        while (matchToken(Token.BITAND)) {
+            decompiler.addToken(Token.BITAND);
+            pn = jsFactory.createSimpleBinaryOperator(tokenToString(Token.BITAND), pn, eqExpr(inForInit));
 //            pn = nf.createBinary(Token.BITAND, pn, eqExpr(inForInit));
-//        }
+        }
         return pn;
     }
 
@@ -1826,15 +1836,15 @@ public class ParserToJS extends ParserErrorReportingBase
         JSNode pn = relExpr(inForInit);
         for (;;) {
             int tt = peekToken();
+            switch (tt) {
+              case Token.EQ:
+              case Token.NE:
+              case Token.SHEQ:
+              case Token.SHNE:
+                consumeToken();
+                int decompilerToken = tt;
+                int parseToken = tt;
 // TODO: Fill this in            
-//            switch (tt) {
-//              case Token.EQ:
-//              case Token.NE:
-//              case Token.SHEQ:
-//              case Token.SHNE:
-//                consumeToken();
-//                int decompilerToken = tt;
-//                int parseToken = tt;
 //                if (compilerEnv.getLanguageVersion() == Context.VERSION_1_2) {
 //                    // JavaScript 1.2 uses shallow equality for == and != .
 //                    // In addition, convert === and !== for decompiler into
@@ -1856,10 +1866,11 @@ public class ParserToJS extends ParserErrorReportingBase
 //                        break;
 //                    }
 //                }
-//                decompiler.addToken(decompilerToken);
+                decompiler.addToken(decompilerToken);
+                pn = jsFactory.createSimpleBinaryOperator(tokenToString(parseToken), pn, relExpr(inForInit));
 //                pn = nf.createBinary(parseToken, pn, relExpr(inForInit));
-//                continue;
-//            }
+                continue;
+            }
             break;
         }
         return pn;
@@ -1871,22 +1882,22 @@ public class ParserToJS extends ParserErrorReportingBase
         JSNode pn = shiftExpr();
         for (;;) {
             int tt = peekToken();
+            switch (tt) {
 // TODO: Fill this in            
-//            switch (tt) {
 //              case Token.IN:
 //                if (inForInit)
 //                    break;
 //                // fall through
 //              case Token.INSTANCEOF:
-//              case Token.LE:
-//              case Token.LT:
-//              case Token.GE:
-//              case Token.GT:
-//                consumeToken();
-//                decompiler.addToken(tt);
-//                pn = nf.createBinary(tt, pn, shiftExpr());
-//                continue;
-//            }
+              case Token.LE:
+              case Token.LT:
+              case Token.GE:
+              case Token.GT:
+                consumeToken();
+                decompiler.addToken(tt);
+                pn = jsFactory.createSimpleBinaryOperator(tokenToString(tt), pn, shiftExpr());
+                continue;
+            }
             break;
         }
         return pn;
@@ -1897,17 +1908,17 @@ public class ParserToJS extends ParserErrorReportingBase
     {
         JSNode pn = addExpr();
         for (;;) {
-// TODO: Fill this in
-//            int tt = peekToken();
-//            switch (tt) {
-//              case Token.LSH:
-//              case Token.URSH:
-//              case Token.RSH:
-//                consumeToken();
-//                decompiler.addToken(tt);
+            int tt = peekToken();
+            switch (tt) {
+              case Token.LSH:
+              case Token.URSH:
+              case Token.RSH:
+                consumeToken();
+                decompiler.addToken(tt);
+                pn = jsFactory.createSimpleBinaryOperator(tokenToString(tt), pn, addExpr());
 //                pn = nf.createBinary(tt, pn, addExpr());
-//                continue;
-//            }
+                continue;
+            }
             break;
         }
         return pn;
@@ -1918,15 +1929,15 @@ public class ParserToJS extends ParserErrorReportingBase
     {
         JSNode pn = mulExpr();
         for (;;) {
-// TODO: Fill this in        	
-//            int tt = peekToken();
-//            if (tt == Token.ADD || tt == Token.SUB) {
-//                consumeToken();
-//                decompiler.addToken(tt);
-//                // flushNewLines
+            int tt = peekToken();
+            if (tt == Token.ADD || tt == Token.SUB) {
+                consumeToken();
+                decompiler.addToken(tt);
+                // flushNewLines
+                pn = jsFactory.createSimpleBinaryOperator(tokenToString(tt), pn, mulExpr());
 //                pn = nf.createBinary(tt, pn, mulExpr());
-//                continue;
-//            }
+                continue;
+            }
             break;
         }
 
@@ -1939,16 +1950,16 @@ public class ParserToJS extends ParserErrorReportingBase
         JSNode pn = unaryExpr();
         for (;;) {
             int tt = peekToken();
-// TODO: Fill this in            
-//            switch (tt) {
-//              case Token.MUL:
-//              case Token.DIV:
-//              case Token.MOD:
-//                consumeToken();
-//                decompiler.addToken(tt);
+            switch (tt) {
+              case Token.MUL:
+              case Token.DIV:
+              case Token.MOD:
+                consumeToken();
+                decompiler.addToken(tt);
+                pn = jsFactory.createSimpleBinaryOperator(tokenToString(tt), pn, unaryExpr());
 //                pn = nf.createBinary(tt, pn, unaryExpr());
-//                continue;
-//            }
+                continue;
+            }
             break;
         }
 
@@ -3097,5 +3108,103 @@ public class ParserToJS extends ParserErrorReportingBase
             elems.add(nf.createUnary(Token.SET, f));
         }
         return true;
+    }
+    
+    private String tokenToString(int token)
+    {
+        switch(token) {
+        case Token.TRUE: return "true";
+        case Token.FALSE: return "false";
+        case Token.NULL: return "null";
+        case Token.THIS: return "this";
+        case Token.FUNCTION: return "function";
+        case Token.COMMA: return ", ";
+        case Token.LC: return "{ ";
+        case Token.RC:  return "}";
+        case Token.LP: return "(";
+        case Token.RP: return ")";
+        case Token.LB: return "[";
+        case Token.RB: return "]";
+        case Token.DOT: return ".";
+        case Token.NEW: return "new ";
+        case Token.DELPROP: return "delete ";
+        case Token.IF: return "if";
+        case Token.ELSE: return "else";
+        case Token.FOR: return "for";
+        case Token.IN: return " in ";
+        case Token.WITH: return "with ";
+        case Token.WHILE: return "while ";
+        case Token.DO: return "do";
+        case Token.TRY: return "true";
+        case Token.CATCH: return "catch";
+        case Token.FINALLY: return "finally";
+        case Token.THROW: return "throw";
+        case Token.SWITCH: return "switch";
+        case Token.BREAK: return "break";
+        case Token.CONTINUE: return "continue";
+        case Token.CASE: return "case";
+        case Token.DEFAULT: return "default";
+        case Token.RETURN: return "return";
+        case Token.VAR: return "var ";
+        case Token.LET: return "let ";
+        case Token.SEMI: return ";";
+        case Token.ASSIGN: return "=";
+        case Token.ASSIGN_ADD: return "+=";
+        case Token.ASSIGN_SUB: return "-=";
+        case Token.ASSIGN_MUL: return "*=";
+        case Token.ASSIGN_DIV: return "/=";
+        case Token.ASSIGN_MOD: return "%=";
+        case Token.ASSIGN_BITOR: return "|=";
+        case Token.ASSIGN_BITXOR: return "^=";
+        case Token.ASSIGN_BITAND: return "&=";
+        case Token.ASSIGN_LSH: return "<<=";
+        case Token.ASSIGN_RSH: return ">>=";
+        case Token.ASSIGN_URSH: return ">>>=";
+        case Token.HOOK: return "?";
+        case Token.OBJECTLIT: return ":";
+        case Token.COLON: return ":";
+        case Token.OR: return "||";
+        case Token.AND: return "&&";
+        case Token.BITOR: return "|";
+        case Token.BITXOR: return "^";
+        case Token.BITAND: return "&";
+        case Token.SHEQ: return "===";
+        case Token.SHNE: return "!==";
+        case Token.EQ: return "==";
+        case Token.NE: return "!=";
+        case Token.LE: return "<=";
+        case Token.LT: return "<";
+        case Token.GE: return ">=";
+        case Token.GT: return ">";
+        case Token.INSTANCEOF: return "instanceof ";
+        case Token.LSH: return "<<";
+        case Token.RSH: return ">>";
+        case Token.URSH: return ">>>";
+        case Token.TYPEOF: return "typeof ";
+        case Token.VOID: return "void ";
+        case Token.CONST: return "const";
+        case Token.YIELD: return "yield";
+        case Token.NOT: return "!";
+        case Token.BITNOT: return "~";
+        case Token.POS: return "+";
+        case Token.NEG: return "-";
+        case Token.INC: return "++";
+        case Token.DEC: return "--";
+        case Token.ADD: return "+";
+        case Token.SUB: return "-";
+        case Token.MUL: return "*";
+        case Token.DIV: return "/";
+        case Token.MOD: return "%";
+        
+        
+        
+        case Token.COLONCOLON: return "::";
+        case Token.DOTDOT: return "..";
+        case Token.DOTQUERY: return ".(";
+        case Token.XMLATTR: return "@";
+
+        default:
+        	throw new RuntimeException("Looking for a string representation for a token that shouldn't be looked up");
+        }
     }
 }
