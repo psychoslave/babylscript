@@ -48,8 +48,12 @@ package org.mozilla.javascript;
 
 import java.io.Reader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.mozilla.javascript.Node.Scope;
+import org.mozilla.javascript.Node.Symbol;
 
 /**
  * This class implements the JavaScript parser.
@@ -67,18 +71,100 @@ public class ParserToJS extends ParserErrorReportingBase
 {
 	private static class JSRecompilerNodeFactory
 	{
+		JSScript createScript()
+		{
+			return new JSScript();
+		}
 		JSNode createNode(String str)
 		{
 			return new JSNode(str);
 		}
+		JSFunction createFunction(String name)
+		{
+			return new JSFunction(name);
+		}
 	}
 	private static class JSNode
 	{
+		JSNode()
+		{
+			this.data = "";
+		}
 		JSNode(String data) 
 		{
 			this.data = data;
 		}
 		String data;
+		public String toString() { return data; }
+		int type;
+		public int getType() { return type; }
+		public void addToBack(JSNode node) {
+			this.data += node.data;
+		}
+		
+	}
+	private static class JSScope extends JSNode
+	{
+		JSScope parent = null;
+		HashMap<String, Symbol> symbolTable = new HashMap<String, Symbol>();
+		public Symbol getSymbol(String name)
+		{
+			return symbolTable.get(name);
+		}
+		public void putSymbol(String name, Symbol symbol) 
+		{
+//			symbol.containingTable = this;
+			symbolTable.put(name, symbol);
+		}
+		public JSScope getDefiningScope(String name) {
+			if (symbolTable.containsKey(name)) return this;
+			if (parent != null) return parent.getDefiningScope(name);
+			return null;
+		}
+		public void setParent(JSScope parent) {
+			this.parent = parent;
+		}
+		public JSScope getParentScope() {
+			return parent;
+		}
+	}
+	private static class JSScript extends JSScope
+	{
+		public void setSourceName(String sourceURI) {}
+		public void setBaseLineno(int baseLineno) {}
+		public void setEncodedSourceBounds(int sourceStartOffset,
+				int sourceEndOffset) {}
+		public String getNextTempName() {
+			tempNum++;
+			return "$" + tempNum;
+		}
+		private int tempNum = 0;
+		private ArrayList<JSFunction> functions = new ArrayList<JSFunction>();
+		private ArrayList<String> regexps = new ArrayList<String>();
+		public int addFunction(JSFunction fnNode) {
+			functions.add(fnNode);
+			return functions.size() - 1;
+		}
+		public JSFunction getFunctionNode(int fnIndex) {
+			return functions.get(fnIndex);
+		}
+	    public int addRegexp(String string, String flags) {
+	        if (string == null) Kit.codeBug();
+	        regexps.add(string);
+	        regexps.add(flags);
+	        return regexps.size() / 2 - 1;
+	    }
+	}
+	private static class JSFunction extends JSScript
+	{
+		public JSFunction(String name) {
+			super();
+			this.name = name;
+		}
+	    boolean itsIgnoreDynamicScope = false;
+		private String name = "";
+		public String getFunctionName() { return name; }
+		public void setEndLineno(int lineno) { }
 	}
 	
     // TokenInformation flags : currentFlaggedToken stores them together
@@ -102,8 +188,8 @@ public class ParserToJS extends ParserErrorReportingBase
 // The following are per function variables and should be saved/restored
 // during function parsing.
 // XXX Move to separated class?
-    ScriptOrFnNode currentScriptOrFn;
-    Node.Scope currentScope;
+    JSScript currentScriptOrFn;
+    JSScope currentScope;
     private int nestingOfWith;
     private Map<String,Node> labelSet; // map of label names into nodes
     private ObjArray loopSet;
@@ -248,10 +334,11 @@ public class ParserToJS extends ParserErrorReportingBase
     }
     
     void pushScope(Node node) {
-        Node.Scope scopeNode = (Node.Scope) node;
-        if (scopeNode.getParentScope() != null) throw Kit.codeBug();
-        scopeNode.setParent(currentScope);
-        currentScope = scopeNode;
+// TODO: Fix this up!    	
+//        JSScope scopeNode = (JSScope) node;
+//        if (scopeNode.getParentScope() != null) throw Kit.codeBug();
+//        scopeNode.setParent(currentScope);
+//        currentScope = scopeNode;
     }
     
     void popScope() {
@@ -307,7 +394,7 @@ public class ParserToJS extends ParserErrorReportingBase
      * parse failure will result in a call to the ErrorReporter from
      * CompilerEnvirons.)
      */
-    public ScriptOrFnNode parse(String sourceString,
+    public String parse(String sourceString,
                                 String sourceURI, int lineno)
     {
         this.sourceURI = sourceURI;
@@ -329,7 +416,7 @@ public class ParserToJS extends ParserErrorReportingBase
      * parse failure will result in a call to the ErrorReporter from
      * CompilerEnvirons.)
      */
-    public ScriptOrFnNode parse(Reader sourceReader,
+    public String parse(Reader sourceReader,
                                 String sourceURI, int lineno)
         throws IOException
     {
@@ -339,12 +426,12 @@ public class ParserToJS extends ParserErrorReportingBase
         return parse();
     }
 
-    private ScriptOrFnNode parse()
+    private String parse()
         throws IOException
     {
         this.decompiler = createDecompiler(compilerEnv);
         //this.nf = new IRFactory(this);
-        currentScriptOrFn = nf.createScript();
+        currentScriptOrFn = jsFactory.createScript();
         currentScope = currentScriptOrFn;
         int sourceStartOffset = decompiler.getCurrentOffset();
         this.encodedSource = null;
@@ -357,6 +444,7 @@ public class ParserToJS extends ParserErrorReportingBase
 
         /* so we have something to add nodes to until
          * we've collected all the source */
+//        JSNode pn = new JSNode();
         Node pn = nf.createLeaf(Token.BLOCK);
 
         try {
@@ -380,6 +468,7 @@ public class ParserToJS extends ParserErrorReportingBase
                 } else {
                     n = statement();
                 }
+//                pn.addToBack(n);
                 nf.addChildToBack(pn, n);
             }
         } catch (StackOverflowError ex) {
@@ -398,20 +487,21 @@ public class ParserToJS extends ParserErrorReportingBase
 
         currentScriptOrFn.setSourceName(sourceURI);
         currentScriptOrFn.setBaseLineno(baseLineno);
-        currentScriptOrFn.setEndLineno(ts.getLineno());
+        currentScriptOrFn.setBaseLineno(ts.getLineno());
 
         int sourceEndOffset = decompiler.getCurrentOffset();
         currentScriptOrFn.setEncodedSourceBounds(sourceStartOffset,
                                                  sourceEndOffset);
 
-        nf.initScript(currentScriptOrFn, pn);
+// TODO: Fill this in later
+//        nf.initScript(currentScriptOrFn, pn);
 
         if (compilerEnv.isGeneratingSource()) {
             encodedSource = decompiler.getEncodedSource();
         }
         this.decompiler = null; // It helps GC
 
-        return currentScriptOrFn;
+        return currentScriptOrFn.toString();
     }
 
     /*
@@ -505,7 +595,7 @@ public class ParserToJS extends ParserErrorReportingBase
 
         boolean nested = insideFunction();
 
-        FunctionNode fnNode = nf.createFunction(name);
+        JSFunction fnNode = jsFactory.createFunction(name);
         if (nested || nestingOfWith > 0) {
             // 1. Nested functions are not affected by the dynamic scope flag
             // as dynamic scope is already a parent of their scope.
@@ -518,9 +608,9 @@ public class ParserToJS extends ParserErrorReportingBase
 
         int functionSourceEnd;
 
-        ScriptOrFnNode savedScriptOrFn = currentScriptOrFn;
+        JSScript savedScriptOrFn = currentScriptOrFn;
         currentScriptOrFn = fnNode;
-        Node.Scope savedCurrentScope = currentScope;
+        JSScope savedCurrentScope = currentScope;
         currentScope = fnNode;
         int savedNestingOfWith = nestingOfWith;
         nestingOfWith = 0;
@@ -616,7 +706,9 @@ public class ParserToJS extends ParserErrorReportingBase
         fnNode.setBaseLineno(baseLineno);
         fnNode.setEndLineno(ts.getLineno());
 
-        Node pn = nf.initFunction(fnNode, functionIndex, body, syntheticType);
+// TODO: Fill this in later
+//        Node pn = nf.initFunction(fnNode, functionIndex, body, syntheticType);
+        Node pn = null;
         if (memberExprNode != null) {
             pn = nf.createAssignment(Token.ASSIGN, memberExprNode, pn);
             if (functionType != FunctionNode.FUNCTION_EXPRESSION) {
@@ -1325,7 +1417,7 @@ public class ParserToJS extends ParserErrorReportingBase
         if (nowAllSet(before, endFlags, 
                       Node.END_YIELDS|Node.END_RETURNS_VALUE))
         {
-            String name = ((FunctionNode)currentScriptOrFn).getFunctionName();
+            String name = ((JSFunction)currentScriptOrFn).getFunctionName();
             if (name.length() == 0)
                 addError("msg.anon.generator.returns", "");
             else
@@ -1438,7 +1530,7 @@ public class ParserToJS extends ParserErrorReportingBase
     }
     
     void defineSymbol(int declType, boolean ignoreNotInBlock, String name) {
-        Node.Scope definingScope = currentScope.getDefiningScope(name);
+        JSScope definingScope = currentScope.getDefiningScope(name);
         Node.Scope.Symbol symbol = definingScope != null 
                                   ? definingScope.getSymbol(name)
                                   : null;
@@ -2503,7 +2595,7 @@ public class ParserToJS extends ParserErrorReportingBase
             return false;
         }
         int fnIndex = f.getExistingIntProp(Node.FUNCTION_PROP);
-        FunctionNode fn = currentScriptOrFn.getFunctionNode(fnIndex);
+        JSFunction fn = currentScriptOrFn.getFunctionNode(fnIndex);
         if (fn.getFunctionName().length() != 0) {
             reportError("msg.bad.prop");
             return false;

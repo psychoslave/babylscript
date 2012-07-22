@@ -2396,14 +2396,13 @@ public class Context
     	}
 
     	ParserToJS p = new ParserToJS(compilerEnv, compilationErrorReporter);
-    	ScriptOrFnNode tree;
+    	String result;
     	if (sourceString != null) {
-    		tree = p.parse(sourceString, sourceName, lineno);
+    		result = p.parse(sourceString, sourceName, lineno);
     	} else {
-    		tree = p.parse(sourceReader, sourceName, lineno);
+    		result = p.parse(sourceReader, sourceName, lineno);
     	}
 
-    	String result = "";
     	return result;
     }
 
