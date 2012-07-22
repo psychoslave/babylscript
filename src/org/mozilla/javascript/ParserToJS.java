@@ -78,6 +78,10 @@ public class ParserToJS extends ParserErrorReportingBase
 		{
 			return new JSScript();
 		}
+		JSNode createNode() 
+		{
+			return new JSNode();
+		}
 		JSNode createNode(String str)
 		{
 			return new JSNode(str);
@@ -85,6 +89,19 @@ public class ParserToJS extends ParserErrorReportingBase
 		JSFunction createFunction(String name)
 		{
 			return new JSFunction(name);
+		}
+		JSNode createNumber(String str)
+		{
+			return new JSNode("babylwrap(" + str + ")");
+		}
+		JSNode createString(String str)
+		{
+			return new JSNode("babylwrap('" + str.replace("\\", "\\\\").replace("\"", "\\\"").replace("'", "\\'")
+					.replace("\n", "\\\n").replace("\f", "\\\f").replace("\t", "\\\t").replace("\r", "\\\r") + "')");
+		}
+		JSNode createError(String str)
+		{
+			return new JSNode("error");
 		}
 	}
 	private static class JSNode
@@ -104,7 +121,16 @@ public class ParserToJS extends ParserErrorReportingBase
 		public void addToBack(JSNode node) {
 			this.data += node.data;
 		}
-		
+		public JSNode add(String str)
+		{
+			this.data += str;
+			return this;
+		}
+		public JSNode add(JSNode node)
+		{
+			this.data += node.data;
+			return this;
+		}
 	}
 	private static class JSScope extends JSNode
 	{
@@ -516,8 +542,9 @@ public class ParserToJS extends ParserErrorReportingBase
         currentScriptOrFn.setEncodedSourceBounds(sourceStartOffset,
                                                  sourceEndOffset);
 
-// TODO: Fill this in later
+// TODO: This is probably fine, but double-check
 //        nf.initScript(currentScriptOrFn, pn);
+        currentScriptOrFn.add(pn);
 
         if (compilerEnv.isGeneratingSource()) {
             encodedSource = decompiler.getEncodedSource();
@@ -570,176 +597,178 @@ public class ParserToJS extends ParserErrorReportingBase
     private Node function(int functionType)
         throws IOException, ParserException
     {
-        int syntheticType = functionType;
-        int baseLineno = ts.getLineno();  // line number where source starts
-
-        int functionSourceStart = decompiler.markFunctionStart(functionType);
-        String name;
-        String lang;
-        Node memberExprNode = null;
-        if (matchToken(Token.NAME)) {
-            lang = ts.getLastLanguageString();
-            name = ts.getString();
-            decompiler.addName(name);
-            if (!matchToken(Token.LP)) {
-                if (compilerEnv.isAllowMemberExprAsFunctionName()) {
-                    // Extension to ECMA: if 'function <name>' does not follow
-                    // by '(', assume <name> starts memberExpr
-                    Node memberExprHead = nf.createName(lang, name);
-                    name = "";
-                    memberExprNode = memberExprTail(false, memberExprHead);
-                }
-                mustMatchToken(Token.LP, "msg.no.paren.parms");
-            }
-        } else if (matchToken(Token.LP)) {
-            // Anonymous function
-            name = "";
-        } else {
-            name = "";
-            if (compilerEnv.isAllowMemberExprAsFunctionName()) {
-                // Note that memberExpr can not start with '(' like
-                // in function (1+2).toString(), because 'function (' already
-                // processed as anonymous function
-                memberExprNode = memberExpr(false);
-            }
-            mustMatchToken(Token.LP, "msg.no.paren.parms");
-        }
-
-        if (memberExprNode != null) {
-            syntheticType = FunctionNode.FUNCTION_EXPRESSION;
-        } 
-        
-        if (syntheticType != FunctionNode.FUNCTION_EXPRESSION && 
-            name.length() > 0)
-        {
-            // Function statements define a symbol in the enclosing scope
-            defineSymbol(Token.FUNCTION, false, name);
-        }
-
-        boolean nested = insideFunction();
-
-        JSFunction fnNode = jsFactory.createFunction(name);
-        if (nested || nestingOfWith > 0) {
-            // 1. Nested functions are not affected by the dynamic scope flag
-            // as dynamic scope is already a parent of their scope.
-            // 2. Functions defined under the with statement also immune to
-            // this setup, in which case dynamic scope is ignored in favor
-            // of with object.
-            fnNode.itsIgnoreDynamicScope = true;
-        }
-        int functionIndex = currentScriptOrFn.addFunction(fnNode);
-
-        int functionSourceEnd;
-
-        JSScript savedScriptOrFn = currentScriptOrFn;
-        currentScriptOrFn = fnNode;
-        JSScope savedCurrentScope = currentScope;
-        currentScope = fnNode;
-        int savedNestingOfWith = nestingOfWith;
-        nestingOfWith = 0;
-        Map<String,Node> savedLabelSet = labelSet;
-        labelSet = null;
-        ObjArray savedLoopSet = loopSet;
-        loopSet = null;
-        ObjArray savedLoopAndSwitchSet = loopAndSwitchSet;
-        loopAndSwitchSet = null;
-        int savedFunctionEndFlags = endFlags;
-        endFlags = 0;
-
-        Node destructuring = null;
-        Node body;
-        try {
-            decompiler.addToken(Token.LP);
-            if (!matchToken(Token.RP)) {
-                boolean first = true;
-                do {
-                    if (!first)
-                        decompiler.addToken(Token.COMMA);
-                    first = false;
-                    int tt = peekToken();
-                    if (tt == Token.LB || tt == Token.LC) {
-                        // Destructuring assignment for parameters: add a 
-                        // dummy parameter name, and add a statement to the
-                        // body to initialize variables from the destructuring
-                        // assignment
-                        if (destructuring == null) {
-                            destructuring = new Node(Token.COMMA);
-                        }
-                        String parmName = currentScriptOrFn.getNextTempName();
-                        defineSymbol(Token.LP, false, parmName);
-                        destructuring.addChildToBack(
-                            nf.createDestructuringAssignment(Token.VAR,
-                                primaryExpr(), nf.createName(ScriptRuntime.TOFILL, parmName)));
-                    } else {
-                        mustMatchToken(Token.NAME, "msg.no.parm");
-                        String s = ts.getString();
-                        defineSymbol(Token.LP, false, s);
-                        decompiler.addName(s);
-                    }
-                } while (matchEitherToken(Token.COMMA, Token.SEMI));
-
-                mustMatchToken(Token.RP, "msg.no.paren.after.parms");
-            }
-            decompiler.addToken(Token.RP);
-
-            mustMatchToken(Token.LC, "msg.no.brace.body");
-            decompiler.addEOL(Token.LC);
-            body = parseFunctionBody();
-            if (destructuring != null) {
-                body.addChildToFront(
-                    new Node(Token.EXPR_VOID, destructuring, ts.getLineno()));
-            }
-            mustMatchToken(Token.RC, "msg.no.brace.after.body");
-
-            if (compilerEnv.isStrictMode() && !body.hasConsistentReturnUsage())
-            {
-              String msg = name.length() > 0 ? "msg.no.return.value"
-                                             : "msg.anon.no.return.value";
-              addStrictWarning(msg, name);
-            }
-            
-            if (syntheticType == FunctionNode.FUNCTION_EXPRESSION &&
-                name.length() > 0 && currentScope.getSymbol(name) == null) 
-            {
-                // Function expressions define a name only in the body of the 
-                // function, and only if not hidden by a parameter name
-                defineSymbol(Token.FUNCTION, false, name);
-            }
-            
-            decompiler.addToken(Token.RC);
-            functionSourceEnd = decompiler.markFunctionEnd(functionSourceStart);
-            if (functionType != FunctionNode.FUNCTION_EXPRESSION) {
-                // Add EOL only if function is not part of expression
-                // since it gets SEMI + EOL from Statement in that case
-                decompiler.addToken(Token.EOL);
-            }
-        }
-        finally {
-            endFlags = savedFunctionEndFlags;
-            loopAndSwitchSet = savedLoopAndSwitchSet;
-            loopSet = savedLoopSet;
-            labelSet = savedLabelSet;
-            nestingOfWith = savedNestingOfWith;
-            currentScriptOrFn = savedScriptOrFn;
-            currentScope = savedCurrentScope;
-        }
-
-        fnNode.setEncodedSourceBounds(functionSourceStart, functionSourceEnd);
-        fnNode.setSourceName(sourceURI);
-        fnNode.setBaseLineno(baseLineno);
-        fnNode.setEndLineno(ts.getLineno());
-
-// TODO: Fill this in later
-//        Node pn = nf.initFunction(fnNode, functionIndex, body, syntheticType);
-        Node pn = null;
-        if (memberExprNode != null) {
-            pn = nf.createAssignment(Token.ASSIGN, memberExprNode, pn);
-            if (functionType != FunctionNode.FUNCTION_EXPRESSION) {
-                // XXX check JScript behavior: should it be createExprStatement?
-                pn = nf.createExprStatementNoReturn(pn, baseLineno);
-            }
-        }
-        return pn;
+    	return null;
+// TODO: Fix this later
+//        int syntheticType = functionType;
+//        int baseLineno = ts.getLineno();  // line number where source starts
+//
+//        int functionSourceStart = decompiler.markFunctionStart(functionType);
+//        String name;
+//        String lang;
+//        Node memberExprNode = null;
+//        if (matchToken(Token.NAME)) {
+//            lang = ts.getLastLanguageString();
+//            name = ts.getString();
+//            decompiler.addName(name);
+//            if (!matchToken(Token.LP)) {
+//                if (compilerEnv.isAllowMemberExprAsFunctionName()) {
+//                    // Extension to ECMA: if 'function <name>' does not follow
+//                    // by '(', assume <name> starts memberExpr
+//                    Node memberExprHead = nf.createName(lang, name);
+//                    name = "";
+//                    memberExprNode = memberExprTail(false, memberExprHead);
+//                }
+//                mustMatchToken(Token.LP, "msg.no.paren.parms");
+//            }
+//        } else if (matchToken(Token.LP)) {
+//            // Anonymous function
+//            name = "";
+//        } else {
+//            name = "";
+//            if (compilerEnv.isAllowMemberExprAsFunctionName()) {
+//                // Note that memberExpr can not start with '(' like
+//                // in function (1+2).toString(), because 'function (' already
+//                // processed as anonymous function
+//                memberExprNode = memberExpr(false);
+//            }
+//            mustMatchToken(Token.LP, "msg.no.paren.parms");
+//        }
+//
+//        if (memberExprNode != null) {
+//            syntheticType = FunctionNode.FUNCTION_EXPRESSION;
+//        } 
+//        
+//        if (syntheticType != FunctionNode.FUNCTION_EXPRESSION && 
+//            name.length() > 0)
+//        {
+//            // Function statements define a symbol in the enclosing scope
+//            defineSymbol(Token.FUNCTION, false, name);
+//        }
+//
+//        boolean nested = insideFunction();
+//
+//        JSFunction fnNode = jsFactory.createFunction(name);
+//        if (nested || nestingOfWith > 0) {
+//            // 1. Nested functions are not affected by the dynamic scope flag
+//            // as dynamic scope is already a parent of their scope.
+//            // 2. Functions defined under the with statement also immune to
+//            // this setup, in which case dynamic scope is ignored in favor
+//            // of with object.
+//            fnNode.itsIgnoreDynamicScope = true;
+//        }
+//        int functionIndex = currentScriptOrFn.addFunction(fnNode);
+//
+//        int functionSourceEnd;
+//
+//        JSScript savedScriptOrFn = currentScriptOrFn;
+//        currentScriptOrFn = fnNode;
+//        JSScope savedCurrentScope = currentScope;
+//        currentScope = fnNode;
+//        int savedNestingOfWith = nestingOfWith;
+//        nestingOfWith = 0;
+//        Map<String,Node> savedLabelSet = labelSet;
+//        labelSet = null;
+//        ObjArray savedLoopSet = loopSet;
+//        loopSet = null;
+//        ObjArray savedLoopAndSwitchSet = loopAndSwitchSet;
+//        loopAndSwitchSet = null;
+//        int savedFunctionEndFlags = endFlags;
+//        endFlags = 0;
+//
+//        Node destructuring = null;
+//        Node body;
+//        try {
+//            decompiler.addToken(Token.LP);
+//            if (!matchToken(Token.RP)) {
+//                boolean first = true;
+//                do {
+//                    if (!first)
+//                        decompiler.addToken(Token.COMMA);
+//                    first = false;
+//                    int tt = peekToken();
+//                    if (tt == Token.LB || tt == Token.LC) {
+//                        // Destructuring assignment for parameters: add a 
+//                        // dummy parameter name, and add a statement to the
+//                        // body to initialize variables from the destructuring
+//                        // assignment
+//                        if (destructuring == null) {
+//                            destructuring = new Node(Token.COMMA);
+//                        }
+//                        String parmName = currentScriptOrFn.getNextTempName();
+//                        defineSymbol(Token.LP, false, parmName);
+//                        destructuring.addChildToBack(
+//                            nf.createDestructuringAssignment(Token.VAR,
+//                                primaryExpr(), nf.createName(ScriptRuntime.TOFILL, parmName)));
+//                    } else {
+//                        mustMatchToken(Token.NAME, "msg.no.parm");
+//                        String s = ts.getString();
+//                        defineSymbol(Token.LP, false, s);
+//                        decompiler.addName(s);
+//                    }
+//                } while (matchEitherToken(Token.COMMA, Token.SEMI));
+//
+//                mustMatchToken(Token.RP, "msg.no.paren.after.parms");
+//            }
+//            decompiler.addToken(Token.RP);
+//
+//            mustMatchToken(Token.LC, "msg.no.brace.body");
+//            decompiler.addEOL(Token.LC);
+//            body = parseFunctionBody();
+//            if (destructuring != null) {
+//                body.addChildToFront(
+//                    new Node(Token.EXPR_VOID, destructuring, ts.getLineno()));
+//            }
+//            mustMatchToken(Token.RC, "msg.no.brace.after.body");
+//
+//            if (compilerEnv.isStrictMode() && !body.hasConsistentReturnUsage())
+//            {
+//              String msg = name.length() > 0 ? "msg.no.return.value"
+//                                             : "msg.anon.no.return.value";
+//              addStrictWarning(msg, name);
+//            }
+//            
+//            if (syntheticType == FunctionNode.FUNCTION_EXPRESSION &&
+//                name.length() > 0 && currentScope.getSymbol(name) == null) 
+//            {
+//                // Function expressions define a name only in the body of the 
+//                // function, and only if not hidden by a parameter name
+//                defineSymbol(Token.FUNCTION, false, name);
+//            }
+//            
+//            decompiler.addToken(Token.RC);
+//            functionSourceEnd = decompiler.markFunctionEnd(functionSourceStart);
+//            if (functionType != FunctionNode.FUNCTION_EXPRESSION) {
+//                // Add EOL only if function is not part of expression
+//                // since it gets SEMI + EOL from Statement in that case
+//                decompiler.addToken(Token.EOL);
+//            }
+//        }
+//        finally {
+//            endFlags = savedFunctionEndFlags;
+//            loopAndSwitchSet = savedLoopAndSwitchSet;
+//            loopSet = savedLoopSet;
+//            labelSet = savedLabelSet;
+//            nestingOfWith = savedNestingOfWith;
+//            currentScriptOrFn = savedScriptOrFn;
+//            currentScope = savedCurrentScope;
+//        }
+//
+//        fnNode.setEncodedSourceBounds(functionSourceStart, functionSourceEnd);
+//        fnNode.setSourceName(sourceURI);
+//        fnNode.setBaseLineno(baseLineno);
+//        fnNode.setEndLineno(ts.getLineno());
+//
+//// TODO: Fill this in later
+////        Node pn = nf.initFunction(fnNode, functionIndex, body, syntheticType);
+//        Node pn = null;
+//        if (memberExprNode != null) {
+//            pn = nf.createAssignment(Token.ASSIGN, memberExprNode, pn);
+//            if (functionType != FunctionNode.FUNCTION_EXPRESSION) {
+//                // XXX check JScript behavior: should it be createExprStatement?
+//                pn = nf.createExprStatementNoReturn(pn, baseLineno);
+//            }
+//        }
+//        return pn;
     }
 
     private Node statements(Node scope)
@@ -859,7 +888,7 @@ public class ParserToJS extends ParserErrorReportingBase
     private JSNode statementHelper(Node statementLabel)
         throws IOException, ParserException
     {
-        Node pn = null;
+        JSNode pn = null;
         int tt = peekToken();
 
         switch (tt) {
@@ -1372,8 +1401,9 @@ public class ParserToJS extends ParserErrorReportingBase
 //
           default: {
             int lineno = ts.getLineno();
-            pn = expr(false);
-            pn = nf.createExprStatement(pn, lineno);
+            pn = jsexpr(false);
+// TODO: Fill this in            
+//            pn = nf.createExprStatement(pn, lineno);
             break;
           }
         }
@@ -1398,8 +1428,7 @@ public class ParserToJS extends ParserErrorReportingBase
         }
         decompiler.addEOL(Token.SEMI);
 
-//        return pn;
-        return null;
+        return pn;
     }
 
     /**
@@ -1649,247 +1678,284 @@ public class ParserToJS extends ParserErrorReportingBase
         }
     }
 
+    private JSNode jsexpr(boolean inForInit)
+            throws IOException, ParserException
+        {
+            JSNode pn = jsassignExpr(inForInit);
+    // TODO: Fill this in        
+//            while (matchToken(Token.COMMA)) {
+//                decompiler.addToken(Token.COMMA);
+//                if (compilerEnv.isStrictMode() && !pn.hasSideEffects())
+//                    addStrictWarning("msg.no.side.effects", "");
+//                if (peekToken() == Token.YIELD) {
+//                  reportError("msg.yield.parenthesized");
+//                }
+//                pn = nf.createBinary(Token.COMMA, pn, assignExpr(inForInit));
+//            }
+            return pn;
+        }
+
     private Node expr(boolean inForInit)
         throws IOException, ParserException
     {
         Node pn = assignExpr(inForInit);
-        while (matchToken(Token.COMMA)) {
-            decompiler.addToken(Token.COMMA);
-            if (compilerEnv.isStrictMode() && !pn.hasSideEffects())
-                addStrictWarning("msg.no.side.effects", "");
-            if (peekToken() == Token.YIELD) {
-              reportError("msg.yield.parenthesized");
-            }
-            pn = nf.createBinary(Token.COMMA, pn, assignExpr(inForInit));
-        }
+// TODO: Fill this in        
+//        while (matchToken(Token.COMMA)) {
+//            decompiler.addToken(Token.COMMA);
+//            if (compilerEnv.isStrictMode() && !pn.hasSideEffects())
+//                addStrictWarning("msg.no.side.effects", "");
+//            if (peekToken() == Token.YIELD) {
+//              reportError("msg.yield.parenthesized");
+//            }
+//            pn = nf.createBinary(Token.COMMA, pn, assignExpr(inForInit));
+//        }
         return pn;
     }
+
+    private JSNode jsassignExpr(boolean inForInit)
+            throws IOException, ParserException
+        {
+            int tt = peekToken();
+    // TODO: Fill this in        
+//            if (tt == Token.YIELD) {
+//                consumeToken();
+//                return returnOrYield(tt, true);
+//            }
+            JSNode pn = condExpr(inForInit);
+
+            tt = peekToken();
+    // TODO: Fill this in        
+//            if (Token.FIRST_ASSIGN <= tt && tt <= Token.LAST_ASSIGN) {
+//                consumeToken();
+//                decompiler.addToken(tt);
+//                pn = nf.createAssignment(tt, pn, assignExpr(inForInit));
+//            }
+
+            return pn;
+        }
 
     private Node assignExpr(boolean inForInit)
         throws IOException, ParserException
     {
-        int tt = peekToken();
-        if (tt == Token.YIELD) {
-            consumeToken();
-            return returnOrYield(tt, true);
-        }
-        Node pn = condExpr(inForInit);
+    	return null;
+    }
 
-        tt = peekToken();
-        if (Token.FIRST_ASSIGN <= tt && tt <= Token.LAST_ASSIGN) {
-            consumeToken();
-            decompiler.addToken(tt);
-            pn = nf.createAssignment(tt, pn, assignExpr(inForInit));
-        }
+    private JSNode condExpr(boolean inForInit)
+        throws IOException, ParserException
+    {
+        JSNode pn = orExpr(inForInit);
+
+// TODO: Fill this in        
+//        if (matchToken(Token.HOOK)) {
+//            decompiler.addToken(Token.HOOK);
+//            Node ifTrue = assignExpr(false);
+//            mustMatchToken(Token.COLON, "msg.no.colon.cond");
+//            decompiler.addToken(Token.COLON);
+//            Node ifFalse = assignExpr(inForInit);
+//            return nf.createCondExpr(pn, ifTrue, ifFalse);
+//        }
 
         return pn;
     }
 
-    private Node condExpr(boolean inForInit)
+    private JSNode orExpr(boolean inForInit)
         throws IOException, ParserException
     {
-        Node pn = orExpr(inForInit);
-
-        if (matchToken(Token.HOOK)) {
-            decompiler.addToken(Token.HOOK);
-            Node ifTrue = assignExpr(false);
-            mustMatchToken(Token.COLON, "msg.no.colon.cond");
-            decompiler.addToken(Token.COLON);
-            Node ifFalse = assignExpr(inForInit);
-            return nf.createCondExpr(pn, ifTrue, ifFalse);
-        }
+        JSNode pn = andExpr(inForInit);
+// TODO: Fill this in        
+//        if (matchToken(Token.OR)) {
+//            decompiler.addToken(Token.OR);
+//            pn = nf.createBinary(Token.OR, pn, orExpr(inForInit));
+//        }
 
         return pn;
     }
 
-    private Node orExpr(boolean inForInit)
+    private JSNode andExpr(boolean inForInit)
         throws IOException, ParserException
     {
-        Node pn = andExpr(inForInit);
-        if (matchToken(Token.OR)) {
-            decompiler.addToken(Token.OR);
-            pn = nf.createBinary(Token.OR, pn, orExpr(inForInit));
-        }
+        JSNode pn = bitOrExpr(inForInit);
+// TODO: fill this in        
+//        if (matchToken(Token.AND)) {
+//            decompiler.addToken(Token.AND);
+//            pn = nf.createBinary(Token.AND, pn, andExpr(inForInit));
+//        }
 
         return pn;
     }
 
-    private Node andExpr(boolean inForInit)
+    private JSNode bitOrExpr(boolean inForInit)
         throws IOException, ParserException
     {
-        Node pn = bitOrExpr(inForInit);
-        if (matchToken(Token.AND)) {
-            decompiler.addToken(Token.AND);
-            pn = nf.createBinary(Token.AND, pn, andExpr(inForInit));
-        }
-
+        JSNode pn = bitXorExpr(inForInit);
+// TODO: Fill this in        
+//        while (matchToken(Token.BITOR)) {
+//            decompiler.addToken(Token.BITOR);
+//            pn = nf.createBinary(Token.BITOR, pn, bitXorExpr(inForInit));
+//        }
         return pn;
     }
 
-    private Node bitOrExpr(boolean inForInit)
+    private JSNode bitXorExpr(boolean inForInit)
         throws IOException, ParserException
     {
-        Node pn = bitXorExpr(inForInit);
-        while (matchToken(Token.BITOR)) {
-            decompiler.addToken(Token.BITOR);
-            pn = nf.createBinary(Token.BITOR, pn, bitXorExpr(inForInit));
-        }
+        JSNode pn = bitAndExpr(inForInit);
+// TODO: fill this in        
+//        while (matchToken(Token.BITXOR)) {
+//            decompiler.addToken(Token.BITXOR);
+//            pn = nf.createBinary(Token.BITXOR, pn, bitAndExpr(inForInit));
+//        }
         return pn;
     }
 
-    private Node bitXorExpr(boolean inForInit)
+    private JSNode bitAndExpr(boolean inForInit)
         throws IOException, ParserException
     {
-        Node pn = bitAndExpr(inForInit);
-        while (matchToken(Token.BITXOR)) {
-            decompiler.addToken(Token.BITXOR);
-            pn = nf.createBinary(Token.BITXOR, pn, bitAndExpr(inForInit));
-        }
+        JSNode pn = eqExpr(inForInit);
+// TODO: Fill this in        
+//        while (matchToken(Token.BITAND)) {
+//            decompiler.addToken(Token.BITAND);
+//            pn = nf.createBinary(Token.BITAND, pn, eqExpr(inForInit));
+//        }
         return pn;
     }
 
-    private Node bitAndExpr(boolean inForInit)
+    private JSNode eqExpr(boolean inForInit)
         throws IOException, ParserException
     {
-        Node pn = eqExpr(inForInit);
-        while (matchToken(Token.BITAND)) {
-            decompiler.addToken(Token.BITAND);
-            pn = nf.createBinary(Token.BITAND, pn, eqExpr(inForInit));
-        }
-        return pn;
-    }
-
-    private Node eqExpr(boolean inForInit)
-        throws IOException, ParserException
-    {
-        Node pn = relExpr(inForInit);
+        JSNode pn = relExpr(inForInit);
         for (;;) {
             int tt = peekToken();
-            switch (tt) {
-              case Token.EQ:
-              case Token.NE:
-              case Token.SHEQ:
-              case Token.SHNE:
-                consumeToken();
-                int decompilerToken = tt;
-                int parseToken = tt;
-                if (compilerEnv.getLanguageVersion() == Context.VERSION_1_2) {
-                    // JavaScript 1.2 uses shallow equality for == and != .
-                    // In addition, convert === and !== for decompiler into
-                    // == and != since the decompiler is supposed to show
-                    // canonical source and in 1.2 ===, !== are allowed
-                    // only as an alias to ==, !=.
-                    switch (tt) {
-                      case Token.EQ:
-                        parseToken = Token.SHEQ;
-                        break;
-                      case Token.NE:
-                        parseToken = Token.SHNE;
-                        break;
-                      case Token.SHEQ:
-                        decompilerToken = Token.EQ;
-                        break;
-                      case Token.SHNE:
-                        decompilerToken = Token.NE;
-                        break;
-                    }
-                }
-                decompiler.addToken(decompilerToken);
-                pn = nf.createBinary(parseToken, pn, relExpr(inForInit));
-                continue;
-            }
+// TODO: Fill this in            
+//            switch (tt) {
+//              case Token.EQ:
+//              case Token.NE:
+//              case Token.SHEQ:
+//              case Token.SHNE:
+//                consumeToken();
+//                int decompilerToken = tt;
+//                int parseToken = tt;
+//                if (compilerEnv.getLanguageVersion() == Context.VERSION_1_2) {
+//                    // JavaScript 1.2 uses shallow equality for == and != .
+//                    // In addition, convert === and !== for decompiler into
+//                    // == and != since the decompiler is supposed to show
+//                    // canonical source and in 1.2 ===, !== are allowed
+//                    // only as an alias to ==, !=.
+//                    switch (tt) {
+//                      case Token.EQ:
+//                        parseToken = Token.SHEQ;
+//                        break;
+//                      case Token.NE:
+//                        parseToken = Token.SHNE;
+//                        break;
+//                      case Token.SHEQ:
+//                        decompilerToken = Token.EQ;
+//                        break;
+//                      case Token.SHNE:
+//                        decompilerToken = Token.NE;
+//                        break;
+//                    }
+//                }
+//                decompiler.addToken(decompilerToken);
+//                pn = nf.createBinary(parseToken, pn, relExpr(inForInit));
+//                continue;
+//            }
             break;
         }
         return pn;
     }
 
-    private Node relExpr(boolean inForInit)
+    private JSNode relExpr(boolean inForInit)
         throws IOException, ParserException
     {
-        Node pn = shiftExpr();
+        JSNode pn = shiftExpr();
         for (;;) {
             int tt = peekToken();
-            switch (tt) {
-              case Token.IN:
-                if (inForInit)
-                    break;
-                // fall through
-              case Token.INSTANCEOF:
-              case Token.LE:
-              case Token.LT:
-              case Token.GE:
-              case Token.GT:
-                consumeToken();
-                decompiler.addToken(tt);
-                pn = nf.createBinary(tt, pn, shiftExpr());
-                continue;
-            }
+// TODO: Fill this in            
+//            switch (tt) {
+//              case Token.IN:
+//                if (inForInit)
+//                    break;
+//                // fall through
+//              case Token.INSTANCEOF:
+//              case Token.LE:
+//              case Token.LT:
+//              case Token.GE:
+//              case Token.GT:
+//                consumeToken();
+//                decompiler.addToken(tt);
+//                pn = nf.createBinary(tt, pn, shiftExpr());
+//                continue;
+//            }
             break;
         }
         return pn;
     }
 
-    private Node shiftExpr()
+    private JSNode shiftExpr()
         throws IOException, ParserException
     {
-        Node pn = addExpr();
+        JSNode pn = addExpr();
         for (;;) {
-            int tt = peekToken();
-            switch (tt) {
-              case Token.LSH:
-              case Token.URSH:
-              case Token.RSH:
-                consumeToken();
-                decompiler.addToken(tt);
-                pn = nf.createBinary(tt, pn, addExpr());
-                continue;
-            }
+// TODO: Fill this in
+//            int tt = peekToken();
+//            switch (tt) {
+//              case Token.LSH:
+//              case Token.URSH:
+//              case Token.RSH:
+//                consumeToken();
+//                decompiler.addToken(tt);
+//                pn = nf.createBinary(tt, pn, addExpr());
+//                continue;
+//            }
             break;
         }
         return pn;
     }
 
-    private Node addExpr()
+    private JSNode addExpr()
         throws IOException, ParserException
     {
-        Node pn = mulExpr();
+        JSNode pn = mulExpr();
         for (;;) {
-            int tt = peekToken();
-            if (tt == Token.ADD || tt == Token.SUB) {
-                consumeToken();
-                decompiler.addToken(tt);
-                // flushNewLines
-                pn = nf.createBinary(tt, pn, mulExpr());
-                continue;
-            }
+// TODO: Fill this in        	
+//            int tt = peekToken();
+//            if (tt == Token.ADD || tt == Token.SUB) {
+//                consumeToken();
+//                decompiler.addToken(tt);
+//                // flushNewLines
+//                pn = nf.createBinary(tt, pn, mulExpr());
+//                continue;
+//            }
             break;
         }
 
         return pn;
     }
 
-    private Node mulExpr()
+    private JSNode mulExpr()
         throws IOException, ParserException
     {
-        Node pn = unaryExpr();
+        JSNode pn = unaryExpr();
         for (;;) {
             int tt = peekToken();
-            switch (tt) {
-              case Token.MUL:
-              case Token.DIV:
-              case Token.MOD:
-                consumeToken();
-                decompiler.addToken(tt);
-                pn = nf.createBinary(tt, pn, unaryExpr());
-                continue;
-            }
+// TODO: Fill this in            
+//            switch (tt) {
+//              case Token.MUL:
+//              case Token.DIV:
+//              case Token.MOD:
+//                consumeToken();
+//                decompiler.addToken(tt);
+//                pn = nf.createBinary(tt, pn, unaryExpr());
+//                continue;
+//            }
             break;
         }
 
         return pn;
     }
 
-    private Node unaryExpr()
+    private JSNode unaryExpr()
         throws IOException, ParserException
     {
         int tt;
@@ -1897,63 +1963,66 @@ public class ParserToJS extends ParserErrorReportingBase
         tt = peekToken();
 
         switch(tt) {
-        case Token.VOID:
-        case Token.NOT:
-        case Token.BITNOT:
-        case Token.TYPEOF:
-            consumeToken();
-            decompiler.addToken(tt);
-            return nf.createUnary(tt, unaryExpr());
-
-        case Token.ADD:
-            consumeToken();
-            // Convert to special POS token in decompiler and parse tree
-            decompiler.addToken(Token.POS);
-            return nf.createUnary(Token.POS, unaryExpr());
-
-        case Token.SUB:
-            consumeToken();
-            // Convert to special NEG token in decompiler and parse tree
-            decompiler.addToken(Token.NEG);
-            return nf.createUnary(Token.NEG, unaryExpr());
-
-        case Token.INC:
-        case Token.DEC:
-            consumeToken();
-            decompiler.addToken(tt);
-            return nf.createIncDec(tt, false, memberExpr(true));
-
-        case Token.DELPROP:
-            consumeToken();
-            decompiler.addToken(Token.DELPROP);
-            return nf.createUnary(Token.DELPROP, unaryExpr());
+// TODO: Fill this in        
+//        case Token.VOID:
+//        case Token.NOT:
+//        case Token.BITNOT:
+//        case Token.TYPEOF:
+//            consumeToken();
+//            decompiler.addToken(tt);
+//            return nf.createUnary(tt, unaryExpr());
+//
+//        case Token.ADD:
+//            consumeToken();
+//            // Convert to special POS token in decompiler and parse tree
+//            decompiler.addToken(Token.POS);
+//            return nf.createUnary(Token.POS, unaryExpr());
+//
+//        case Token.SUB:
+//            consumeToken();
+//            // Convert to special NEG token in decompiler and parse tree
+//            decompiler.addToken(Token.NEG);
+//            return nf.createUnary(Token.NEG, unaryExpr());
+//
+//        case Token.INC:
+//        case Token.DEC:
+//            consumeToken();
+//            decompiler.addToken(tt);
+//            return nf.createIncDec(tt, false, memberExpr(true));
+//
+//        case Token.DELPROP:
+//            consumeToken();
+//            decompiler.addToken(Token.DELPROP);
+//            return nf.createUnary(Token.DELPROP, unaryExpr());
 
         case Token.ERROR:
             consumeToken();
             break;
 
-        // XML stream encountered in expression.
-        case Token.LT:
-            if (compilerEnv.isXmlAvailable()) {
-                consumeToken();
-                Node pn = xmlInitializer();
-                return memberExprTail(true, pn);
-            }
-            // Fall thru to the default handling of RELOP
+// TODO: fill this in            
+//        // XML stream encountered in expression.
+//        case Token.LT:
+//            if (compilerEnv.isXmlAvailable()) {
+//                consumeToken();
+//                Node pn = xmlInitializer();
+//                return memberExprTail(true, pn);
+//            }
+//            // Fall thru to the default handling of RELOP
 
         default:
-            Node pn = memberExpr(true);
+            JSNode pn = memberExpr(true);
 
             // Don't look across a newline boundary for a postfix incop.
-            tt = peekTokenOrEOL();
-            if (tt == Token.INC || tt == Token.DEC) {
-                consumeToken();
-                decompiler.addToken(tt);
-                return nf.createIncDec(tt, true, pn);
-            }
+// TODO: Fill this in            
+//            tt = peekTokenOrEOL();
+//            if (tt == Token.INC || tt == Token.DEC) {
+//                consumeToken();
+//                decompiler.addToken(tt);
+//                return nf.createIncDec(tt, true, pn);
+//            }
             return pn;
         }
-        return nf.createName(ScriptRuntime.TOFILL, "error"); // Only reached on error.Try to continue.
+        return jsFactory.createError("error"); // Only reached on error.Try to continue.
 
     }
 
@@ -2047,47 +2116,161 @@ public class ParserToJS extends ParserErrorReportingBase
         decompiler.addToken(Token.RP);
     }
 
-    private Node memberExpr(boolean allowCallSyntax)
+    private JSNode memberExpr(boolean allowCallSyntax)
         throws IOException, ParserException
     {
         int tt;
 
-        Node pn;
+        JSNode pn;
 
         /* Check for new expressions. */
         tt = peekToken();
-        if (tt == Token.NEW) {
-            /* Eat the NEW token. */
-            consumeToken();
-            decompiler.addToken(Token.NEW);
+// TODO: Fill this in        
+//        if (tt == Token.NEW) {
+//            /* Eat the NEW token. */
+//            consumeToken();
+//            decompiler.addToken(Token.NEW);
+//
+//            /* Make a NEW node to append to. */
+//            pn = nf.createCallOrNew(Token.NEW, memberExpr(false));
+//
+//            if (matchToken(Token.LP)) {
+//                decompiler.addToken(Token.LP);
+//                /* Add the arguments to pn, if any are supplied. */
+//                argumentList(pn);
+//            }
+//
+//            /* XXX there's a check in the C source against
+//             * "too many constructor arguments" - how many
+//             * do we claim to support?
+//             */
+//
+//            /* Experimental syntax:  allow an object literal to follow a new expression,
+//             * which will mean a kind of anonymous class built with the JavaAdapter.
+//             * the object literal will be passed as an additional argument to the constructor.
+//             */
+//            tt = peekToken();
+//            if (tt == Token.LC) {
+//                nf.addChildToBack(pn, primaryExpr());
+//            }
+//        } else {
+            pn = jsprimaryExpr();
+//        }
 
-            /* Make a NEW node to append to. */
-            pn = nf.createCallOrNew(Token.NEW, memberExpr(false));
+        return jsmemberExprTail(allowCallSyntax, pn);
+    }
 
-            if (matchToken(Token.LP)) {
-                decompiler.addToken(Token.LP);
-                /* Add the arguments to pn, if any are supplied. */
-                argumentList(pn);
+    private JSNode jsmemberExprTail(boolean allowCallSyntax, JSNode pn)
+            throws IOException, ParserException
+    {
+      tailLoop:
+        for (;;) {
+            int tt = peekToken();
+            switch (tt) {
+
+//              case Token.DOT:
+//              case Token.DOTDOT:
+//                {
+//                    int memberTypeFlags;
+//                    String s;
+//
+//                    consumeToken();
+//                    decompiler.addToken(tt);
+//                    memberTypeFlags = 0;
+//                    if (tt == Token.DOTDOT) {
+//                        mustHaveXML();
+//                        memberTypeFlags = Node.DESCENDANTS_FLAG;
+//                    }
+//                    if (!compilerEnv.isXmlAvailable()) {
+//                        mustMatchToken(Token.NAME, "msg.no.name.after.dot");
+//                        s = ts.getString();
+//                        decompiler.addName(s);
+//                        String lang = lastPeekedLanguageString();
+//                        pn = nf.createPropertyGet(pn, lang, null, s, memberTypeFlags);
+//                        break;
+//                    }
+//
+//                    tt = nextToken();
+//                    switch (tt) {
+//                    
+//                      // needed for generator.throw();
+//                      case Token.THROW:
+//                        decompiler.addName("throw");
+//                        pn = propertyName(pn, "throw", memberTypeFlags);
+//                        break;
+//
+//                      // handles: name, ns::name, ns::*, ns::[expr]
+//                      case Token.NAME:
+//                        s = ts.getString();
+//                        decompiler.addName(s);
+//                        pn = propertyName(pn, s, memberTypeFlags);
+//                        break;
+//
+//                      // handles: *, *::name, *::*, *::[expr]
+//                      case Token.MUL:
+//                        decompiler.addName("*");
+//                        pn = propertyName(pn, "*", memberTypeFlags);
+//                        break;
+//
+//                      // handles: '@attr', '@ns::attr', '@ns::*', '@ns::*',
+//                      //          '@::attr', '@::*', '@*', '@*::attr', '@*::*'
+//                      case Token.XMLATTR:
+//                        decompiler.addToken(Token.XMLATTR);
+//                        pn = attributeAccess(pn, memberTypeFlags);
+//                        break;
+//
+//                      default:
+//                        reportError("msg.no.name.after.dot");
+//                    }
+//                }
+//                break;
+//
+//              case Token.DOTQUERY:
+//                consumeToken();
+//                mustHaveXML();
+//                decompiler.addToken(Token.DOTQUERY);
+//                pn = nf.createDotQuery(pn, expr(false), ts.getLineno());
+//                mustMatchToken(Token.RP, "msg.no.paren");
+//                decompiler.addToken(Token.RP);
+//                break;
+//
+//              case Token.LB:
+//              {
+//                String lang = lastPeekedLanguageString();
+//                consumeToken();
+//                decompiler.addToken(Token.LB);
+//                Node left = expr(false);
+//                if (peekToken() == Token.COLON)
+//                {
+//                    // Look for a reference to a translated name
+//                    consumeToken();
+//                    decompiler.addToken(Token.COLON);
+//                    Node right = expr(false);
+//                    pn = nf.createTranslatedNameGet(pn, null, left, right, 0);
+//                }
+//                else
+//                    pn = nf.createElementGet(pn, lang, null, left, 0);
+//                mustMatchToken(Token.RB, "msg.no.bracket.index");
+//                decompiler.addToken(Token.RB);
+//                break;
+//              }
+//
+//              case Token.LP:
+//                if (!allowCallSyntax) {
+//                    break tailLoop;
+//                }
+//                consumeToken();
+//                decompiler.addToken(Token.LP);
+//                pn = nf.createCallOrNew(Token.CALL, pn);
+//                /* Add the arguments to pn, if any are supplied. */
+//                argumentList(pn);
+//                break;
+//
+              default:
+                break tailLoop;
             }
-
-            /* XXX there's a check in the C source against
-             * "too many constructor arguments" - how many
-             * do we claim to support?
-             */
-
-            /* Experimental syntax:  allow an object literal to follow a new expression,
-             * which will mean a kind of anonymous class built with the JavaAdapter.
-             * the object literal will be passed as an additional argument to the constructor.
-             */
-            tt = peekToken();
-            if (tt == Token.LC) {
-                nf.addChildToBack(pn, primaryExpr());
-            }
-        } else {
-            pn = primaryExpr();
         }
-
-        return memberExprTail(allowCallSyntax, pn);
+        return pn;
     }
 
     private Node memberExprTail(boolean allowCallSyntax, Node pn)
@@ -2380,6 +2563,258 @@ public class ParserToJS extends ParserErrorReportingBase
         }
     }
     
+    private JSNode jsprimaryExpr()
+            throws IOException, ParserException
+    {
+        JSNode pn;
+
+        int ttFlagged = nextFlaggedToken();
+        int tt = ttFlagged & CLEAR_TI_MASK;
+
+        switch(tt) {
+
+//          case Token.FUNCTION:
+//            return function(FunctionNode.FUNCTION_EXPRESSION);
+//
+//          case Token.LB: {
+//            ObjArray elems = new ObjArray();
+//            int skipCount = 0;
+//            int destructuringLen = 0;
+//            decompiler.addToken(Token.LB);
+//            boolean after_lb_or_comma = true;
+//            for (;;) {
+//                tt = peekToken();
+//
+//                if (tt == Token.COMMA || tt == Token.SEMI) {
+//                    consumeToken();
+//                    decompiler.addToken(Token.COMMA);
+//                    if (!after_lb_or_comma) {
+//                        after_lb_or_comma = true;
+//                    } else {
+//                        elems.add(null);
+//                        ++skipCount;
+//                    }
+//                } else if (tt == Token.RB) {
+//                    consumeToken();
+//                    decompiler.addToken(Token.RB);
+//                    // for ([a,] in obj) is legal, but for ([a] in obj) is 
+//                    // not since we have both key and value supplied. The
+//                    // trick is that [a,] and [a] are equivalent in other
+//                    // array literal contexts. So we calculate a special
+//                    // length value just for destructuring assignment.
+//                    destructuringLen = elems.size() + 
+//                                       (after_lb_or_comma ? 1 : 0);
+//                    break;
+//                } else if (skipCount == 0 && elems.size() == 1 &&
+//                           tt == Token.FOR)
+//                {
+//                    Node scopeNode = nf.createScopeNode(Token.ARRAYCOMP, 
+//                                                        ts.getLineno());
+//                    String tempName = currentScriptOrFn.getNextTempName();
+//                    pushScope(scopeNode);
+//                    try {
+//                        defineSymbol(Token.LET, false, tempName);
+//                        Node expr = (Node) elems.get(0);
+//                        Node block = nf.createBlock(ts.getLineno());
+//                        Node init = new Node(Token.EXPR_VOID, 
+//                            nf.createAssignment(Token.ASSIGN, 
+//                                nf.createName(ScriptRuntime.TOFILL, tempName),
+//                                nf.createCallOrNew(Token.NEW,
+//                                    nf.createName(ScriptRuntime.TOFILL, "Array"))), ts.getLineno());
+//                        block.addChildToBack(init);
+//                        block.addChildToBack(arrayComprehension(ScriptRuntime.TOFILL, tempName, 
+//                            expr));
+//                        scopeNode.addChildToBack(block);
+//                        scopeNode.addChildToBack(nf.createName(ScriptRuntime.TOFILL, tempName));
+//                        return scopeNode;
+//                    } finally {
+//                        popScope();
+//                    }
+//                } else {
+//                    if (!after_lb_or_comma) {
+//                        reportError("msg.no.bracket.arg");
+//                    }
+//                    elems.add(assignExpr(false));
+//                    after_lb_or_comma = false;
+//                }
+//            }
+//            return nf.createArrayLiteral(elems, skipCount, destructuringLen);
+//          }
+//
+//          case Token.LC: {
+//            ObjArray elems = new ObjArray();
+//            decompiler.addToken(Token.LC);
+//            if (!matchToken(Token.RC)) {
+//
+//                boolean first = true;
+//            commaloop:
+//                do {
+//                    Object property;
+//
+//                    if (!first)
+//                        decompiler.addToken(Token.COMMA);
+//                    else
+//                        first = false;
+//
+//                    tt = peekToken();
+//                    switch(tt) {
+//                      case Token.NAME:
+//                      case Token.STRING:
+//                        consumeToken();
+//                        // map NAMEs to STRINGs in object literal context
+//                        // but tell the decompiler the proper type
+//                        String s = ts.getString();
+//                        if (tt == Token.NAME) {
+//                            if (s.equals("get") &&
+//                                peekToken() == Token.NAME) {
+//                                decompiler.addToken(Token.GET);
+//                                consumeToken();
+//                                s = ts.getString();
+//                                decompiler.addName(s);
+//                                property = ScriptRuntime.getIndexObject(s);
+//                                if (!getterSetterProperty(elems, property,
+//                                                          true))
+//                                    break commaloop;
+//                                break;
+//                            } else if (s.equals("set") &&
+//                                       peekToken() == Token.NAME) {
+//                                decompiler.addToken(Token.SET);
+//                                consumeToken();
+//                                s = ts.getString();
+//                                decompiler.addName(s);
+//                                property = ScriptRuntime.getIndexObject(s);
+//                                if (!getterSetterProperty(elems, property,
+//                                                          false))
+//                                    break commaloop;
+//                                break;
+//                            }
+//                            decompiler.addName(s);
+//                        } else {
+//                            decompiler.addString(s);
+//                        }
+//                        property = ScriptRuntime.getIndexObject(s);
+//                        plainProperty(elems, property);
+//                        break;
+//
+//                      case Token.NUMBER:
+//                        consumeToken();
+//                        double n = ts.getNumber();
+//                        decompiler.addNumber(n);
+//                        property = ScriptRuntime.getIndexObject(n);
+//                        plainProperty(elems, property);
+//                        break;
+//
+//                      case Token.RC:
+//                        // trailing comma is OK.
+//                        break commaloop;
+//                    default:
+//                        reportError("msg.bad.prop");
+//                        break commaloop;
+//                    }
+//                } while (matchEitherToken(Token.COMMA, Token.SEMI));
+//
+//                mustMatchToken(Token.RC, "msg.no.brace.prop");
+//            }
+//            decompiler.addToken(Token.RC);
+//            return nf.createObjectLiteral(elems);
+//          }
+//          
+//          case Token.LET:
+//            decompiler.addToken(Token.LET);
+//            return let(false);
+//
+//          case Token.LP:
+//
+//            /* Brendan's IR-jsparse.c makes a new node tagged with
+//             * TOK_LP here... I'm not sure I understand why.  Isn't
+//             * the grouping already implicit in the structure of the
+//             * parse tree?  also TOK_LP is already overloaded (I
+//             * think) in the C IR as 'function call.'  */
+//            decompiler.addToken(Token.LP);
+//            pn = expr(false);
+//            pn.putProp(Node.PARENTHESIZED_PROP, Boolean.TRUE);
+//            decompiler.addToken(Token.RP);
+//            mustMatchToken(Token.RP, "msg.no.paren");
+//            return pn;
+//
+//          case Token.XMLATTR:
+//            mustHaveXML();
+//            decompiler.addToken(Token.XMLATTR);
+//            pn = attributeAccess(null, 0);
+//            return pn;
+//
+//          case Token.NAME: {
+//            String name = ts.getString();
+//            String lang = ts.getLastLanguageString();
+//            if ((ttFlagged & TI_CHECK_LABEL) != 0) {
+//                if (peekToken() == Token.COLON) {
+//                    // Do not consume colon, it is used as unwind indicator
+//                    // to return to statementHelper.
+//                    // XXX Better way?
+//                    return nf.createLabel(ts.getLineno());
+//                }
+//            }
+//
+//            decompiler.addName(name);
+//            if (compilerEnv.isXmlAvailable()) {
+//                pn = propertyName(null, name, 0);
+//            } else {
+//                pn = nf.createName(lang, name);
+//            }
+//            return pn;
+//          }
+
+          case Token.NUMBER: {
+            double n = ts.getNumber();
+            String str = ts.getString();
+            decompiler.addNumber(n);
+            return jsFactory.createNumber(str);
+          }
+
+          case Token.STRING: {
+            String s = ts.getString();
+            decompiler.addString(s);
+            return jsFactory.createString(s);
+          }
+
+//          case Token.DIV:
+//          case Token.ASSIGN_DIV: {
+//            // Got / or /= which should be treated as regexp in fact
+//            ts.readRegExp(tt);
+//            String flags = ts.regExpFlags;
+//            ts.regExpFlags = null;
+//            String re = ts.getString();
+//            decompiler.addRegexp(re, flags);
+//            int index = currentScriptOrFn.addRegexp(re, flags);
+//            return nf.createRegExp(index);
+//          }
+//
+//          case Token.NULL:
+//          case Token.THIS:
+//          case Token.FALSE:
+//          case Token.TRUE:
+//            decompiler.addToken(tt);
+//            return nf.createLeaf(tt);
+
+          case Token.RESERVED:
+            reportError("msg.reserved.id");
+            break;
+
+          case Token.ERROR:
+            /* the scanner or one of its subroutines reported the error. */
+            break;
+
+          case Token.EOF:
+            reportError("msg.unexpected.eof");
+            break;
+
+          default:
+            reportError("msg.syntax");
+            break;
+        }
+        return null;    // should never reach here
+    }
+
     private Node primaryExpr()
         throws IOException, ParserException
     {

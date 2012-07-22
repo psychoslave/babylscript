@@ -247,8 +247,11 @@ public class BabylTokenizer
             int match = numberReader.matchNumber(c, in, parser);
             if (match != Token.EMPTY)
             {
-                if (match == Token.NUMBER)
+                if (match == Token.NUMBER) 
+                {
+                	setString(numberReader.readString);
                     setNumber(numberReader.readValue);
+                }
                 return match;
             }
 
@@ -648,6 +651,7 @@ public class BabylTokenizer
     public static class DecimalNumberReader
     {
         protected double readValue;
+        protected String readString;
         protected StringBuilder stringBuffer = new StringBuilder(128);
         protected char decimalSeparator;
         protected char tertiaryDecimalSeparator;
@@ -758,6 +762,7 @@ public class BabylTokenizer
             in.ungetChar(c);
             String numString = stringBuffer.toString();
 
+            readString = numString;
             double dval;
             if (base == 10 && !isInteger) {
                 try {

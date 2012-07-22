@@ -38,7 +38,12 @@ public class BabylscriptToJSTest
 	   Context cx = Context.enter();
 	   cx.setLocale(Locale.ENGLISH);
 	   cx.setOptimizationLevel(-1);
-	   String result = cx.compileStringToJS(code, null, 0, true);
+	   String result = "";
+	   try {
+		   result = cx.compileStringToJS(code, null, 0, true);
+	   } finally {
+		   Context.exit();
+	   }
 	   return result;
    }
    String compileToJSNoHeaders(String code) 
@@ -46,7 +51,12 @@ public class BabylscriptToJSTest
 	   Context cx = Context.enter();
 	   cx.setLocale(Locale.ENGLISH);
 	   cx.setOptimizationLevel(-1);
-	   String result = cx.compileStringToJS(code, null, 0, false);
+	   String result = "";
+	   try {
+		   result = cx.compileStringToJS(code, null, 0, false);
+	   } finally {
+		   Context.exit();
+	   }
 	   return result;
    }
    String evalStringToString(String code)
@@ -56,7 +66,7 @@ public class BabylscriptToJSTest
 	   cx.setLocale(Locale.ENGLISH);
 	   cx.setOptimizationLevel(-1);
 	   try {
-		   return Context.toString(cx.evaluateString(scope, code, "<test>", 0, null));
+		   return Context.toString(cx.evaluateString(scope, js, "<test>", 0, null));
 	   } finally {
 		   Context.exit();
 	   }
@@ -65,13 +75,25 @@ public class BabylscriptToJSTest
    @Test
    public void basic1() 
    {
-	   assertEquals("32", compileToJSNoHeaders("32"));
+	   assertEquals("babylwrap(32)", compileToJSNoHeaders("32"));
+   }
+
+   @Test
+   public void basic2() 
+   {
+	   assertEquals("32", evalStringToString("32"));
+   }
+
+   @Test
+   public void basic3() 
+   {
+	   assertEquals("babylwrap('hello')", compileToJSNoHeaders("'hello'"));
    }
    
-//   @Test
-//   public void basic2() 
-//   {
-//      assertEquals("32", evalStringToString("var a = { b: '3', c: '2'}; a.b + a.c;"));
-//   }
-   
+   @Test
+   public void simpleOperators1() 
+   {
+	   assertEquals("24", evalStringToString("16+8"));
+   }
+
 }
