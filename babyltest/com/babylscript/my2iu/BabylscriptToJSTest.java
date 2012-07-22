@@ -38,7 +38,15 @@ public class BabylscriptToJSTest
 	   Context cx = Context.enter();
 	   cx.setLocale(Locale.ENGLISH);
 	   cx.setOptimizationLevel(-1);
-	   String result = cx.compileStringToJS(code, null, 0);
+	   String result = cx.compileStringToJS(code, null, 0, true);
+	   return result;
+   }
+   String compileToJSNoHeaders(String code) 
+   {
+	   Context cx = Context.enter();
+	   cx.setLocale(Locale.ENGLISH);
+	   cx.setOptimizationLevel(-1);
+	   String result = cx.compileStringToJS(code, null, 0, false);
 	   return result;
    }
    String evalStringToString(String code)
@@ -57,7 +65,7 @@ public class BabylscriptToJSTest
    @Test
    public void basic1() 
    {
-	   assertEquals("32", compileToJS("32"));
+	   assertEquals("32", compileToJSNoHeaders("32"));
    }
    
 //   @Test

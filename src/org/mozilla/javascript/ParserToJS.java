@@ -46,6 +46,9 @@
 
 package org.mozilla.javascript;
 
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -165,6 +168,24 @@ public class ParserToJS extends ParserErrorReportingBase
 		private String name = "";
 		public String getFunctionName() { return name; }
 		public void setEndLineno(int lineno) { }
+	}
+
+	private static String babylscriptJSHeader; 
+	static {
+		InputStream is = ParserToJS.class.getResourceAsStream("/org/mozilla/javascript/babylscriptJSHeader.js");
+		ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+		byte []dataChunk = new byte[512];
+		try {
+			while(true)
+			{
+				int numBytes = is.read(dataChunk);
+				if (numBytes < 0) break;
+				byteStream.write(dataChunk, 0, numBytes);
+			}
+			is.close();
+			byteStream.close();
+			babylscriptJSHeader = new String(byteStream.toByteArray(), "UTF-8");
+		} catch(IOException e) {}
 	}
 	
     // TokenInformation flags : currentFlaggedToken stores them together
@@ -395,13 +416,13 @@ public class ParserToJS extends ParserErrorReportingBase
      * CompilerEnvirons.)
      */
     public String parse(String sourceString,
-                                String sourceURI, int lineno)
+                                String sourceURI, int lineno, boolean withHeaders)
     {
         this.sourceURI = sourceURI;
         this.ts = new TokenStream(this, null, sourceString, lineno, 
                 compilerEnv.getLanguageMode(), compilerEnv.getCustomTokenizerConfig());
         try {
-            return parse();
+            return parse(withHeaders);
         } catch (IOException ex) {
             // Should never happen
             throw new IllegalStateException();
@@ -417,16 +438,16 @@ public class ParserToJS extends ParserErrorReportingBase
      * CompilerEnvirons.)
      */
     public String parse(Reader sourceReader,
-                                String sourceURI, int lineno)
+                                String sourceURI, int lineno, boolean withHeaders)
         throws IOException
     {
         this.sourceURI = sourceURI;
         this.ts = new TokenStream(this, sourceReader, null, lineno,
                 compilerEnv.getLanguageMode(), compilerEnv.getCustomTokenizerConfig());
-        return parse();
+        return parse(withHeaders);
     }
 
-    private String parse()
+    private String parse(boolean withHeaders)
         throws IOException
     {
         this.decompiler = createDecompiler(compilerEnv);
@@ -444,8 +465,8 @@ public class ParserToJS extends ParserErrorReportingBase
 
         /* so we have something to add nodes to until
          * we've collected all the source */
-//        JSNode pn = new JSNode();
-        Node pn = nf.createLeaf(Token.BLOCK);
+        JSNode pn = new JSNode();
+//        Node pn = nf.createLeaf(Token.BLOCK);
 
         try {
             for (;;) {
@@ -455,21 +476,23 @@ public class ParserToJS extends ParserErrorReportingBase
                     break;
                 }
 
-                Node n;
+                JSNode n;
                 if (tt == Token.FUNCTION) {
                     consumeToken();
                     try {
-                        n = function(calledByCompileFunction
-                                     ? FunctionNode.FUNCTION_EXPRESSION
-                                     : FunctionNode.FUNCTION_STATEMENT);
+                    	n = null;
+// TODO: Fill this in later                    	
+//                        n = function(calledByCompileFunction
+//                                     ? FunctionNode.FUNCTION_EXPRESSION
+//                                     : FunctionNode.FUNCTION_STATEMENT);
                     } catch (ParserException e) {
                         break;
                     }
                 } else {
-                    n = statement();
+                    n = jsstatement();
                 }
-//                pn.addToBack(n);
-                nf.addChildToBack(pn, n);
+                pn.addToBack(n);
+//                nf.addChildToBack(pn, n);
             }
         } catch (StackOverflowError ex) {
             String msg = ScriptRuntime.getMessage0(
@@ -501,7 +524,7 @@ public class ParserToJS extends ParserErrorReportingBase
         }
         this.decompiler = null; // It helps GC
 
-        return currentScriptOrFn.toString();
+        return (withHeaders ? babylscriptJSHeader : "") + currentScriptOrFn.toString();
     }
 
     /*
@@ -778,7 +801,7 @@ public class ParserToJS extends ParserErrorReportingBase
         throws IOException
     {
         try {
-            Node pn = statementHelper(null);
+            Node pn = null;  // statementHelper(null);
             if (pn != null) {
                 if (compilerEnv.isStrictMode() && !pn.hasSideEffects())
                     addStrictWarning("msg.no.side.effects", "");
@@ -802,520 +825,551 @@ public class ParserToJS extends ParserErrorReportingBase
         return nf.createExprStatement(nf.createName(ScriptRuntime.TOFILL, "error"), lineno);
     }
 
-    private Node statementHelper(Node statementLabel)
+    private JSNode jsstatement()
+            throws IOException
+        {
+            try {
+                JSNode pn = statementHelper(null);
+                if (pn != null) {
+// TODO: Fix this up                	
+//                    if (compilerEnv.isStrictMode() && !pn.hasSideEffects())
+//                        addStrictWarning("msg.no.side.effects", "");
+                    return pn;
+                }
+            } catch (ParserException e) { }
+
+            // skip to end of statement
+            int lineno = ts.getLineno();
+            guessingStatementEnd: for (;;) {
+                int tt = peekTokenOrEOL();
+                consumeToken();
+                switch (tt) {
+                  case Token.ERROR:
+                  case Token.EOF:
+                  case Token.EOL:
+                  case Token.SEMI:
+                    break guessingStatementEnd;
+                }
+            }
+            return null;
+// TODO: Fill this in            
+//            return nf.createExprStatement(nf.createName(ScriptRuntime.TOFILL, "error"), lineno);
+        }
+
+    private JSNode statementHelper(Node statementLabel)
         throws IOException, ParserException
     {
         Node pn = null;
         int tt = peekToken();
 
         switch (tt) {
-          case Token.IF: {
-            consumeToken();
-
-            decompiler.addToken(Token.IF);
-            int lineno = ts.getLineno();
-            Node cond = condition();
-            decompiler.addEOL(Token.LC);
-            Node ifTrue = statement();
-            Node ifFalse = null;
-            if (matchToken(Token.ELSE)) {
-                decompiler.addToken(Token.RC);
-                decompiler.addToken(Token.ELSE);
-                decompiler.addEOL(Token.LC);
-                ifFalse = statement();
-            }
-            decompiler.addEOL(Token.RC);
-            pn = nf.createIf(cond, ifTrue, ifFalse, lineno);
-            return pn;
-          }
-
-          case Token.SWITCH: {
-            consumeToken();
-
-            decompiler.addToken(Token.SWITCH);
-            int lineno = ts.getLineno();
-            mustMatchToken(Token.LP, "msg.no.paren.switch");
-            decompiler.addToken(Token.LP);
-            pn = enterSwitch(expr(false), lineno);
-            try {
-                mustMatchToken(Token.RP, "msg.no.paren.after.switch");
-                decompiler.addToken(Token.RP);
-                mustMatchToken(Token.LC, "msg.no.brace.switch");
-                decompiler.addEOL(Token.LC);
-
-                boolean hasDefault = false;
-                switchLoop: for (;;) {
-                    tt = nextToken();
-                    Node caseExpression;
-                    switch (tt) {
-                      case Token.RC:
-                        break switchLoop;
-
-                      case Token.CASE:
-                        decompiler.addToken(Token.CASE);
-                        caseExpression = expr(false);
-                        mustMatchToken(Token.COLON, "msg.no.colon.case");
-                        decompiler.addEOL(Token.COLON);
-                        break;
-
-                      case Token.DEFAULT:
-                        if (hasDefault) {
-                            reportError("msg.double.switch.default");
-                        }
-                        decompiler.addToken(Token.DEFAULT);
-                        hasDefault = true;
-                        caseExpression = null;
-                        mustMatchToken(Token.COLON, "msg.no.colon.case");
-                        decompiler.addEOL(Token.COLON);
-                        break;
-
-                      default:
-                        reportError("msg.bad.switch");
-                        break switchLoop;
-                    }
-
-                    Node block = nf.createLeaf(Token.BLOCK);
-                    while ((tt = peekToken()) != Token.RC
-                           && tt != Token.CASE
-                           && tt != Token.DEFAULT
-                           && tt != Token.EOF)
-                    {
-                        nf.addChildToBack(block, statement());
-                    }
-
-                    // caseExpression == null => add default label
-                    nf.addSwitchCase(pn, caseExpression, block);
-                }
-                decompiler.addEOL(Token.RC);
-                nf.closeSwitch(pn);
-            } finally {
-                exitSwitch();
-            }
-            return pn;
-          }
-
-          case Token.WHILE: {
-            consumeToken();
-            decompiler.addToken(Token.WHILE);
-
-            Node loop = enterLoop(statementLabel, true);
-            try {
-                Node cond = condition();
-                decompiler.addEOL(Token.LC);
-                Node body = statement();
-                decompiler.addEOL(Token.RC);
-                pn = nf.createWhile(loop, cond, body);
-            } finally {
-                exitLoop(true);
-            }
-            return pn;
-          }
-
-          case Token.DO: {
-            consumeToken();
-            decompiler.addToken(Token.DO);
-            decompiler.addEOL(Token.LC);
-
-            Node loop = enterLoop(statementLabel, true);
-            try {
-                Node body = statement();
-                decompiler.addToken(Token.RC);
-                mustMatchToken(Token.WHILE, "msg.no.while.do");
-                decompiler.addToken(Token.WHILE);
-                Node cond = condition();
-                pn = nf.createDoWhile(loop, body, cond);
-            } finally {
-                exitLoop(true);
-            }
-            // Always auto-insert semicolon to follow SpiderMonkey:
-            // It is required by ECMAScript but is ignored by the rest of
-            // world, see bug 238945
-            matchToken(Token.SEMI);
-            decompiler.addEOL(Token.SEMI);
-            return pn;
-          }
-
-          case Token.FOR: {
-            consumeToken();
-            boolean isForEach = false;
-            decompiler.addToken(Token.FOR);
-            String lang = lastPeekedLanguageString();
-
-            Node loop = enterLoop(statementLabel, true);
-            try {
-                Node init;  // Node init is also foo in 'foo in object'
-                Node cond;  // Node cond is also object in 'foo in object'
-                Node incr = null;
-                Node body;
-                int declType = -1;
-
-                // See if this is a for each () instead of just a for ()
-                if (matchToken(Token.NAME)) {
-                    decompiler.addName(ts.getString());
-                    if (ts.getString().equals("each")) {
-                        isForEach = true;
-                    } else {
-                        reportError("msg.no.paren.for");
-                    }
-                }
-
-                mustMatchToken(Token.LP, "msg.no.paren.for");
-                decompiler.addToken(Token.LP);
-                tt = peekToken();
-                if (tt == Token.SEMI) {
-                    init = nf.createLeaf(Token.EMPTY);
-                } else {
-                    if (tt == Token.VAR || tt == Token.LET) {
-                        // set init to a var list or initial
-                        consumeToken();    // consume the token
-                        decompiler.addToken(tt);
-                        init = variables(true, tt);
-                        declType = tt;
-                    }
-                    else {
-                        init = expr(true);
-                    }
-                }
-
-                if (matchToken(Token.IN)) {
-                    decompiler.addToken(Token.IN);
-                    // 'cond' is the object over which we're iterating
-                    cond = expr(false);
-                } else {  // ordinary for loop
-                    mustMatchToken(Token.SEMI, "msg.no.semi.for");
-                    decompiler.addToken(Token.SEMI);
-                    if (peekToken() == Token.SEMI) {
-                        // no loop condition
-                        cond = nf.createLeaf(Token.EMPTY);
-                    } else {
-                        cond = expr(false);
-                    }
-
-                    mustMatchToken(Token.SEMI, "msg.no.semi.for.cond");
-                    decompiler.addToken(Token.SEMI);
-                    if (peekToken() == Token.RP) {
-                        incr = nf.createLeaf(Token.EMPTY);
-                    } else {
-                        incr = expr(false);
-                    }
-                }
-
-                mustMatchToken(Token.RP, "msg.no.paren.for.ctrl");
-                decompiler.addToken(Token.RP);
-                decompiler.addEOL(Token.LC);
-                body = statement();
-                decompiler.addEOL(Token.RC);
-
-                if (incr == null) {
-                    // cond could be null if 'in obj' got eaten
-                    // by the init node.
-                    pn = nf.createForIn(declType, lang, loop, init, cond, body,
-                                        isForEach);
-                } else {
-                    pn = nf.createFor(loop, init, cond, incr, body);
-                }
-            } finally {
-                exitLoop(true);
-            }
-            return pn;
-          }
-
-          case Token.TRY: {
-            consumeToken();
-            int lineno = ts.getLineno();
-
-            Node tryblock;
-            Node catchblocks = null;
-            Node finallyblock = null;
-
-            decompiler.addToken(Token.TRY);
-            if (peekToken() != Token.LC) {
-                reportError("msg.no.brace.try");
-            }
-            decompiler.addEOL(Token.LC);
-            tryblock = statement();
-            decompiler.addEOL(Token.RC);
-
-            catchblocks = nf.createLeaf(Token.BLOCK);
-
-            boolean sawDefaultCatch = false;
-            int peek = peekToken();
-            if (peek == Token.CATCH) {
-                while (matchToken(Token.CATCH)) {
-                    if (sawDefaultCatch) {
-                        reportError("msg.catch.unreachable");
-                    }
-                    decompiler.addToken(Token.CATCH);
-                    mustMatchToken(Token.LP, "msg.no.paren.catch");
-                    decompiler.addToken(Token.LP);
-
-                    mustMatchToken(Token.NAME, "msg.bad.catchcond");
-                    String varName = ts.getString();
-                    decompiler.addName(varName);
-
-                    Node catchCond = null;
-                    if (matchToken(Token.IF)) {
-                        decompiler.addToken(Token.IF);
-                        catchCond = expr(false);
-                    } else {
-                        sawDefaultCatch = true;
-                    }
-
-                    mustMatchToken(Token.RP, "msg.bad.catchcond");
-                    decompiler.addToken(Token.RP);
-                    mustMatchToken(Token.LC, "msg.no.brace.catchblock");
-                    decompiler.addEOL(Token.LC);
-
-                    nf.addChildToBack(catchblocks,
-                        nf.createCatch(varName, catchCond,
-                                       statements(null),
-                                       ts.getLineno()));
-
-                    mustMatchToken(Token.RC, "msg.no.brace.after.body");
-                    decompiler.addEOL(Token.RC);
-                }
-            } else if (peek != Token.FINALLY) {
-                mustMatchToken(Token.FINALLY, "msg.try.no.catchfinally");
-            }
-
-            if (matchToken(Token.FINALLY)) {
-                decompiler.addToken(Token.FINALLY);
-                decompiler.addEOL(Token.LC);
-                finallyblock = statement();
-                decompiler.addEOL(Token.RC);
-            }
-
-            pn = nf.createTryCatchFinally(tryblock, catchblocks,
-                                          finallyblock, lineno);
-
-            return pn;
-          }
-
-          case Token.THROW: {
-            consumeToken();
-            if (peekTokenOrEOL() == Token.EOL) {
-                // ECMAScript does not allow new lines before throw expression,
-                // see bug 256617
-                reportError("msg.bad.throw.eol");
-            }
-
-            int lineno = ts.getLineno();
-            decompiler.addToken(Token.THROW);
-            pn = nf.createThrow(expr(false), lineno);
-            break;
-          }
-
-          case Token.BREAK: {
-            consumeToken();
-            int lineno = ts.getLineno();
-
-            decompiler.addToken(Token.BREAK);
-
-            // matchJumpLabelName only matches if there is one
-            Node breakStatement = matchJumpLabelName();
-            if (breakStatement == null) {
-                if (loopAndSwitchSet == null || loopAndSwitchSet.size() == 0) {
-                    reportError("msg.bad.break");
-                    return null;
-                }
-                breakStatement = (Node)loopAndSwitchSet.peek();
-            }
-            pn = nf.createBreak(breakStatement, lineno);
-            break;
-          }
-
-          case Token.CONTINUE: {
-            consumeToken();
-            int lineno = ts.getLineno();
-
-            decompiler.addToken(Token.CONTINUE);
-
-            Node loop;
-            // matchJumpLabelName only matches if there is one
-            Node label = matchJumpLabelName();
-            if (label == null) {
-                if (loopSet == null || loopSet.size() == 0) {
-                    reportError("msg.continue.outside");
-                    return null;
-                }
-                loop = (Node)loopSet.peek();
-            } else {
-                loop = nf.getLabelLoop(label);
-                if (loop == null) {
-                    reportError("msg.continue.nonloop");
-                    return null;
-                }
-            }
-            pn = nf.createContinue(loop, lineno);
-            break;
-          }
-
-          case Token.WITH: {
-            consumeToken();
-
-            decompiler.addToken(Token.WITH);
-            int lineno = ts.getLineno();
-            mustMatchToken(Token.LP, "msg.no.paren.with");
-            decompiler.addToken(Token.LP);
-            Node obj = expr(false);
-            mustMatchToken(Token.RP, "msg.no.paren.after.with");
-            decompiler.addToken(Token.RP);
-            decompiler.addEOL(Token.LC);
-
-            ++nestingOfWith;
-            Node body;
-            try {
-                body = statement();
-            } finally {
-                --nestingOfWith;
-            }
-
-            decompiler.addEOL(Token.RC);
-
-            pn = nf.createWith(obj, body, lineno);
-            return pn;
-          }
-
-          case Token.CONST:
-          case Token.VAR: {
-            consumeToken();
-            decompiler.addToken(tt);
-            pn = variables(false, tt);
-            break;
-          }
-          
-          case Token.LET: {
-            consumeToken();
-            decompiler.addToken(Token.LET);
-            if (peekToken() == Token.LP) {
-                return let(true);
-            } else {
-                pn = variables(false, tt);
-                if (peekToken() == Token.SEMI)
-                    break;
-                return pn;
-            }
-          }
-
-          case Token.RETURN: 
-          case Token.YIELD: {
-            pn = returnOrYield(tt, false);
-            break;
-          }
-
-          case Token.DEBUGGER:
-            consumeToken();
-            decompiler.addToken(Token.DEBUGGER);
-            pn = nf.createDebugger(ts.getLineno());
-            break;
-
-          case Token.LC:
-            consumeToken();
-            if (statementLabel != null) {
-                decompiler.addToken(Token.LC);
-            }
-            Node scope = nf.createScopeNode(Token.BLOCK, ts.getLineno());
-            pushScope(scope);
-            try {
-                statements(scope);
-                mustMatchToken(Token.RC, "msg.no.brace.block");
-                if (statementLabel != null) {
-                    decompiler.addEOL(Token.RC);
-                }
-                return scope;
-            } finally {
-                popScope();
-            }
-
-          case Token.ERROR:
-            // Fall thru, to have a node for error recovery to work on
-          case Token.SEMI:
-            consumeToken();
-            pn = nf.createLeaf(Token.EMPTY);
-            return pn;
-
-          case Token.FUNCTION: {
-            consumeToken();
-            pn = function(FunctionNode.FUNCTION_EXPRESSION_STATEMENT);
-            return pn;
-          }
-
-          case Token.DEFAULT :
-            consumeToken();
-            mustHaveXML();
-
-            decompiler.addToken(Token.DEFAULT);
-            int nsLine = ts.getLineno();
-
-            if (!(matchToken(Token.NAME)
-                  && ts.getString().equals("xml")))
-            {
-                reportError("msg.bad.namespace");
-            }
-            decompiler.addName(" xml");
-
-            if (!(matchToken(Token.NAME)
-                  && ts.getString().equals("namespace")))
-            {
-                reportError("msg.bad.namespace");
-            }
-            decompiler.addName(" namespace");
-
-            if (!matchToken(Token.ASSIGN)) {
-                reportError("msg.bad.namespace");
-            }
-            decompiler.addToken(Token.ASSIGN);
-
-            Node expr = expr(false);
-            pn = nf.createDefaultNamespace(expr, nsLine);
-            break;
-
-          case Token.NAME: {
-            int lineno = ts.getLineno();
-            String name = ts.getString();
-            setCheckForLabel();
-            pn = expr(false);
-            if (pn.getType() != Token.LABEL) {
-                pn = nf.createExprStatement(pn, lineno);
-            } else {
-                // Parsed the label: push back token should be
-                // colon that primaryExpr left untouched.
-                if (peekToken() != Token.COLON) Kit.codeBug();
-                consumeToken();
-                // depend on decompiling lookahead to guess that that
-                // last name was a label.
-                decompiler.addName(name);
-                decompiler.addEOL(Token.COLON);
-
-                if (labelSet == null) {
-                    labelSet = new HashMap<String,Node>();
-                } else if (labelSet.containsKey(name)) {
-                    reportError("msg.dup.label");
-                }
-
-                boolean firstLabel;
-                if (statementLabel == null) {
-                    firstLabel = true;
-                    statementLabel = pn;
-                } else {
-                    // Discard multiple label nodes and use only
-                    // the first: it allows to simplify IRFactory
-                    firstLabel = false;
-                }
-                labelSet.put(name, statementLabel);
-                try {
-                    pn = statementHelper(statementLabel);
-                } finally {
-                    labelSet.remove(name);
-                }
-                if (firstLabel) {
-                    pn = nf.createLabeledStatement(statementLabel, pn);
-                }
-                return pn;
-            }
-            break;
-          }
-
+//          case Token.IF: {
+//            consumeToken();
+//
+//            decompiler.addToken(Token.IF);
+//            int lineno = ts.getLineno();
+//            Node cond = condition();
+//            decompiler.addEOL(Token.LC);
+//            Node ifTrue = statement();
+//            Node ifFalse = null;
+//            if (matchToken(Token.ELSE)) {
+//                decompiler.addToken(Token.RC);
+//                decompiler.addToken(Token.ELSE);
+//                decompiler.addEOL(Token.LC);
+//                ifFalse = statement();
+//            }
+//            decompiler.addEOL(Token.RC);
+//            pn = nf.createIf(cond, ifTrue, ifFalse, lineno);
+//            return pn;
+//          }
+//
+//          case Token.SWITCH: {
+//            consumeToken();
+//
+//            decompiler.addToken(Token.SWITCH);
+//            int lineno = ts.getLineno();
+//            mustMatchToken(Token.LP, "msg.no.paren.switch");
+//            decompiler.addToken(Token.LP);
+//            pn = enterSwitch(expr(false), lineno);
+//            try {
+//                mustMatchToken(Token.RP, "msg.no.paren.after.switch");
+//                decompiler.addToken(Token.RP);
+//                mustMatchToken(Token.LC, "msg.no.brace.switch");
+//                decompiler.addEOL(Token.LC);
+//
+//                boolean hasDefault = false;
+//                switchLoop: for (;;) {
+//                    tt = nextToken();
+//                    Node caseExpression;
+//                    switch (tt) {
+//                      case Token.RC:
+//                        break switchLoop;
+//
+//                      case Token.CASE:
+//                        decompiler.addToken(Token.CASE);
+//                        caseExpression = expr(false);
+//                        mustMatchToken(Token.COLON, "msg.no.colon.case");
+//                        decompiler.addEOL(Token.COLON);
+//                        break;
+//
+//                      case Token.DEFAULT:
+//                        if (hasDefault) {
+//                            reportError("msg.double.switch.default");
+//                        }
+//                        decompiler.addToken(Token.DEFAULT);
+//                        hasDefault = true;
+//                        caseExpression = null;
+//                        mustMatchToken(Token.COLON, "msg.no.colon.case");
+//                        decompiler.addEOL(Token.COLON);
+//                        break;
+//
+//                      default:
+//                        reportError("msg.bad.switch");
+//                        break switchLoop;
+//                    }
+//
+//                    Node block = nf.createLeaf(Token.BLOCK);
+//                    while ((tt = peekToken()) != Token.RC
+//                           && tt != Token.CASE
+//                           && tt != Token.DEFAULT
+//                           && tt != Token.EOF)
+//                    {
+//                        nf.addChildToBack(block, statement());
+//                    }
+//
+//                    // caseExpression == null => add default label
+//                    nf.addSwitchCase(pn, caseExpression, block);
+//                }
+//                decompiler.addEOL(Token.RC);
+//                nf.closeSwitch(pn);
+//            } finally {
+//                exitSwitch();
+//            }
+//            return pn;
+//          }
+//
+//          case Token.WHILE: {
+//            consumeToken();
+//            decompiler.addToken(Token.WHILE);
+//
+//            Node loop = enterLoop(statementLabel, true);
+//            try {
+//                Node cond = condition();
+//                decompiler.addEOL(Token.LC);
+//                Node body = statement();
+//                decompiler.addEOL(Token.RC);
+//                pn = nf.createWhile(loop, cond, body);
+//            } finally {
+//                exitLoop(true);
+//            }
+//            return pn;
+//          }
+//
+//          case Token.DO: {
+//            consumeToken();
+//            decompiler.addToken(Token.DO);
+//            decompiler.addEOL(Token.LC);
+//
+//            Node loop = enterLoop(statementLabel, true);
+//            try {
+//                Node body = statement();
+//                decompiler.addToken(Token.RC);
+//                mustMatchToken(Token.WHILE, "msg.no.while.do");
+//                decompiler.addToken(Token.WHILE);
+//                Node cond = condition();
+//                pn = nf.createDoWhile(loop, body, cond);
+//            } finally {
+//                exitLoop(true);
+//            }
+//            // Always auto-insert semicolon to follow SpiderMonkey:
+//            // It is required by ECMAScript but is ignored by the rest of
+//            // world, see bug 238945
+//            matchToken(Token.SEMI);
+//            decompiler.addEOL(Token.SEMI);
+//            return pn;
+//          }
+//
+//          case Token.FOR: {
+//            consumeToken();
+//            boolean isForEach = false;
+//            decompiler.addToken(Token.FOR);
+//            String lang = lastPeekedLanguageString();
+//
+//            Node loop = enterLoop(statementLabel, true);
+//            try {
+//                Node init;  // Node init is also foo in 'foo in object'
+//                Node cond;  // Node cond is also object in 'foo in object'
+//                Node incr = null;
+//                Node body;
+//                int declType = -1;
+//
+//                // See if this is a for each () instead of just a for ()
+//                if (matchToken(Token.NAME)) {
+//                    decompiler.addName(ts.getString());
+//                    if (ts.getString().equals("each")) {
+//                        isForEach = true;
+//                    } else {
+//                        reportError("msg.no.paren.for");
+//                    }
+//                }
+//
+//                mustMatchToken(Token.LP, "msg.no.paren.for");
+//                decompiler.addToken(Token.LP);
+//                tt = peekToken();
+//                if (tt == Token.SEMI) {
+//                    init = nf.createLeaf(Token.EMPTY);
+//                } else {
+//                    if (tt == Token.VAR || tt == Token.LET) {
+//                        // set init to a var list or initial
+//                        consumeToken();    // consume the token
+//                        decompiler.addToken(tt);
+//                        init = variables(true, tt);
+//                        declType = tt;
+//                    }
+//                    else {
+//                        init = expr(true);
+//                    }
+//                }
+//
+//                if (matchToken(Token.IN)) {
+//                    decompiler.addToken(Token.IN);
+//                    // 'cond' is the object over which we're iterating
+//                    cond = expr(false);
+//                } else {  // ordinary for loop
+//                    mustMatchToken(Token.SEMI, "msg.no.semi.for");
+//                    decompiler.addToken(Token.SEMI);
+//                    if (peekToken() == Token.SEMI) {
+//                        // no loop condition
+//                        cond = nf.createLeaf(Token.EMPTY);
+//                    } else {
+//                        cond = expr(false);
+//                    }
+//
+//                    mustMatchToken(Token.SEMI, "msg.no.semi.for.cond");
+//                    decompiler.addToken(Token.SEMI);
+//                    if (peekToken() == Token.RP) {
+//                        incr = nf.createLeaf(Token.EMPTY);
+//                    } else {
+//                        incr = expr(false);
+//                    }
+//                }
+//
+//                mustMatchToken(Token.RP, "msg.no.paren.for.ctrl");
+//                decompiler.addToken(Token.RP);
+//                decompiler.addEOL(Token.LC);
+//                body = statement();
+//                decompiler.addEOL(Token.RC);
+//
+//                if (incr == null) {
+//                    // cond could be null if 'in obj' got eaten
+//                    // by the init node.
+//                    pn = nf.createForIn(declType, lang, loop, init, cond, body,
+//                                        isForEach);
+//                } else {
+//                    pn = nf.createFor(loop, init, cond, incr, body);
+//                }
+//            } finally {
+//                exitLoop(true);
+//            }
+//            return pn;
+//          }
+//
+//          case Token.TRY: {
+//            consumeToken();
+//            int lineno = ts.getLineno();
+//
+//            Node tryblock;
+//            Node catchblocks = null;
+//            Node finallyblock = null;
+//
+//            decompiler.addToken(Token.TRY);
+//            if (peekToken() != Token.LC) {
+//                reportError("msg.no.brace.try");
+//            }
+//            decompiler.addEOL(Token.LC);
+//            tryblock = statement();
+//            decompiler.addEOL(Token.RC);
+//
+//            catchblocks = nf.createLeaf(Token.BLOCK);
+//
+//            boolean sawDefaultCatch = false;
+//            int peek = peekToken();
+//            if (peek == Token.CATCH) {
+//                while (matchToken(Token.CATCH)) {
+//                    if (sawDefaultCatch) {
+//                        reportError("msg.catch.unreachable");
+//                    }
+//                    decompiler.addToken(Token.CATCH);
+//                    mustMatchToken(Token.LP, "msg.no.paren.catch");
+//                    decompiler.addToken(Token.LP);
+//
+//                    mustMatchToken(Token.NAME, "msg.bad.catchcond");
+//                    String varName = ts.getString();
+//                    decompiler.addName(varName);
+//
+//                    Node catchCond = null;
+//                    if (matchToken(Token.IF)) {
+//                        decompiler.addToken(Token.IF);
+//                        catchCond = expr(false);
+//                    } else {
+//                        sawDefaultCatch = true;
+//                    }
+//
+//                    mustMatchToken(Token.RP, "msg.bad.catchcond");
+//                    decompiler.addToken(Token.RP);
+//                    mustMatchToken(Token.LC, "msg.no.brace.catchblock");
+//                    decompiler.addEOL(Token.LC);
+//
+//                    nf.addChildToBack(catchblocks,
+//                        nf.createCatch(varName, catchCond,
+//                                       statements(null),
+//                                       ts.getLineno()));
+//
+//                    mustMatchToken(Token.RC, "msg.no.brace.after.body");
+//                    decompiler.addEOL(Token.RC);
+//                }
+//            } else if (peek != Token.FINALLY) {
+//                mustMatchToken(Token.FINALLY, "msg.try.no.catchfinally");
+//            }
+//
+//            if (matchToken(Token.FINALLY)) {
+//                decompiler.addToken(Token.FINALLY);
+//                decompiler.addEOL(Token.LC);
+//                finallyblock = statement();
+//                decompiler.addEOL(Token.RC);
+//            }
+//
+//            pn = nf.createTryCatchFinally(tryblock, catchblocks,
+//                                          finallyblock, lineno);
+//
+//            return pn;
+//          }
+//
+//          case Token.THROW: {
+//            consumeToken();
+//            if (peekTokenOrEOL() == Token.EOL) {
+//                // ECMAScript does not allow new lines before throw expression,
+//                // see bug 256617
+//                reportError("msg.bad.throw.eol");
+//            }
+//
+//            int lineno = ts.getLineno();
+//            decompiler.addToken(Token.THROW);
+//            pn = nf.createThrow(expr(false), lineno);
+//            break;
+//          }
+//
+//          case Token.BREAK: {
+//            consumeToken();
+//            int lineno = ts.getLineno();
+//
+//            decompiler.addToken(Token.BREAK);
+//
+//            // matchJumpLabelName only matches if there is one
+//            Node breakStatement = matchJumpLabelName();
+//            if (breakStatement == null) {
+//                if (loopAndSwitchSet == null || loopAndSwitchSet.size() == 0) {
+//                    reportError("msg.bad.break");
+//                    return null;
+//                }
+//                breakStatement = (Node)loopAndSwitchSet.peek();
+//            }
+//            pn = nf.createBreak(breakStatement, lineno);
+//            break;
+//          }
+//
+//          case Token.CONTINUE: {
+//            consumeToken();
+//            int lineno = ts.getLineno();
+//
+//            decompiler.addToken(Token.CONTINUE);
+//
+//            Node loop;
+//            // matchJumpLabelName only matches if there is one
+//            Node label = matchJumpLabelName();
+//            if (label == null) {
+//                if (loopSet == null || loopSet.size() == 0) {
+//                    reportError("msg.continue.outside");
+//                    return null;
+//                }
+//                loop = (Node)loopSet.peek();
+//            } else {
+//                loop = nf.getLabelLoop(label);
+//                if (loop == null) {
+//                    reportError("msg.continue.nonloop");
+//                    return null;
+//                }
+//            }
+//            pn = nf.createContinue(loop, lineno);
+//            break;
+//          }
+//
+//          case Token.WITH: {
+//            consumeToken();
+//
+//            decompiler.addToken(Token.WITH);
+//            int lineno = ts.getLineno();
+//            mustMatchToken(Token.LP, "msg.no.paren.with");
+//            decompiler.addToken(Token.LP);
+//            Node obj = expr(false);
+//            mustMatchToken(Token.RP, "msg.no.paren.after.with");
+//            decompiler.addToken(Token.RP);
+//            decompiler.addEOL(Token.LC);
+//
+//            ++nestingOfWith;
+//            Node body;
+//            try {
+//                body = statement();
+//            } finally {
+//                --nestingOfWith;
+//            }
+//
+//            decompiler.addEOL(Token.RC);
+//
+//            pn = nf.createWith(obj, body, lineno);
+//            return pn;
+//          }
+//
+//          case Token.CONST:
+//          case Token.VAR: {
+//            consumeToken();
+//            decompiler.addToken(tt);
+//            pn = variables(false, tt);
+//            break;
+//          }
+//          
+//          case Token.LET: {
+//            consumeToken();
+//            decompiler.addToken(Token.LET);
+//            if (peekToken() == Token.LP) {
+//                return let(true);
+//            } else {
+//                pn = variables(false, tt);
+//                if (peekToken() == Token.SEMI)
+//                    break;
+//                return pn;
+//            }
+//          }
+//
+//          case Token.RETURN: 
+//          case Token.YIELD: {
+//            pn = returnOrYield(tt, false);
+//            break;
+//          }
+//
+//          case Token.DEBUGGER:
+//            consumeToken();
+//            decompiler.addToken(Token.DEBUGGER);
+//            pn = nf.createDebugger(ts.getLineno());
+//            break;
+//
+//          case Token.LC:
+//            consumeToken();
+//            if (statementLabel != null) {
+//                decompiler.addToken(Token.LC);
+//            }
+//            Node scope = nf.createScopeNode(Token.BLOCK, ts.getLineno());
+//            pushScope(scope);
+//            try {
+//                statements(scope);
+//                mustMatchToken(Token.RC, "msg.no.brace.block");
+//                if (statementLabel != null) {
+//                    decompiler.addEOL(Token.RC);
+//                }
+//                return scope;
+//            } finally {
+//                popScope();
+//            }
+//
+//          case Token.ERROR:
+//            // Fall thru, to have a node for error recovery to work on
+//          case Token.SEMI:
+//            consumeToken();
+//            pn = nf.createLeaf(Token.EMPTY);
+//            return pn;
+//
+//          case Token.FUNCTION: {
+//            consumeToken();
+//            pn = function(FunctionNode.FUNCTION_EXPRESSION_STATEMENT);
+//            return pn;
+//          }
+//
+//          case Token.DEFAULT :
+//            consumeToken();
+//            mustHaveXML();
+//
+//            decompiler.addToken(Token.DEFAULT);
+//            int nsLine = ts.getLineno();
+//
+//            if (!(matchToken(Token.NAME)
+//                  && ts.getString().equals("xml")))
+//            {
+//                reportError("msg.bad.namespace");
+//            }
+//            decompiler.addName(" xml");
+//
+//            if (!(matchToken(Token.NAME)
+//                  && ts.getString().equals("namespace")))
+//            {
+//                reportError("msg.bad.namespace");
+//            }
+//            decompiler.addName(" namespace");
+//
+//            if (!matchToken(Token.ASSIGN)) {
+//                reportError("msg.bad.namespace");
+//            }
+//            decompiler.addToken(Token.ASSIGN);
+//
+//            Node expr = expr(false);
+//            pn = nf.createDefaultNamespace(expr, nsLine);
+//            break;
+//
+//          case Token.NAME: {
+//            int lineno = ts.getLineno();
+//            String name = ts.getString();
+//            setCheckForLabel();
+//            pn = expr(false);
+//            if (pn.getType() != Token.LABEL) {
+//                pn = nf.createExprStatement(pn, lineno);
+//            } else {
+//                // Parsed the label: push back token should be
+//                // colon that primaryExpr left untouched.
+//                if (peekToken() != Token.COLON) Kit.codeBug();
+//                consumeToken();
+//                // depend on decompiling lookahead to guess that that
+//                // last name was a label.
+//                decompiler.addName(name);
+//                decompiler.addEOL(Token.COLON);
+//
+//                if (labelSet == null) {
+//                    labelSet = new HashMap<String,Node>();
+//                } else if (labelSet.containsKey(name)) {
+//                    reportError("msg.dup.label");
+//                }
+//
+//                boolean firstLabel;
+//                if (statementLabel == null) {
+//                    firstLabel = true;
+//                    statementLabel = pn;
+//                } else {
+//                    // Discard multiple label nodes and use only
+//                    // the first: it allows to simplify IRFactory
+//                    firstLabel = false;
+//                }
+//                labelSet.put(name, statementLabel);
+//                try {
+//                    pn = statementHelper(statementLabel);
+//                } finally {
+//                    labelSet.remove(name);
+//                }
+//                if (firstLabel) {
+//                    pn = nf.createLabeledStatement(statementLabel, pn);
+//                }
+//                return pn;
+//            }
+//            break;
+//          }
+//
           default: {
             int lineno = ts.getLineno();
             pn = expr(false);
@@ -1344,7 +1398,8 @@ public class ParserToJS extends ParserErrorReportingBase
         }
         decompiler.addEOL(Token.SEMI);
 
-        return pn;
+//        return pn;
+        return null;
     }
 
     /**

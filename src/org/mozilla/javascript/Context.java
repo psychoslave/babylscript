@@ -1374,14 +1374,14 @@ public class Context
     }
     
     public final String compileStringToJS(String source, String sourceName,
-            int lineno) 
+            int lineno, boolean withHeaders) 
     {
     	if (lineno < 0) {
     		// For compatibility IllegalArgumentException can not be thrown here
     		lineno = 0;
     	}
         try {
-        	return compileToJSImpl(null, source, sourceName, lineno, null);
+        	return compileToJSImpl(null, source, sourceName, lineno, null, withHeaders);
         } catch (IOException ex) {
             // Should not happen when dealing with source as string
             throw new RuntimeException();
@@ -2373,7 +2373,7 @@ public class Context
     private String compileToJSImpl(
             Reader sourceReader, String sourceString,
             String sourceName, int lineno,
-            ErrorReporter compilationErrorReporter) throws IOException
+            ErrorReporter compilationErrorReporter, boolean withHeaders) throws IOException
     {
     	if(sourceName == null) {
     		sourceName = "unnamed script";
@@ -2398,9 +2398,9 @@ public class Context
     	ParserToJS p = new ParserToJS(compilerEnv, compilationErrorReporter);
     	String result;
     	if (sourceString != null) {
-    		result = p.parse(sourceString, sourceName, lineno);
+    		result = p.parse(sourceString, sourceName, lineno, withHeaders);
     	} else {
-    		result = p.parse(sourceReader, sourceName, lineno);
+    		result = p.parse(sourceReader, sourceName, lineno, withHeaders);
     	}
 
     	return result;
