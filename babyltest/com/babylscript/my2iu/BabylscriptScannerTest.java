@@ -53,13 +53,13 @@ public class BabylscriptScannerTest
    @Test
    public void basic2() 
    {
-      assertEquals(evalStringToString("---fr---fonction a(b){ renvoi b * 2; }; a(3);"), "6");
+      assertEquals(evalStringToString("---fr---fonction a(b){ retourner b * 2; }; a(3);"), "6");
    }
 
    @Test
    public void basic3() 
    {
-      assertEquals(evalStringToString("---fr---fonction a(b){ ---en--- if (b == 3) ---fr--- renvoi b * 2; sinon ---en--- return 8; }; a(3);"), "6");
+      assertEquals(evalStringToString("---fr---fonction a(b){ ---en--- if (b == 3) ---fr--- retourner b * 2; sinon ---en--- return 8; }; a(3);"), "6");
    }
 
    @Test
