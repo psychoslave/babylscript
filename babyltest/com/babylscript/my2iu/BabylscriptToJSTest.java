@@ -123,7 +123,7 @@ public class BabylscriptToJSTest
    @Test
    public void variables1() 
    {
-	   assertEquals("babylroot[babyllookup(babylroot,'en','a')]", compileToJSNoHeaders("a"));
+	   assertEquals("babylroot[babyllookup(babylroot,'en','a')];\n", compileToJSNoHeaders("a"));
    }
 
    @Test
@@ -139,9 +139,75 @@ public class BabylscriptToJSTest
    }
 
    @Test
+   public void variables4() 
+   {
+	   assertEquals("babylroot[babyllookup(babylroot,'en','a')];\n", compileToJSNoHeaders("var a;"));
+   }
+
+   @Test
+   public void variables5() 
+   {
+	   assertEquals("babylroot[babyllookup(babylroot,'en','a')],babylroot[babyllookup(babylroot,'en','b')];\n", compileToJSNoHeaders("var a, b;"));
+   }
+
+   @Test
+   public void variables6() 
+   {
+	   assertEquals("babylroot[babyllookup(babylroot,'en','a')]=babylwrap(2),babylroot[babyllookup(babylroot,'en','b')];\n", compileToJSNoHeaders("var a=2, b;"));
+   }
+
+   @Test
+   public void variables7() 
+   {
+	   assertEquals("2", evalStringToString("var a; a = 2; a"));
+   }
+
+   @Test
    public void statements1() 
    {
 	   assertEquals("5", evalStringToString("a = 2\n b=3\n a+b"));
+   }
+
+   @Test
+   public void statements2() 
+   {
+	   assertEquals("5", evalStringToString("a = 3; if (true) a = a + 2; a;"));
+   }
+
+   @Test
+   public void statements3() 
+   {
+	   assertEquals("5", evalStringToString("a = 3; if (a > 0) a = 5; else a = -2; a;"));
+   }
+
+   @Test
+   public void statements4() 
+   {
+	   assertEquals("-2", evalStringToString("a = 3; if (a > 5) a = 5; else if (a > 0) a = -2; else a = -5; a;"));
+   }
+
+   @Test
+   public void statements5() 
+   {
+	   assertEquals("-1", evalStringToString("a = 3; while (a > 0) a = a - 2; a;"));
+   }
+
+   @Test
+   public void statements6() 
+   {
+	   assertEquals("5", evalStringToString("var b = 2; for (a = 0; a < 3; a++) b++; b;"));
+   }
+
+   @Test
+   public void statements7() 
+   {
+	   assertEquals("8", evalStringToString("var b = 2; for (var a = 0,b=5; a < 3; a++) b++; b;"));
+   }
+
+   @Test
+   public void statements8() 
+   {
+	   assertEquals("8", evalStringToString("var b = 2; for (;;) { b++; if (b > 7) break; } b;"));
    }
 
    // 
