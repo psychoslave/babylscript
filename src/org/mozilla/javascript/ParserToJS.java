@@ -100,6 +100,26 @@ public class ParserToJS extends ParserErrorReportingBase
             		.add(")");
 			
 		}
+		JSNode createSimplePreUnaryOperator(String operator, JSNode val)
+		{
+            return createNode()
+            		.add("babylwrap(")
+            		.add(operator)
+            		.add("(")
+            		.add(val).add(").obj")
+            		.add(")");
+			
+		}
+		JSNode createSimplePostUnaryOperator(String operator, JSNode val)
+		{
+            return createNode()
+            		.add("babylwrap(")
+            		.add("(")
+            		.add(val).add(").obj")
+            		.add(operator)
+            		.add(")");
+			
+		}
 		JSNode createNumber(String str)
 		{
 			return new JSNode("babylwrap(" + str + ")");
@@ -1975,32 +1995,34 @@ public class ParserToJS extends ParserErrorReportingBase
 
         switch(tt) {
 // TODO: Fill this in        
-//        case Token.VOID:
-//        case Token.NOT:
-//        case Token.BITNOT:
 //        case Token.TYPEOF:
-//            consumeToken();
-//            decompiler.addToken(tt);
+        case Token.VOID:
+        case Token.NOT:
+      	case Token.BITNOT:
+            consumeToken();
+            decompiler.addToken(tt);
+            return jsFactory.createSimplePreUnaryOperator(tokenToString(tt) + " ", unaryExpr());
 //            return nf.createUnary(tt, unaryExpr());
-//
-//        case Token.ADD:
-//            consumeToken();
-//            // Convert to special POS token in decompiler and parse tree
-//            decompiler.addToken(Token.POS);
-//            return nf.createUnary(Token.POS, unaryExpr());
-//
-//        case Token.SUB:
-//            consumeToken();
-//            // Convert to special NEG token in decompiler and parse tree
-//            decompiler.addToken(Token.NEG);
-//            return nf.createUnary(Token.NEG, unaryExpr());
-//
-//        case Token.INC:
-//        case Token.DEC:
-//            consumeToken();
-//            decompiler.addToken(tt);
-//            return nf.createIncDec(tt, false, memberExpr(true));
-//
+
+        case Token.ADD:
+            consumeToken();
+            // Convert to special POS token in decompiler and parse tree
+            decompiler.addToken(Token.POS);
+            return jsFactory.createSimplePreUnaryOperator(tokenToString(Token.POS), unaryExpr());
+
+        case Token.SUB:
+            consumeToken();
+            // Convert to special NEG token in decompiler and parse tree
+            decompiler.addToken(Token.NEG);
+            return jsFactory.createSimplePreUnaryOperator(tokenToString(Token.NEG), unaryExpr());
+
+        case Token.INC:
+        case Token.DEC:
+            consumeToken();
+            decompiler.addToken(tt);
+            return jsFactory.createSimplePreUnaryOperator(tokenToString(tt), memberExpr(true));
+
+// TODO: Fill this in        
 //        case Token.DELPROP:
 //            consumeToken();
 //            decompiler.addToken(Token.DELPROP);
@@ -2024,13 +2046,13 @@ public class ParserToJS extends ParserErrorReportingBase
             JSNode pn = memberExpr(true);
 
             // Don't look across a newline boundary for a postfix incop.
-// TODO: Fill this in            
-//            tt = peekTokenOrEOL();
-//            if (tt == Token.INC || tt == Token.DEC) {
-//                consumeToken();
-//                decompiler.addToken(tt);
+            tt = peekTokenOrEOL();
+            if (tt == Token.INC || tt == Token.DEC) {
+                consumeToken();
+                decompiler.addToken(tt);
+                return jsFactory.createSimplePostUnaryOperator(tokenToString(tt), pn);
 //                return nf.createIncDec(tt, true, pn);
-//            }
+            }
             return pn;
         }
         return jsFactory.createError("error"); // Only reached on error.Try to continue.

@@ -107,4 +107,16 @@ public class BabylscriptToJSTest
    {
 	   assertEquals("15", evalStringToString("'1' + 5"));
    }
+
+   @Test
+   public void simpleOperators4() 
+   {
+	   assertEquals("-5", evalStringToString("- 5"));
+   }
+
+   @Test
+   public void simpleOperators5() 
+   {
+	   assertEquals("-6", evalStringToString("~5"));
+   }
 }

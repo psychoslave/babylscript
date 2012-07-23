@@ -35,19 +35,43 @@ if (!babyltest) {
 	BabylObject.prototype.toString = function() { return this.obj.toString(); };
 
 	var NullBabylObject = new BabylObject(null, null);
+	var UndefinedBabylObject = new BabylObject(null, null);
+	delete UndefinedBabylObject.obj;
+	var TrueBabylObject = new BabylObject(true, null);
+	var FalseBabylObject = new BabylObject(false, null);
 	 
 	var babylwrap = function(obj) {
-		if (obj == null) {
+		if (obj === null) 
 			return NullBabylObject;
-		} else if (obj.constructor === BabylObject) {
+	
+		switch(typeof obj) {
+			case 'object':
+				break;
+			case 'undefined':
+				return UndefinedBabylObject;
+			case 'number':
+				return new BabylObject(obj, null);
+			case 'string':
+				return new BabylObject(obj, null);
+			case 'boolean':
+				if (obj === true) 
+					return TrueBabylObject;
+				else
+					return FalseBabylObject; 
+			case 'function':
+				return new BabylObject(obj, null);
+			default:
+				break;
+		}
+		if (obj.constructor === BabylObject) {
 			return obj;  // already wrapped
-		} else if (typeof obj == 'number' || obj.constructor === Number) {
+		} else if (obj.constructor === Number) {
 			return new BabylObject(obj, null);
-		} else if (typeof obj == 'string' || obj.constructor === String) {
+		} else if (obj.constructor === String) {
 			return new BabylObject(obj, null);
-		} else if (typeof obj == 'boolean' || obj.constructor === Boolean) {
+		} else if (obj.constructor === Boolean) {
 			return new BabylObject(obj, null);
-		} else if (typeof obj == 'function' || obj.constructor === Function) {
+		} else if (obj.constructor === Function) {
 			return new BabylObject(obj, null);
 		} else {
 			return new BabylObject(obj, null);
