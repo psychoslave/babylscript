@@ -120,46 +120,115 @@ public class ParserToJS extends ParserErrorReportingBase
             		.add(")");
 			
 		}
+		JSNode createAssignment(String assignOp, JSNode left, JSNode right)
+		{
+			if (assignOp.equals("="))
+	            return createNode()
+	            		.add(left)
+	            		.add(assignOp)
+	            		.add(right);
+			else
+				// TODO: This isn't quite correct because the type of the object may change, requiring a new
+				// translation mapping e.g. a=2; a += 'hello';
+	            return createNode()
+	            		.add("(")
+	            		.add(left)
+	            		.add(").obj")
+	            		.add(assignOp)
+	            		.add("(")
+	            		.add(right)
+	            		.add(").obj");
+		}
+		JSNode createLabel()
+		{
+			// This is just some strange thing that Rhino does that allows it to dive
+			// into the parser to confirm whether a name refers to a label or not, and if so, it 
+			// passes this special value back up out of the parser as confirmation that
+			// the name read previously was indeed confirmed to be a label
+			JSNode node = new JSNode();
+			node.type = Token.LABEL;
+			return node;
+		}
+		JSNode createName(String lang, String name)
+		{
+			return new JSName(lang, name);
+		}
 		JSNode createNumber(String str)
 		{
 			return new JSNode("babylwrap(" + str + ")");
 		}
+		JSNode createSpecialConstant(String str)
+		{
+			return new JSNode("babylwrap(" + str + ")");
+		}
+		String escapeJSString(String str)
+		{
+			return str.replace("\\", "\\\\").replace("\"", "\\\"").replace("'", "\\'")
+					.replace("\n", "\\\n").replace("\f", "\\\f").replace("\t", "\\\t").replace("\r", "\\\r");
+		}
 		JSNode createString(String str)
 		{
-			return new JSNode("babylwrap('" + str.replace("\\", "\\\\").replace("\"", "\\\"").replace("'", "\\'")
-					.replace("\n", "\\\n").replace("\f", "\\\f").replace("\t", "\\\t").replace("\r", "\\\r") + "')");
+			return new JSNode("babylwrap('" + escapeJSString(str) + "')");
 		}
 		JSNode createError(String str)
 		{
 			return new JSNode("error");
 		}
 	}
+	private static class JSNodePair
+	{
+		JSNodePair() {}
+		JSNodePair(JSNode node) { this.node = node; }
+		JSNode node = null;
+		String str = "";
+	}
 	private static class JSNode
 	{
 		JSNode()
 		{
-			this.data = "";
+			data.add(new JSNodePair());
 		}
-		JSNode(String data) 
+		JSNode(String str) 
 		{
-			this.data = data;
+			JSNodePair pair = new JSNodePair();
+			pair.str = str;
+			data.add(pair);
 		}
-		String data;
-		public String toString() { return data; }
+		ArrayList<JSNodePair> data = new ArrayList<JSNodePair>();
+		public String toString() 
+		{ 
+			String str = ""; 
+			for (JSNodePair pair: data) 
+				str += (pair.node != null ? pair.node.toString() + pair.str : pair.str); 
+			return str;
+		}
 		int type;
 		public int getType() { return type; }
-		public void addToBack(JSNode node) {
-			this.data += node.data;
-		}
 		public JSNode add(String str)
 		{
-			this.data += str;
+			data.get(data.size() -1).str += str;
 			return this;
 		}
 		public JSNode add(JSNode node)
 		{
-			this.data += node.data;
+			data.add(new JSNodePair(node));
 			return this;
+		}
+	}
+	private static class JSName extends JSNode
+	{
+		String lang;
+		String name;
+		JSName(String lang, String str)
+		{
+			super(str);
+			this.lang = lang;
+			this.name = str;
+		}
+		public String toString() 
+		{
+			// Only handle global variables for now 
+			return "babylroot[babyllookup(babylroot,'" + lang + "','" + name + "')]";
 		}
 	}
 	private static class JSScope extends JSNode
@@ -547,7 +616,7 @@ public class ParserToJS extends ParserErrorReportingBase
                 } else {
                     n = jsstatement();
                 }
-                pn.addToBack(n);
+                pn.add(n);
 //                nf.addChildToBack(pn, n);
             }
         } catch (StackOverflowError ex) {
@@ -1457,6 +1526,7 @@ public class ParserToJS extends ParserErrorReportingBase
             break;
         }
         decompiler.addEOL(Token.SEMI);
+        pn.add(";\n");
 
         return pn;
     }
@@ -1754,12 +1824,12 @@ public class ParserToJS extends ParserErrorReportingBase
             JSNode pn = condExpr(inForInit);
 
             tt = peekToken();
-    // TODO: Fill this in        
-//            if (Token.FIRST_ASSIGN <= tt && tt <= Token.LAST_ASSIGN) {
-//                consumeToken();
-//                decompiler.addToken(tt);
+            if (Token.FIRST_ASSIGN <= tt && tt <= Token.LAST_ASSIGN) {
+                consumeToken();
+                decompiler.addToken(tt);
+                pn = jsFactory.createAssignment(tokenToString(tt), pn, jsassignExpr(inForInit));
 //                pn = nf.createAssignment(tt, pn, assignExpr(inForInit));
-//            }
+            }
 
             return pn;
         }
@@ -2775,27 +2845,28 @@ public class ParserToJS extends ParserErrorReportingBase
 //            decompiler.addToken(Token.XMLATTR);
 //            pn = attributeAccess(null, 0);
 //            return pn;
-//
-//          case Token.NAME: {
-//            String name = ts.getString();
-//            String lang = ts.getLastLanguageString();
-//            if ((ttFlagged & TI_CHECK_LABEL) != 0) {
-//                if (peekToken() == Token.COLON) {
-//                    // Do not consume colon, it is used as unwind indicator
-//                    // to return to statementHelper.
-//                    // XXX Better way?
-//                    return nf.createLabel(ts.getLineno());
-//                }
-//            }
-//
-//            decompiler.addName(name);
+
+          case Token.NAME: {
+            String name = ts.getString();
+            String lang = ts.getLastLanguageString();
+            if ((ttFlagged & TI_CHECK_LABEL) != 0) {
+                if (peekToken() == Token.COLON) {
+                    // Do not consume colon, it is used as unwind indicator
+                    // to return to statementHelper.
+                    // XXX Better way?
+                    return jsFactory.createLabel();
+                }
+            }
+
+            decompiler.addName(name);
+// TODO: Fill this in            
 //            if (compilerEnv.isXmlAvailable()) {
 //                pn = propertyName(null, name, 0);
 //            } else {
-//                pn = nf.createName(lang, name);
+                pn = jsFactory.createName(lang, name);
 //            }
-//            return pn;
-//          }
+            return pn;
+          }
 
           case Token.NUMBER: {
             double n = ts.getNumber();
@@ -2821,13 +2892,13 @@ public class ParserToJS extends ParserErrorReportingBase
 //            int index = currentScriptOrFn.addRegexp(re, flags);
 //            return nf.createRegExp(index);
 //          }
-//
-//          case Token.NULL:
-//          case Token.THIS:
-//          case Token.FALSE:
-//          case Token.TRUE:
-//            decompiler.addToken(tt);
-//            return nf.createLeaf(tt);
+
+          case Token.NULL:
+          case Token.THIS:
+          case Token.FALSE:
+          case Token.TRUE:
+            decompiler.addToken(tt);
+            return jsFactory.createSpecialConstant(tokenToString(tt));
 
           case Token.RESERVED:
             reportError("msg.reserved.id");

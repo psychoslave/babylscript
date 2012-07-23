@@ -34,6 +34,20 @@ if (!babyltest) {
 	BabylObject.prototype.trans = {};
 	BabylObject.prototype.toString = function() { return this.obj.toString(); };
 
+	// Wrap the global object so that we can localize them (NOTE: we use "this" as
+	// the global object, so it needs to change if we put this code in a function)
+	//
+	var babylroot = new BabylObject(this, null);
+
+	// Code that does the lookup of translated names
+	//
+	function babyllookup(babylobj, lang, name)
+	{
+		return babylobj.trans[lang + '->' + name] || name;
+	}
+
+	// Various constant Babyl objects that mirror various JavaScript constants
+	//
 	var NullBabylObject = new BabylObject(null, null);
 	var UndefinedBabylObject = new BabylObject(null, null);
 	delete UndefinedBabylObject.obj;

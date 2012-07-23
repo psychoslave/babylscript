@@ -75,7 +75,7 @@ public class BabylscriptToJSTest
    @Test
    public void basic1() 
    {
-	   assertEquals("babylwrap(32)", compileToJSNoHeaders("32"));
+	   assertEquals("babylwrap(32);\n", compileToJSNoHeaders("32"));
    }
 
    @Test
@@ -87,7 +87,7 @@ public class BabylscriptToJSTest
    @Test
    public void basic3() 
    {
-	   assertEquals("babylwrap('hello')", compileToJSNoHeaders("'hello'"));
+	   assertEquals("babylwrap('hello');\n", compileToJSNoHeaders("'hello'"));
    }
    
    @Test
@@ -119,4 +119,75 @@ public class BabylscriptToJSTest
    {
 	   assertEquals("-6", evalStringToString("~5"));
    }
+
+   @Test
+   public void variables1() 
+   {
+	   assertEquals("babylroot[babyllookup(babylroot,'en','a')]", compileToJSNoHeaders("a"));
+   }
+
+   @Test
+   public void variables2() 
+   {
+	   assertEquals("2", evalStringToString("a = 2"));
+   }
+
+   @Test
+   public void variables3() 
+   {
+	   assertEquals("5", evalStringToString("a = 2; a += 3; a;"));
+   }
+
+   @Test
+   public void statements1() 
+   {
+	   assertEquals("5", evalStringToString("a = 2\n b=3\n a+b"));
+   }
+
+   // 
+   // Some corner cases
+   //
+   
+   @Test
+   public void lookupNonConstantWithIncrement1() 
+   {
+	   assertEquals("6", evalStringToString("var str = ''; function a() {str += 'a'; return str;} var b {a:5, aa:10}; b[a()]++; b.a;"));
+// SOLUTION INVOLVES SOMETHING LIKE THIS:	   
+//   var tmp0;
+//
+//   d = {
+//   a : 'a'
+//   };
+//   function readA(k)
+//   {
+//    return k.a; 
+//   }
+//   var a = (tmp0=d)[readA(tmp0)];
+//   alert(a);
+   }
+   
+   @Test
+   public void lookupNonConstantWithIncrement2() 
+   {
+	   assertEquals("6", evalStringToString("var str = ''; function a() {str += 'a'; return str;} var next = false; function c() { next = !next; return next ? b: {a:20,aa:30}} var b {a:5, aa:10};  c()[a()]++; b.a;"));
+   }
+
+   @Test
+   public void assignAddWithTypeChange() 
+   {
+	   assertEquals("3", evalStringToString("var str = 2; str += 'hi';  ---fr--- str.longueur"));
+   }
+
+   @Test
+   public void scoping1() 
+   {
+	   assertEquals("6", evalStringToString("var c = 1; function a() {  var c = 5; function b() {c++; return c;} return b; } var result = a()();"));
+   }
+
+   @Test
+   public void scoping2() 
+   {
+	   assertEquals("3", evalStringToString("var c = 1; function a() { if (!c) { var c = 1000; return 3;} return 5; } var result = a();"));
+   }
+
 }
