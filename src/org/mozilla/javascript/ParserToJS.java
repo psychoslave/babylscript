@@ -1303,76 +1303,104 @@ public class ParserToJS extends ParserErrorReportingBase
             return pn;
           }
 
-//          case Token.TRY: {
-//            consumeToken();
-//            int lineno = ts.getLineno();
-//
-//            Node tryblock;
-//            Node catchblocks = null;
-//            Node finallyblock = null;
-//
-//            decompiler.addToken(Token.TRY);
-//            if (peekToken() != Token.LC) {
-//                reportError("msg.no.brace.try");
-//            }
-//            decompiler.addEOL(Token.LC);
-//            tryblock = statement();
-//            decompiler.addEOL(Token.RC);
-//
+          case Token.TRY: {
+            consumeToken();
+            int lineno = ts.getLineno();
+
+            JSNode tryblock;
+            JSNode catchblocks = null;
+            JSNode finallyblock = null;
+
+            decompiler.addToken(Token.TRY);
+            if (peekToken() != Token.LC) {
+                reportError("msg.no.brace.try");
+            }
+            decompiler.addEOL(Token.LC);
+            tryblock = jsstatement();
+            decompiler.addEOL(Token.RC);
+
+            catchblocks = jsFactory.createNode();
 //            catchblocks = nf.createLeaf(Token.BLOCK);
-//
-//            boolean sawDefaultCatch = false;
-//            int peek = peekToken();
-//            if (peek == Token.CATCH) {
-//                while (matchToken(Token.CATCH)) {
-//                    if (sawDefaultCatch) {
-//                        reportError("msg.catch.unreachable");
-//                    }
-//                    decompiler.addToken(Token.CATCH);
-//                    mustMatchToken(Token.LP, "msg.no.paren.catch");
-//                    decompiler.addToken(Token.LP);
-//
-//                    mustMatchToken(Token.NAME, "msg.bad.catchcond");
-//                    String varName = ts.getString();
-//                    decompiler.addName(varName);
-//
-//                    Node catchCond = null;
-//                    if (matchToken(Token.IF)) {
-//                        decompiler.addToken(Token.IF);
-//                        catchCond = expr(false);
-//                    } else {
-//                        sawDefaultCatch = true;
-//                    }
-//
-//                    mustMatchToken(Token.RP, "msg.bad.catchcond");
-//                    decompiler.addToken(Token.RP);
-//                    mustMatchToken(Token.LC, "msg.no.brace.catchblock");
-//                    decompiler.addEOL(Token.LC);
-//
+
+            boolean sawDefaultCatch = false;
+            int peek = peekToken();
+            if (peek == Token.CATCH) {
+                while (matchToken(Token.CATCH)) {
+                    if (sawDefaultCatch) {
+                        reportError("msg.catch.unreachable");
+                    }
+                    decompiler.addToken(Token.CATCH);
+                    mustMatchToken(Token.LP, "msg.no.paren.catch");
+                    decompiler.addToken(Token.LP);
+
+                    mustMatchToken(Token.NAME, "msg.bad.catchcond");
+                    String lang = ts.getLastLanguageString();
+                    String varName = ts.getString();
+                    decompiler.addName(varName);
+
+                    JSNode catchCond = null;
+                    if (matchToken(Token.IF)) {
+                        decompiler.addToken(Token.IF);
+                        catchCond = jsexpr(false);
+                    } else {
+                        sawDefaultCatch = true;
+                    }
+
+                    mustMatchToken(Token.RP, "msg.bad.catchcond");
+                    decompiler.addToken(Token.RP);
+                    mustMatchToken(Token.LC, "msg.no.brace.catchblock");
+                    decompiler.addEOL(Token.LC);
+
+                    catchblocks.add(
+                    		catchCond == null ?
+                				jsFactory.createNode("catch (")
+// TODO: What is the scoping on this?
+                					.add(jsFactory.createName(lang, varName))  
+                					.add(") {\n")
+                					.add(statements(null))
+                					.add("}\n")
+                				:
+                				jsFactory.createNode("catch (")
+// TODO: What is the scoping on this?
+                					.add(jsFactory.createName(lang, varName))  
+                					.add(" if (")
+                					.addCondition(catchCond)
+                					.add(")) {\n")
+                					.add(statements(null))
+                					.add("}\n")
+                    		);
+//                    
 //                    nf.addChildToBack(catchblocks,
 //                        nf.createCatch(varName, catchCond,
 //                                       statements(null),
 //                                       ts.getLineno()));
-//
-//                    mustMatchToken(Token.RC, "msg.no.brace.after.body");
-//                    decompiler.addEOL(Token.RC);
-//                }
-//            } else if (peek != Token.FINALLY) {
-//                mustMatchToken(Token.FINALLY, "msg.try.no.catchfinally");
-//            }
-//
-//            if (matchToken(Token.FINALLY)) {
-//                decompiler.addToken(Token.FINALLY);
-//                decompiler.addEOL(Token.LC);
-//                finallyblock = statement();
-//                decompiler.addEOL(Token.RC);
-//            }
-//
+
+                    mustMatchToken(Token.RC, "msg.no.brace.after.body");
+                    decompiler.addEOL(Token.RC);
+                }
+            } else if (peek != Token.FINALLY) {
+                mustMatchToken(Token.FINALLY, "msg.try.no.catchfinally");
+            }
+
+            if (matchToken(Token.FINALLY)) {
+                decompiler.addToken(Token.FINALLY);
+                decompiler.addEOL(Token.LC);
+                finallyblock = jsstatement();
+                decompiler.addEOL(Token.RC);
+            }
+            pn = jsFactory.createNode("try ")
+            		.add(tryblock)
+            		.add(catchblocks);
+            if (finallyblock != null)
+            	pn.add("finally {\n")
+            		.add(finallyblock)
+            		.add("}\n");
+// TODO: Rhino rewrites the scoping of variables here            
 //            pn = nf.createTryCatchFinally(tryblock, catchblocks,
 //                                          finallyblock, lineno);
-//
-//            return pn;
-//          }
+
+            return pn;
+          }
 
           case Token.THROW: {
             consumeToken();
@@ -1488,18 +1516,19 @@ public class ParserToJS extends ParserErrorReportingBase
 //                return pn;
 //            }
 //          }
-//
-//          case Token.RETURN: 
-//          case Token.YIELD: {
-//            pn = returnOrYield(tt, false);
-//            break;
-//          }
-//
-//          case Token.DEBUGGER:
-//            consumeToken();
-//            decompiler.addToken(Token.DEBUGGER);
+
+          case Token.RETURN: 
+          case Token.YIELD: {
+            pn = returnOrYield(tt, false);
+            break;
+          }
+
+          case Token.DEBUGGER:
+            consumeToken();
+            decompiler.addToken(Token.DEBUGGER);
+            pn = jsFactory.createNode("debugger");
 //            pn = nf.createDebugger(ts.getLineno());
-//            break;
+            break;
 
           case Token.LC:
             consumeToken();
@@ -1660,7 +1689,7 @@ public class ParserToJS extends ParserErrorReportingBase
         return ((before & mask) != mask) && ((after & mask) == mask);
     }
     
-    private Node returnOrYield(int tt, boolean exprContext)
+    private JSNode returnOrYield(int tt, boolean exprContext)
         throws IOException, ParserException
     {
         if (!insideFunction()) {
@@ -1671,7 +1700,7 @@ public class ParserToJS extends ParserErrorReportingBase
         decompiler.addToken(tt);
         int lineno = ts.getLineno();
 
-        Node e;
+        JSNode e;
         /* This is ugly, but we don't want to require a semicolon. */
         switch (peekTokenOrEOL()) {
           case Token.SEMI:
@@ -1685,12 +1714,12 @@ public class ParserToJS extends ParserErrorReportingBase
             e = null;
             break;
           default:
-            e = expr(false);
+            e = jsexpr(false);
             break;
         }
 
         int before = endFlags;
-        Node ret;
+        JSNode ret;
 
         if (tt == Token.RETURN) {
             if (e == null ) {
@@ -1698,7 +1727,11 @@ public class ParserToJS extends ParserErrorReportingBase
             } else {
                 endFlags |= Node.END_RETURNS_VALUE;
             }
-            ret = nf.createReturn(e, lineno);
+            if (e == null)
+            	ret = jsFactory.createNode("return");
+            else
+            	ret = jsFactory.createNode("return ").add(e);
+//            ret = nf.createReturn(e, lineno);
             
             // see if we need a strict mode warning
             if (nowAllSet(before, endFlags, 
@@ -1708,9 +1741,10 @@ public class ParserToJS extends ParserErrorReportingBase
             }
         } else {
             endFlags |= Node.END_YIELDS;
-            ret = nf.createYield(e, lineno);
-            if (!exprContext)
-                ret = new Node(Token.EXPR_VOID, ret, lineno);
+            ret = jsFactory.createNode("yield ").add(e);
+//            ret = nf.createYield(e, lineno);
+//            if (!exprContext)
+//                ret = new Node(Token.EXPR_VOID, ret, lineno);
         }
 
         // see if we are mixing yields and value returns.
@@ -2384,10 +2418,10 @@ public class ParserToJS extends ParserErrorReportingBase
             pn = jsprimaryExpr();
 //        }
 
-        return jsmemberExprTail(allowCallSyntax, pn);
+        return memberExprTail(allowCallSyntax, pn);
     }
 
-    private JSNode jsmemberExprTail(boolean allowCallSyntax, JSNode pn)
+    private JSNode memberExprTail(boolean allowCallSyntax, JSNode pn)
             throws IOException, ParserException
     {
       tailLoop:
@@ -2500,119 +2534,6 @@ public class ParserToJS extends ParserErrorReportingBase
         return pn;
     }
 
-    private Node memberExprTail(boolean allowCallSyntax, Node pn)
-        throws IOException, ParserException
-    {
-      tailLoop:
-        for (;;) {
-            int tt = peekToken();
-            switch (tt) {
-
-              case Token.DOT:
-              case Token.DOTDOT:
-                {
-                    int memberTypeFlags;
-                    String s;
-
-                    consumeToken();
-                    decompiler.addToken(tt);
-                    memberTypeFlags = 0;
-                    if (tt == Token.DOTDOT) {
-                        mustHaveXML();
-                        memberTypeFlags = Node.DESCENDANTS_FLAG;
-                    }
-                    if (!compilerEnv.isXmlAvailable()) {
-                        mustMatchToken(Token.NAME, "msg.no.name.after.dot");
-                        s = ts.getString();
-                        decompiler.addName(s);
-                        String lang = lastPeekedLanguageString();
-                        pn = nf.createPropertyGet(pn, lang, null, s, memberTypeFlags);
-                        break;
-                    }
-
-                    tt = nextToken();
-                    switch (tt) {
-                    
-                      // needed for generator.throw();
-                      case Token.THROW:
-                        decompiler.addName("throw");
-                        pn = propertyName(pn, "throw", memberTypeFlags);
-                        break;
-
-                      // handles: name, ns::name, ns::*, ns::[expr]
-                      case Token.NAME:
-                        s = ts.getString();
-                        decompiler.addName(s);
-                        pn = propertyName(pn, s, memberTypeFlags);
-                        break;
-
-                      // handles: *, *::name, *::*, *::[expr]
-                      case Token.MUL:
-                        decompiler.addName("*");
-                        pn = propertyName(pn, "*", memberTypeFlags);
-                        break;
-
-                      // handles: '@attr', '@ns::attr', '@ns::*', '@ns::*',
-                      //          '@::attr', '@::*', '@*', '@*::attr', '@*::*'
-                      case Token.XMLATTR:
-                        decompiler.addToken(Token.XMLATTR);
-                        pn = attributeAccess(pn, memberTypeFlags);
-                        break;
-
-                      default:
-                        reportError("msg.no.name.after.dot");
-                    }
-                }
-                break;
-
-              case Token.DOTQUERY:
-                consumeToken();
-                mustHaveXML();
-                decompiler.addToken(Token.DOTQUERY);
-                pn = nf.createDotQuery(pn, expr(false), ts.getLineno());
-                mustMatchToken(Token.RP, "msg.no.paren");
-                decompiler.addToken(Token.RP);
-                break;
-
-              case Token.LB:
-              {
-                String lang = lastPeekedLanguageString();
-                consumeToken();
-                decompiler.addToken(Token.LB);
-                Node left = expr(false);
-                if (peekToken() == Token.COLON)
-                {
-                    // Look for a reference to a translated name
-                    consumeToken();
-                    decompiler.addToken(Token.COLON);
-                    Node right = expr(false);
-                    pn = nf.createTranslatedNameGet(pn, null, left, right, 0);
-                }
-                else
-                    pn = nf.createElementGet(pn, lang, null, left, 0);
-                mustMatchToken(Token.RB, "msg.no.bracket.index");
-                decompiler.addToken(Token.RB);
-                break;
-              }
-
-              case Token.LP:
-                if (!allowCallSyntax) {
-                    break tailLoop;
-                }
-                consumeToken();
-                decompiler.addToken(Token.LP);
-                pn = nf.createCallOrNew(Token.CALL, pn);
-                /* Add the arguments to pn, if any are supplied. */
-                argumentList(pn);
-                break;
-
-              default:
-                break tailLoop;
-            }
-        }
-        return pn;
-    }
-
     /*
      * Xml attribute expression:
      *   '@attr', '@ns::attr', '@ns::*', '@ns::*', '@*', '@*::attr', '@*::*'
@@ -2620,43 +2541,45 @@ public class ParserToJS extends ParserErrorReportingBase
     private Node attributeAccess(Node pn, int memberTypeFlags)
         throws IOException
     {
-        memberTypeFlags |= Node.ATTRIBUTE_FLAG;
-        int tt = nextToken();
-
-        switch (tt) {
-          // handles: @name, @ns::name, @ns::*, @ns::[expr]
-          case Token.NAME:
-            {
-                String s = ts.getString();
-                decompiler.addName(s);
-                pn = propertyName(pn, s, memberTypeFlags);
-            }
-            break;
-
-          // handles: @*, @*::name, @*::*, @*::[expr]
-          case Token.MUL:
-            decompiler.addName("*");
-            pn = propertyName(pn, "*", memberTypeFlags);
-            break;
-
-          // handles @[expr]
-          case Token.LB:
-          {
-            decompiler.addToken(Token.LB);
-            String lang = lastPeekedLanguageString();
-            pn = nf.createElementGet(pn, lang, null, expr(false), memberTypeFlags);
-            mustMatchToken(Token.RB, "msg.no.bracket.index");
-            decompiler.addToken(Token.RB);
-            break;
-          }
-
-          default:
-            reportError("msg.no.name.after.xmlAttr");
-            pn = nf.createPropertyGet(pn, lastPeekedLanguageString(), null, "?", memberTypeFlags);
-            break;
-        }
-
-        return pn;
+    	return null;
+// TODO: Fill this in    	
+//        memberTypeFlags |= Node.ATTRIBUTE_FLAG;
+//        int tt = nextToken();
+//
+//        switch (tt) {
+//          // handles: @name, @ns::name, @ns::*, @ns::[expr]
+//          case Token.NAME:
+//            {
+//                String s = ts.getString();
+//                decompiler.addName(s);
+//                pn = propertyName(pn, s, memberTypeFlags);
+//            }
+//            break;
+//
+//          // handles: @*, @*::name, @*::*, @*::[expr]
+//          case Token.MUL:
+//            decompiler.addName("*");
+//            pn = propertyName(pn, "*", memberTypeFlags);
+//            break;
+//
+//          // handles @[expr]
+//          case Token.LB:
+//          {
+//            decompiler.addToken(Token.LB);
+//            String lang = lastPeekedLanguageString();
+//            pn = nf.createElementGet(pn, lang, null, expr(false), memberTypeFlags);
+//            mustMatchToken(Token.RB, "msg.no.bracket.index");
+//            decompiler.addToken(Token.RB);
+//            break;
+//          }
+//
+//          default:
+//            reportError("msg.no.name.after.xmlAttr");
+//            pn = nf.createPropertyGet(pn, lastPeekedLanguageString(), null, "?", memberTypeFlags);
+//            break;
+//        }
+//
+//        return pn;
     }
 
     /**
