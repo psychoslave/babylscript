@@ -210,6 +210,30 @@ public class BabylscriptToJSTest
 	   assertEquals("8", evalStringToString("var b = 2; for (;;) { b++; if (b > 7) break; } b;"));
    }
 
+   @Test
+   public void statements9() 
+   {
+	   assertEquals("5", compileToJSNoHeaders("b = 3; try { throw b; } catch(e) {b = 5;} b;"));
+   }
+
+   @Test
+   public void function1() 
+   {
+	   assertEquals("2", evalStringToString("function a() { return 2;} a();"));
+   }
+
+   @Test
+   public void function2() 
+   {
+	   assertEquals("2", evalStringToString("function a(b) { return b;} a(2);"));
+   }
+
+   @Test
+   public void function3() 
+   {
+	   assertEquals("15", evalStringToString("function a(b, c) { return b+b+c;} a(3,9);"));
+   }
+
    // 
    // Some corner cases
    //
@@ -253,7 +277,13 @@ public class BabylscriptToJSTest
    @Test
    public void scoping2() 
    {
-	   assertEquals("3", evalStringToString("var c = 1; function a() { if (!c) { var c = 1000; return 3;} return 5; } var result = a();"));
+	   assertEquals("1", evalStringToString("var c = 1; function a() {  var c = 5; function b() {c++; } return b; } var result = a()(); c;"));
+   }
+
+   @Test
+   public void scoping3() 
+   {
+	   assertEquals("3", compileToJSNoHeaders("var c = 1; function a() { if (!c) { var c = 1000; return 3;} return 5; } var result = a();"));
    }
 
 }

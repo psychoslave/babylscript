@@ -53,7 +53,9 @@ import java.io.Reader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Stack;
 
 import org.mozilla.javascript.Node.Scope;
 import org.mozilla.javascript.Node.Symbol;
@@ -86,9 +88,9 @@ public class ParserToJS extends ParserErrorReportingBase
 		{
 			return new JSNode(str);
 		}
-		JSFunction createFunction(String name)
+		JSFunction createFunction(String lang, String name)
 		{
-			return new JSFunction(name);
+			return new JSFunction(lang, name);
 		}
 		JSNode createSimpleBinaryOperator(String operator, JSNode left, JSNode right)
 		{
@@ -151,7 +153,7 @@ public class ParserToJS extends ParserErrorReportingBase
 			node.type = Token.LABEL;
 			return node;
 		}
-		JSNode createName(String lang, String name)
+		JSName createName(String lang, String name)
 		{
 			return new JSName(lang, name);
 		}
@@ -230,9 +232,26 @@ public class ParserToJS extends ParserErrorReportingBase
 			add(".obj");
 			return this;
 		}
+		public void fillInNameScope(ArrayList<JSScope> currentScope)
+		{
+			for (JSNodePair pair: data)
+			{
+				if (pair.node != null)
+					pair.node.fillInNameScope(currentScope);
+			}
+		}
+		public void calculateVariableScope(ArrayList<JSScope> currentScope)
+		{
+			for (JSNodePair pair: data)
+			{
+				if (pair.node != null)
+					pair.node.calculateVariableScope(currentScope);
+			}
+		}
 	}
 	private static class JSName extends JSNode
 	{
+		boolean isGlobal = true;
 		String lang;
 		String name;
 		JSName(String lang, String str)
@@ -243,17 +262,36 @@ public class ParserToJS extends ParserErrorReportingBase
 		}
 		public String toString() 
 		{
-			// Only handle global variables for now 
-			return "babylroot[babyllookup(babylroot,'" + lang + "','" + name + "')]" + super.toString();
+			if (isGlobal)
+				return "babylroot[babyllookup(babylroot,'" + lang + "','" + name + "')]" + super.toString();
+			else
+				// Non-globals can't be translated
+				return name + super.toString();
+		}
+		public void fillInNameScope(ArrayList<JSScope> currentScope)
+		{
+			// go through the scope chain to see if it's a locally defined variable
+			boolean isNotGlobal = false;
+			for (int n = currentScope.size() - 1; n > 0; n--)
+			{
+				if (currentScope.get(n).symbols.contains(name))
+				{
+					isNotGlobal = true;
+					break;
+				}
+			}
+			isGlobal = !isNotGlobal;
+			super.fillInNameScope(currentScope);
 		}
 	}
 	private static class JSVariables extends JSNode
 	{
+		boolean isGlobal = true;
 		int declType;  // holds variable definitions of type Token.LET, Token.VAR, or Token.CONST
 		String declString;
-		ArrayList<JSNode> names = new ArrayList<JSNode>();
+		ArrayList<JSName> names = new ArrayList<JSName>();
 		ArrayList<JSNode> assigns = new ArrayList<JSNode>();
-		public void addVar(JSNode name, JSNode assign)
+		public void addVar(JSName name, JSNode assign)
 		{
 			names.add(name);
 			assigns.add(assign);
@@ -280,7 +318,7 @@ public class ParserToJS extends ParserErrorReportingBase
 		{
 			// Only handle global variables for now
 			String str = "";
-			if (declType != Token.VAR)
+			if (declType != Token.VAR || !isGlobal)
 				str += declString;
 			for (int n = 0; n < names.size(); n++)
 			{
@@ -291,10 +329,63 @@ public class ParserToJS extends ParserErrorReportingBase
 			}
 			return str + super.toString();
 		}
+		public void fillInNameScope(ArrayList<JSScope> currentScope)
+		{
+			for (JSName s: names)
+			{
+				s.fillInNameScope(currentScope);
+			}
+			for (JSNode s: assigns)
+			{
+				if (s != null)
+					s.fillInNameScope(currentScope);
+			}
+		}
+		public void calculateVariableScope(ArrayList<JSScope> currentScope)
+		{
+			for (JSName s: names)
+			{
+				String name = s.name;
+				if (declType != Token.VAR)
+				{
+					// TODO: Put this in the current scope or does it
+					// actually create its own scope?
+					currentScope.get(currentScope.size()-1).addNameToScope(name);
+					isGlobal = false;
+				}
+				else
+				{
+					// Traverse upwards until we get to a function or the
+					// top level
+					for (int n = currentScope.size() -1; n >= 0; n--)
+					{
+						if (n == 0 || currentScope.get(n) instanceof JSFunction)
+						{
+							currentScope.get(n).addNameToScope(name);
+							isGlobal = (n == 0); 
+							break;
+						}
+					}
+				}
+			}
+			for (JSNode s: assigns)
+			{
+				if (s != null)
+					s.calculateVariableScope(currentScope);
+			}
+			super.calculateVariableScope(currentScope);
+		}
 	}
 
 	private static class JSScope extends JSNode
 	{
+		// This symbol list is mainly used for tracking arguments for
+		// functions (it seems unreliable for other stuff)
+		ArrayList<Symbol> symbolList = new ArrayList<Symbol>();
+		
+		// This symbolTable and parentScope stuff doesn't seem to be reliably
+		// maintained, so we'll ignore these things and just manually calculate
+		// things from the post-parsed results
 		JSScope parent = null;
 		HashMap<String, Symbol> symbolTable = new HashMap<String, Symbol>();
 		public Symbol getSymbol(String name)
@@ -305,6 +396,7 @@ public class ParserToJS extends ParserErrorReportingBase
 		{
 //			symbol.containingTable = this;
 			symbolTable.put(name, symbol);
+			symbolList.add(symbol);
 		}
 		public JSScope getDefiningScope(String name) {
 			if (symbolTable.containsKey(name)) return this;
@@ -316,6 +408,25 @@ public class ParserToJS extends ParserErrorReportingBase
 		}
 		public JSScope getParentScope() {
 			return parent;
+		}
+		
+		HashSet<String> symbols = new HashSet<String>();
+		public void addNameToScope(String name)
+		{
+			symbols.add(name);
+		}
+		
+		public void fillInNameScope(ArrayList<JSScope> currentScope)
+		{
+			currentScope.add(this);
+			super.fillInNameScope(currentScope);
+			currentScope.remove(currentScope.size()-1);
+		}
+		public void calculateVariableScope(ArrayList<JSScope> currentScope)
+		{
+			currentScope.add(this);
+			super.calculateVariableScope(currentScope);
+			currentScope.remove(currentScope.size()-1);
 		}
 	}
 	private static class JSScript extends JSScope
@@ -347,14 +458,89 @@ public class ParserToJS extends ParserErrorReportingBase
 	}
 	private static class JSFunction extends JSScript
 	{
-		public JSFunction(String name) {
+		boolean isGlobal = true;
+		JSName name = null;
+		public JSFunction(String lang, String name) {
 			super();
-			this.name = name;
+			this.name = new JSName(lang, name);
 		}
 	    boolean itsIgnoreDynamicScope = false;
-		private String name = "";
-		public String getFunctionName() { return name; }
+	    private int syntheticType;
+		private JSNode body;
+		public String getFunctionName() { if (name != null) return name.name; return null; }
 		public void setEndLineno(int lineno) { }
+		public JSNode init(int functionIndex, JSNode body, int syntheticType) {
+			this.body = body;
+			this.syntheticType = syntheticType;
+			return this;
+		}
+		public String toString() 
+		{
+			String str = "";
+			if (syntheticType == FunctionNode.FUNCTION_STATEMENT)
+				str += (isGlobal ? "" : "var ") + name + "=";
+			str += "function (";
+			boolean first = true;
+			for (Symbol s: symbolList)
+			{
+				if (s.declType == Token.LP)
+				{
+					if (!first) str += ",";
+					first = false;
+					str += s.name;
+				}
+			}
+			str += ") {\n" + body.toString() + "}\n";
+			return str;
+		}
+		public void fillInNameScope(ArrayList<JSScope> currentScope)
+		{
+			// Figure out the name definition if it's a function statement 
+			if (name != null)
+			{
+				name.fillInNameScope(currentScope);
+			}
+			
+			currentScope.add(this);
+			body.fillInNameScope(currentScope);
+			currentScope.remove(currentScope.size()-1);
+			super.fillInNameScope(currentScope);
+		}
+		public void calculateVariableScope(ArrayList<JSScope> currentScope)
+		{
+			if (name != null)
+			{
+				if (syntheticType == FunctionNode.FUNCTION_STATEMENT)
+				{
+					// TODO: assume that function statements follow VAR scoping rules
+					// Traverse upwards until we get to a function or the
+					// top level
+					for (int n = currentScope.size() -1; n >= 0; n--)
+					{
+						if (n == 0 || currentScope.get(n) instanceof JSFunction)
+						{
+							currentScope.get(n).addNameToScope(name.name);
+							isGlobal = (n == 0); 
+							break;
+						}
+					}
+				}
+			}
+			// Add the function arguments to the known list of symbols
+			for (Symbol s: symbolList)
+			{
+				if (s.declType == Token.LP)
+				{
+					addNameToScope(s.name);
+				}
+			}
+			
+			// Recurse in
+			currentScope.add(this);
+			body.calculateVariableScope(currentScope);
+			currentScope.remove(currentScope.size()-1);
+			super.calculateVariableScope(currentScope);
+		}
 	}
 
 	private static String babylscriptJSHeader; 
@@ -667,11 +853,9 @@ public class ParserToJS extends ParserErrorReportingBase
                 if (tt == Token.FUNCTION) {
                     consumeToken();
                     try {
-                    	n = null;
-// TODO: Fill this in later                    	
-//                        n = function(calledByCompileFunction
-//                                     ? FunctionNode.FUNCTION_EXPRESSION
-//                                     : FunctionNode.FUNCTION_STATEMENT);
+                        n = function(calledByCompileFunction
+                                     ? FunctionNode.FUNCTION_EXPRESSION
+                                     : FunctionNode.FUNCTION_STATEMENT);
                     } catch (ParserException e) {
                         break;
                     }
@@ -712,6 +896,11 @@ public class ParserToJS extends ParserErrorReportingBase
         }
         this.decompiler = null; // It helps GC
 
+        ArrayList<JSScope> scope = new ArrayList<JSScope>();
+        currentScriptOrFn.calculateVariableScope(scope);
+        assert scope.isEmpty();
+        currentScriptOrFn.fillInNameScope(scope);
+        
         return (withHeaders ? babylscriptJSHeader : "") + currentScriptOrFn.toString();
     }
 
@@ -721,14 +910,15 @@ public class ParserToJS extends ParserErrorReportingBase
      * it'd only be useful for checking argument hiding, which
      * I'm not doing anyway...
      */
-    private Node parseFunctionBody()
+    private JSNode parseFunctionBody()
         throws IOException
     {
         ++nestingOfFunction;
-        Node pn = nf.createBlock(ts.getLineno());
+        JSNode pn = jsFactory.createBlock();
+//        Node pn = nf.createBlock(ts.getLineno());
         try {
             bodyLoop: for (;;) {
-                Node n;
+                JSNode n;
                 int tt = peekToken();
                 switch (tt) {
                   case Token.ERROR:
@@ -741,10 +931,11 @@ public class ParserToJS extends ParserErrorReportingBase
                     n = function(FunctionNode.FUNCTION_STATEMENT);
                     break;
                   default:
-                    n = statement();
+                    n = jsstatement();
                     break;
                 }
-                nf.addChildToBack(pn, n);
+                pn.add(n);
+//                nf.addChildToBack(pn, n);
             }
         } catch (ParserException e) {
             // Ignore it
@@ -755,98 +946,98 @@ public class ParserToJS extends ParserErrorReportingBase
         return pn;
     }
 
-    private Node function(int functionType)
+    private JSNode function(int functionType)
         throws IOException, ParserException
     {
-    	return null;
-// TODO: Fix this later
-//        int syntheticType = functionType;
-//        int baseLineno = ts.getLineno();  // line number where source starts
-//
-//        int functionSourceStart = decompiler.markFunctionStart(functionType);
-//        String name;
-//        String lang;
-//        Node memberExprNode = null;
-//        if (matchToken(Token.NAME)) {
-//            lang = ts.getLastLanguageString();
-//            name = ts.getString();
-//            decompiler.addName(name);
-//            if (!matchToken(Token.LP)) {
-//                if (compilerEnv.isAllowMemberExprAsFunctionName()) {
-//                    // Extension to ECMA: if 'function <name>' does not follow
-//                    // by '(', assume <name> starts memberExpr
-//                    Node memberExprHead = nf.createName(lang, name);
-//                    name = "";
-//                    memberExprNode = memberExprTail(false, memberExprHead);
-//                }
-//                mustMatchToken(Token.LP, "msg.no.paren.parms");
-//            }
-//        } else if (matchToken(Token.LP)) {
-//            // Anonymous function
-//            name = "";
-//        } else {
-//            name = "";
-//            if (compilerEnv.isAllowMemberExprAsFunctionName()) {
-//                // Note that memberExpr can not start with '(' like
-//                // in function (1+2).toString(), because 'function (' already
-//                // processed as anonymous function
-//                memberExprNode = memberExpr(false);
-//            }
-//            mustMatchToken(Token.LP, "msg.no.paren.parms");
-//        }
-//
-//        if (memberExprNode != null) {
-//            syntheticType = FunctionNode.FUNCTION_EXPRESSION;
-//        } 
-//        
-//        if (syntheticType != FunctionNode.FUNCTION_EXPRESSION && 
-//            name.length() > 0)
-//        {
-//            // Function statements define a symbol in the enclosing scope
-//            defineSymbol(Token.FUNCTION, false, name);
-//        }
-//
-//        boolean nested = insideFunction();
-//
-//        JSFunction fnNode = jsFactory.createFunction(name);
-//        if (nested || nestingOfWith > 0) {
-//            // 1. Nested functions are not affected by the dynamic scope flag
-//            // as dynamic scope is already a parent of their scope.
-//            // 2. Functions defined under the with statement also immune to
-//            // this setup, in which case dynamic scope is ignored in favor
-//            // of with object.
-//            fnNode.itsIgnoreDynamicScope = true;
-//        }
-//        int functionIndex = currentScriptOrFn.addFunction(fnNode);
-//
-//        int functionSourceEnd;
-//
-//        JSScript savedScriptOrFn = currentScriptOrFn;
-//        currentScriptOrFn = fnNode;
-//        JSScope savedCurrentScope = currentScope;
-//        currentScope = fnNode;
-//        int savedNestingOfWith = nestingOfWith;
-//        nestingOfWith = 0;
-//        Map<String,Node> savedLabelSet = labelSet;
-//        labelSet = null;
-//        ObjArray savedLoopSet = loopSet;
-//        loopSet = null;
-//        ObjArray savedLoopAndSwitchSet = loopAndSwitchSet;
-//        loopAndSwitchSet = null;
-//        int savedFunctionEndFlags = endFlags;
-//        endFlags = 0;
-//
-//        Node destructuring = null;
-//        Node body;
-//        try {
-//            decompiler.addToken(Token.LP);
-//            if (!matchToken(Token.RP)) {
-//                boolean first = true;
-//                do {
-//                    if (!first)
-//                        decompiler.addToken(Token.COMMA);
-//                    first = false;
-//                    int tt = peekToken();
+        int syntheticType = functionType;
+        int baseLineno = ts.getLineno();  // line number where source starts
+
+        int functionSourceStart = decompiler.markFunctionStart(functionType);
+        String name;
+        String lang = null;
+        JSNode memberExprNode = null;
+        if (matchToken(Token.NAME)) {
+            lang = ts.getLastLanguageString();
+            name = ts.getString();
+            decompiler.addName(name);
+            if (!matchToken(Token.LP)) {
+                if (compilerEnv.isAllowMemberExprAsFunctionName()) {
+                    // Extension to ECMA: if 'function <name>' does not follow
+                    // by '(', assume <name> starts memberExpr
+                    JSNode memberExprHead = jsFactory.createName(lang, name);
+//                    JSNode memberExprHead = nf.createName(lang, name);
+                    name = "";
+                    memberExprNode = memberExprTail(false, memberExprHead);
+                }
+                mustMatchToken(Token.LP, "msg.no.paren.parms");
+            }
+        } else if (matchToken(Token.LP)) {
+            // Anonymous function
+            name = "";
+        } else {
+            name = "";
+            if (compilerEnv.isAllowMemberExprAsFunctionName()) {
+                // Note that memberExpr can not start with '(' like
+                // in function (1+2).toString(), because 'function (' already
+                // processed as anonymous function
+                memberExprNode = memberExpr(false);
+            }
+            mustMatchToken(Token.LP, "msg.no.paren.parms");
+        }
+
+        if (memberExprNode != null) {
+            syntheticType = FunctionNode.FUNCTION_EXPRESSION;
+        } 
+        
+        if (syntheticType != FunctionNode.FUNCTION_EXPRESSION && 
+            name.length() > 0)
+        {
+            // Function statements define a symbol in the enclosing scope
+            defineSymbol(Token.FUNCTION, false, name);
+        }
+
+        boolean nested = insideFunction();
+
+        JSFunction fnNode = jsFactory.createFunction(lang, name);
+        if (nested || nestingOfWith > 0) {
+            // 1. Nested functions are not affected by the dynamic scope flag
+            // as dynamic scope is already a parent of their scope.
+            // 2. Functions defined under the with statement also immune to
+            // this setup, in which case dynamic scope is ignored in favor
+            // of with object.
+            fnNode.itsIgnoreDynamicScope = true;
+        }
+        int functionIndex = currentScriptOrFn.addFunction(fnNode);
+
+        int functionSourceEnd;
+
+        JSScript savedScriptOrFn = currentScriptOrFn;
+        currentScriptOrFn = fnNode;
+        JSScope savedCurrentScope = currentScope;
+        currentScope = fnNode;
+        int savedNestingOfWith = nestingOfWith;
+        nestingOfWith = 0;
+        Map<String,Node> savedLabelSet = labelSet;
+        labelSet = null;
+        ObjArray savedLoopSet = loopSet;
+        loopSet = null;
+        ObjArray savedLoopAndSwitchSet = loopAndSwitchSet;
+        loopAndSwitchSet = null;
+        int savedFunctionEndFlags = endFlags;
+        endFlags = 0;
+
+        JSNode destructuring = null;
+        JSNode body;
+        try {
+            decompiler.addToken(Token.LP);
+            if (!matchToken(Token.RP)) {
+                boolean first = true;
+                do {
+                    if (!first)
+                        decompiler.addToken(Token.COMMA);
+                    first = false;
+                    int tt = peekToken();
+// TODO: Fill this in                    
 //                    if (tt == Token.LB || tt == Token.LC) {
 //                        // Destructuring assignment for parameters: add a 
 //                        // dummy parameter name, and add a statement to the
@@ -861,75 +1052,78 @@ public class ParserToJS extends ParserErrorReportingBase
 //                            nf.createDestructuringAssignment(Token.VAR,
 //                                primaryExpr(), nf.createName(ScriptRuntime.TOFILL, parmName)));
 //                    } else {
-//                        mustMatchToken(Token.NAME, "msg.no.parm");
-//                        String s = ts.getString();
-//                        defineSymbol(Token.LP, false, s);
-//                        decompiler.addName(s);
+                        mustMatchToken(Token.NAME, "msg.no.parm");
+                        String s = ts.getString();
+                        defineSymbol(Token.LP, false, s);
+                        decompiler.addName(s);
 //                    }
-//                } while (matchEitherToken(Token.COMMA, Token.SEMI));
-//
-//                mustMatchToken(Token.RP, "msg.no.paren.after.parms");
-//            }
-//            decompiler.addToken(Token.RP);
-//
-//            mustMatchToken(Token.LC, "msg.no.brace.body");
-//            decompiler.addEOL(Token.LC);
-//            body = parseFunctionBody();
+                } while (matchEitherToken(Token.COMMA, Token.SEMI));
+
+                mustMatchToken(Token.RP, "msg.no.paren.after.parms");
+            }
+            decompiler.addToken(Token.RP);
+
+            mustMatchToken(Token.LC, "msg.no.brace.body");
+            decompiler.addEOL(Token.LC);
+            body = parseFunctionBody();
+// TODO: Fill this in            
 //            if (destructuring != null) {
 //                body.addChildToFront(
 //                    new Node(Token.EXPR_VOID, destructuring, ts.getLineno()));
 //            }
-//            mustMatchToken(Token.RC, "msg.no.brace.after.body");
-//
+            mustMatchToken(Token.RC, "msg.no.brace.after.body");
+
+// TODO: Fill this in            
 //            if (compilerEnv.isStrictMode() && !body.hasConsistentReturnUsage())
 //            {
 //              String msg = name.length() > 0 ? "msg.no.return.value"
 //                                             : "msg.anon.no.return.value";
 //              addStrictWarning(msg, name);
 //            }
-//            
-//            if (syntheticType == FunctionNode.FUNCTION_EXPRESSION &&
-//                name.length() > 0 && currentScope.getSymbol(name) == null) 
-//            {
-//                // Function expressions define a name only in the body of the 
-//                // function, and only if not hidden by a parameter name
-//                defineSymbol(Token.FUNCTION, false, name);
-//            }
-//            
-//            decompiler.addToken(Token.RC);
-//            functionSourceEnd = decompiler.markFunctionEnd(functionSourceStart);
-//            if (functionType != FunctionNode.FUNCTION_EXPRESSION) {
-//                // Add EOL only if function is not part of expression
-//                // since it gets SEMI + EOL from Statement in that case
-//                decompiler.addToken(Token.EOL);
-//            }
-//        }
-//        finally {
-//            endFlags = savedFunctionEndFlags;
-//            loopAndSwitchSet = savedLoopAndSwitchSet;
-//            loopSet = savedLoopSet;
-//            labelSet = savedLabelSet;
-//            nestingOfWith = savedNestingOfWith;
-//            currentScriptOrFn = savedScriptOrFn;
-//            currentScope = savedCurrentScope;
-//        }
-//
-//        fnNode.setEncodedSourceBounds(functionSourceStart, functionSourceEnd);
-//        fnNode.setSourceName(sourceURI);
-//        fnNode.setBaseLineno(baseLineno);
-//        fnNode.setEndLineno(ts.getLineno());
-//
-//// TODO: Fill this in later
-////        Node pn = nf.initFunction(fnNode, functionIndex, body, syntheticType);
-//        Node pn = null;
-//        if (memberExprNode != null) {
+            
+            if (syntheticType == FunctionNode.FUNCTION_EXPRESSION &&
+                name.length() > 0 && currentScope.getSymbol(name) == null) 
+            {
+                // Function expressions define a name only in the body of the 
+                // function, and only if not hidden by a parameter name
+                defineSymbol(Token.FUNCTION, false, name);
+            }
+            
+            decompiler.addToken(Token.RC);
+            functionSourceEnd = decompiler.markFunctionEnd(functionSourceStart);
+            if (functionType != FunctionNode.FUNCTION_EXPRESSION) {
+                // Add EOL only if function is not part of expression
+                // since it gets SEMI + EOL from Statement in that case
+                decompiler.addToken(Token.EOL);
+            }
+        }
+        finally {
+            endFlags = savedFunctionEndFlags;
+            loopAndSwitchSet = savedLoopAndSwitchSet;
+            loopSet = savedLoopSet;
+            labelSet = savedLabelSet;
+            nestingOfWith = savedNestingOfWith;
+            currentScriptOrFn = savedScriptOrFn;
+            currentScope = savedCurrentScope;
+        }
+
+        fnNode.setEncodedSourceBounds(functionSourceStart, functionSourceEnd);
+        fnNode.setSourceName(sourceURI);
+        fnNode.setBaseLineno(baseLineno);
+        fnNode.setEndLineno(ts.getLineno());
+
+        JSNode pn = fnNode.init(functionIndex, body, syntheticType);
+//        JSNode pn = nf.initFunction(fnNode, functionIndex, body, syntheticType);
+        if (memberExprNode != null) {
+        	pn = jsFactory.createAssignment(tokenToString(Token.ASSIGN), memberExprNode, pn);
 //            pn = nf.createAssignment(Token.ASSIGN, memberExprNode, pn);
+// TODO: Fill this in later
 //            if (functionType != FunctionNode.FUNCTION_EXPRESSION) {
 //                // XXX check JScript behavior: should it be createExprStatement?
 //                pn = nf.createExprStatementNoReturn(pn, baseLineno);
 //            }
-//        }
-//        return pn;
+        }
+        return pn;
     }
 
     private JSNode statements(JSNode scope)
@@ -1559,12 +1753,12 @@ public class ParserToJS extends ParserErrorReportingBase
 //            pn = nf.createLeaf(Token.EMPTY);
             return pn;
 
-//          case Token.FUNCTION: {
-//            consumeToken();
-//            pn = function(FunctionNode.FUNCTION_EXPRESSION_STATEMENT);
-//            return pn;
-//          }
-//
+          case Token.FUNCTION: {
+            consumeToken();
+            pn = function(FunctionNode.FUNCTION_EXPRESSION_STATEMENT);
+            return pn;
+          }
+
 //          case Token.DEFAULT :
 //            consumeToken();
 //            mustHaveXML();
@@ -1818,7 +2012,7 @@ public class ParserToJS extends ParserErrorReportingBase
 //                            destructuring, init));
 //                }
 //            } else {
-            	JSNode name = jsFactory.createName(lang, s);
+            	JSName name = jsFactory.createName(lang, s);
 //                JSNode name = nf.createName(lang, s);
                 if (init != null)
                 	result.addVar(name, init);
@@ -2355,7 +2549,7 @@ public class ParserToJS extends ParserErrorReportingBase
         }
     }
 
-    private void argumentList(Node listNode)
+    private void argumentList(JSNode listNode)
         throws IOException, ParserException
     {
         boolean matched;
@@ -2365,11 +2559,14 @@ public class ParserToJS extends ParserErrorReportingBase
             do {
                 if (!first)
                     decompiler.addToken(Token.COMMA);
+                if (!first)
+                	listNode.add(",");
                 first = false;
                 if (peekToken() == Token.YIELD) {
                     reportError("msg.yield.parenthesized");
                 }
-                nf.addChildToBack(listNode, assignExpr(false));
+                listNode.add(jsassignExpr(false));
+//                nf.addChildToBack(listNode, assignExpr(false));
             } while (matchEitherToken(Token.COMMA, Token.SEMI));
 
             mustMatchToken(Token.RP, "msg.no.paren.arg");
@@ -2515,18 +2712,20 @@ public class ParserToJS extends ParserErrorReportingBase
 //                decompiler.addToken(Token.RB);
 //                break;
 //              }
-//
-//              case Token.LP:
-//                if (!allowCallSyntax) {
-//                    break tailLoop;
-//                }
-//                consumeToken();
-//                decompiler.addToken(Token.LP);
+
+              case Token.LP:
+                if (!allowCallSyntax) {
+                    break tailLoop;
+                }
+                consumeToken();
+                decompiler.addToken(Token.LP);
+                pn.add("(");
 //                pn = nf.createCallOrNew(Token.CALL, pn);
-//                /* Add the arguments to pn, if any are supplied. */
-//                argumentList(pn);
-//                break;
-//
+                /* Add the arguments to pn, if any are supplied. */
+                argumentList(pn);
+                pn.add(")"); 
+                break;
+
               default:
                 break tailLoop;
             }
@@ -2982,23 +3181,24 @@ public class ParserToJS extends ParserErrorReportingBase
 
     private boolean getterSetterProperty(ObjArray elems, Object property,
                                          boolean isGetter) throws IOException {
-        Node f = function(FunctionNode.FUNCTION_EXPRESSION);
-        if (f.getType() != Token.FUNCTION) {
-            reportError("msg.bad.prop");
-            return false;
-        }
-        int fnIndex = f.getExistingIntProp(Node.FUNCTION_PROP);
-        JSFunction fn = currentScriptOrFn.getFunctionNode(fnIndex);
-        if (fn.getFunctionName().length() != 0) {
-            reportError("msg.bad.prop");
-            return false;
-        }
-        elems.add(property);
-        if (isGetter) {
-            elems.add(nf.createUnary(Token.GET, f));
-        } else {
-            elems.add(nf.createUnary(Token.SET, f));
-        }
+// TODO: Fill this in    	
+//        JSNode f = function(FunctionNode.FUNCTION_EXPRESSION);
+//        if (f.getType() != Token.FUNCTION) {
+//            reportError("msg.bad.prop");
+//            return false;
+//        }
+//        int fnIndex = f.getExistingIntProp(Node.FUNCTION_PROP);
+//        JSFunction fn = currentScriptOrFn.getFunctionNode(fnIndex);
+//        if (fn.getFunctionName().length() != 0) {
+//            reportError("msg.bad.prop");
+//            return false;
+//        }
+//        elems.add(property);
+//        if (isGetter) {
+//            elems.add(nf.createUnary(Token.GET, f));
+//        } else {
+//            elems.add(nf.createUnary(Token.SET, f));
+//        }
         return true;
     }
     
