@@ -73,6 +73,8 @@ public class NativeObject extends IdScriptableObject
     @Override
     protected void fillConstructorProperties(IdFunctionObject ctor)
     {
+        addIdFunctionProperty(ctor, OBJECT_TAG, ConstructorId_getPrototypeOf,
+                "getPrototypeOf", 1);
         addIdFunctionProperty(ctor, OBJECT_TAG, ConstructorId_defineProperty,
                 "defineProperty", 3);
         super.fillConstructorProperties(ctor);
@@ -264,6 +266,13 @@ public class NativeObject extends IdScriptableObject
               }
               return Undefined.instance;
 
+            case ConstructorId_getPrototypeOf:
+              {
+            	  Object arg = args.length < 1 ? Undefined.instance : args[0];
+              	Scriptable obj = ensureScriptable(arg);
+              	return obj.getPrototype();
+              }
+              
             case ConstructorId_defineProperty:
               {
 	              Object arg = args.length < 1 ? Undefined.instance : args[0];
@@ -322,7 +331,8 @@ public class NativeObject extends IdScriptableObject
     }
 
     private static final int
-    	ConstructorId_defineProperty = -1,
+    	ConstructorId_getPrototypeOf = -1,
+    	ConstructorId_defineProperty = -2,
         Id_constructor           = 1,
         Id_toString              = 2,
         Id_toLocaleString        = 3,

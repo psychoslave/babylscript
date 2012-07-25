@@ -316,4 +316,16 @@ public class BabylscriptToJSTest
    {
 	   assertEquals("true", evalES5StringToString("var str = ''; Object.defineProperty(Object.prototype, 'babyltest', {value: {babyl:'hi'}}); Object.prototype.hasOwnProperty('babyltest')"));
    }
+
+   @Test
+   public void ES5Test4() 
+   {
+	   assertEquals("hi", evalES5StringToString("var str = ''; Object.defineProperty(Object.prototype, 'babyltest', {value: {babyl:'hi'}}); a = {}; a.babyltest.babyl"));
+   }
+
+   @Test
+   public void ES5Test5() 
+   {
+	   assertEquals("true", evalES5StringToString("Object.getPrototypeOf({}) == Object.prototype"));
+   }
 }

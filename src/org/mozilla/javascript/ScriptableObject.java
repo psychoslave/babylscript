@@ -1737,6 +1737,12 @@ public abstract class ScriptableObject implements Scriptable, Serializable,
         return !isDataDescriptor(desc) && !isAccessorDescriptor(desc);
     }
 
+    protected Scriptable ensureScriptable(Object arg) {
+        if ( !(arg instanceof Scriptable) )
+            throw ScriptRuntime.typeError1("msg.arg.not.object", ScriptRuntime.typeof(arg));
+        return (Scriptable) arg;
+    }
+
     protected ScriptableObject ensureScriptableObject(Object arg) {
         if ( !(arg instanceof ScriptableObject) )
             throw ScriptRuntime.typeError1("msg.arg.not.object", ScriptRuntime.typeof(arg));
