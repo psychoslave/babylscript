@@ -264,6 +264,18 @@ public class BabylscriptToJSTest
 	   assertEquals("5", evalStringToString("a = new Object(); a.b = 5; a['b']"));
    }
 
+   @Test
+   public void arrayliteral1() 
+   {
+	   assertEquals("5", evalStringToString("a = [22,23,,5]; a[3]"));
+   }
+
+   @Test
+   public void objectliteral1() 
+   {
+	   assertEquals("5", evalStringToString("a = { get b() { return 2;}, c:3};a.b+ a['c']"));
+   }
+
    // 
    // Some corner cases
    //
@@ -271,7 +283,7 @@ public class BabylscriptToJSTest
    @Test
    public void lookupNonConstantWithIncrement1() 
    {
-	   assertEquals("6", evalStringToString("var str = ''; function a() {str += 'a'; return str;} var b {a:5, aa:10}; b[a()]++; b.a;"));
+	   assertEquals("6", evalStringToString("var str = ''; function a() {str += 'a'; return str;} var b ={a:5, aa:10}; b[a()]++; b.a;"));
 // SOLUTION INVOLVES SOMETHING LIKE THIS:	   
 //   var tmp0;
 //
@@ -289,7 +301,7 @@ public class BabylscriptToJSTest
    @Test
    public void lookupNonConstantWithIncrement2() 
    {
-	   assertEquals("6", evalStringToString("var str = ''; function a() {str += 'a'; return str;} var next = false; function c() { next = !next; return next ? b: {a:20,aa:30}} var b {a:5, aa:10};  c()[a()]++; b.a;"));
+	   assertEquals("6", evalStringToString("var str = ''; function a() {str += 'a'; return str;} var next = false; function c() { next = !next; return next ? b: {a:20,aa:30};} var b ={a:5, aa:10};  c()[a()]++; b.a;"));
    }
 
    @Test

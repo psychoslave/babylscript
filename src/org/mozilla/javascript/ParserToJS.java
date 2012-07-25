@@ -94,6 +94,12 @@ public class ParserToJS extends ParserErrorReportingBase
 		{
 			return new JSFunction(lang, name);
 		}
+		JSFunction createGetterSetterFunction(String lang, String name)
+		{
+			JSFunction f = new JSFunction(lang, name);
+			f.isShowFunctionKeyword = false;
+			return f;
+		}
 		JSNode createSimpleBinaryOperator(String operator, JSNode left, JSNode right)
 		{
             return createNode()
@@ -460,6 +466,7 @@ public class ParserToJS extends ParserErrorReportingBase
 	private static class JSFunction extends JSScript
 	{
 		boolean isGlobal = true;
+		boolean isShowFunctionKeyword = true;
 		JSName name = null;
 		public JSFunction(String lang, String name) {
 			super();
@@ -478,9 +485,10 @@ public class ParserToJS extends ParserErrorReportingBase
 		public String toString() 
 		{
 			String str = "";
-			if (syntheticType == FunctionNode.FUNCTION_STATEMENT)
+			if (syntheticType == FunctionNode.FUNCTION_STATEMENT || syntheticType == FunctionNode.FUNCTION_EXPRESSION_STATEMENT)
 				str += (isGlobal ? "" : "var ") + name + "=";
-			str += "function (";
+			if (isShowFunctionKeyword) str += "function ";
+			str += "(";
 			boolean first = true;
 			for (Symbol s: symbolList)
 			{
@@ -1001,6 +1009,12 @@ public class ParserToJS extends ParserErrorReportingBase
     }
 
     private JSNode function(int functionType)
+            throws IOException, ParserException
+    {
+    	return function(functionType, false);
+    }
+
+    private JSNode function(int functionType, boolean isGetterSetter)
         throws IOException, ParserException
     {
         int syntheticType = functionType;
@@ -1052,7 +1066,7 @@ public class ParserToJS extends ParserErrorReportingBase
 
         boolean nested = insideFunction();
 
-        JSFunction fnNode = jsFactory.createFunction(lang, name);
+        JSFunction fnNode = isGetterSetter ? jsFactory.createGetterSetterFunction(lang, name) : jsFactory.createFunction(lang, name);
         if (nested || nestingOfWith > 0) {
             // 1. Nested functions are not affected by the dynamic scope flag
             // as dynamic scope is already a parent of their scope.
@@ -2188,35 +2202,18 @@ public class ParserToJS extends ParserErrorReportingBase
             throws IOException, ParserException
         {
             JSNode pn = jsassignExpr(inForInit);
-    // TODO: Fill this in        
-//            while (matchToken(Token.COMMA)) {
-//                decompiler.addToken(Token.COMMA);
+            while (matchToken(Token.COMMA)) {
+                decompiler.addToken(Token.COMMA);
 //                if (compilerEnv.isStrictMode() && !pn.hasSideEffects())
 //                    addStrictWarning("msg.no.side.effects", "");
-//                if (peekToken() == Token.YIELD) {
-//                  reportError("msg.yield.parenthesized");
-//                }
+                if (peekToken() == Token.YIELD) {
+                  reportError("msg.yield.parenthesized");
+                }
+                pn = jsFactory.createSimpleBinaryOperator(",", pn, jsassignExpr(inForInit));
 //                pn = nf.createBinary(Token.COMMA, pn, assignExpr(inForInit));
-//            }
+            }
             return pn;
         }
-
-    private Node expr(boolean inForInit)
-        throws IOException, ParserException
-    {
-        Node pn = assignExpr(inForInit);
-// TODO: Fill this in        
-//        while (matchToken(Token.COMMA)) {
-//            decompiler.addToken(Token.COMMA);
-//            if (compilerEnv.isStrictMode() && !pn.hasSideEffects())
-//                addStrictWarning("msg.no.side.effects", "");
-//            if (peekToken() == Token.YIELD) {
-//              reportError("msg.yield.parenthesized");
-//            }
-//            pn = nf.createBinary(Token.COMMA, pn, assignExpr(inForInit));
-//        }
-        return pn;
-    }
 
     private JSNode jsassignExpr(boolean inForInit)
             throws IOException, ParserException
@@ -2240,26 +2237,32 @@ public class ParserToJS extends ParserErrorReportingBase
             return pn;
         }
 
-    private Node assignExpr(boolean inForInit)
-        throws IOException, ParserException
-    {
-    	return null;
-    }
-
+//    private Node assignExpr(boolean inForInit)
+//        throws IOException, ParserException
+//    {
+//    	return null;
+//    }
+//
     private JSNode condExpr(boolean inForInit)
         throws IOException, ParserException
     {
         JSNode pn = orExpr(inForInit);
-
-// TODO: Fill this in        
-//        if (matchToken(Token.HOOK)) {
-//            decompiler.addToken(Token.HOOK);
-//            Node ifTrue = assignExpr(false);
-//            mustMatchToken(Token.COLON, "msg.no.colon.cond");
-//            decompiler.addToken(Token.COLON);
-//            Node ifFalse = assignExpr(inForInit);
+        if (matchToken(Token.HOOK)) {
+            decompiler.addToken(Token.HOOK);
+            JSNode ifTrue = jsassignExpr(false);
+            mustMatchToken(Token.COLON, "msg.no.colon.cond");
+            decompiler.addToken(Token.COLON);
+            JSNode ifFalse = jsassignExpr(inForInit);
+            jsFactory.createNode()
+            	.add("(")
+            	.addCondition(pn)
+            	.add("?")
+            	.add(ifTrue)
+            	.add(":")
+            	.add(ifFalse)
+            	.add(")");
 //            return nf.createCondExpr(pn, ifTrue, ifFalse);
-//        }
+        }
 
         return pn;
     }
@@ -2535,73 +2538,73 @@ public class ParserToJS extends ParserErrorReportingBase
 
     }
 
-    private Node xmlInitializer() throws IOException
-    {
-        int tt = ts.getFirstXMLToken();
-        if (tt != Token.XML && tt != Token.XMLEND) {
-            reportError("msg.syntax");
-            return null;
-        }
-
-        /* Make a NEW node to append to. */
-        Node pnXML = nf.createLeaf(Token.NEW);
-
-        String xml = ts.getString();
-        boolean fAnonymous = xml.trim().startsWith("<>");
-
-        Node pn = nf.createName(ScriptRuntime.TOFILL, fAnonymous ? "XMLList" : "XML");
-        nf.addChildToBack(pnXML, pn);
-
-        pn = null;
-        Node expr;
-        for (;;tt = ts.getNextXMLToken()) {
-            switch (tt) {
-            case Token.XML:
-                xml = ts.getString();
-                decompiler.addName(xml);
-                mustMatchToken(Token.LC, "msg.syntax");
-                decompiler.addToken(Token.LC);
-                expr = (peekToken() == Token.RC)
-                    ? nf.createString("")
-                    : expr(false);
-                mustMatchToken(Token.RC, "msg.syntax");
-                decompiler.addToken(Token.RC);
-                if (pn == null) {
-                    pn = nf.createString(xml);
-                } else {
-                    pn = nf.createBinary(Token.ADD, pn, nf.createString(xml));
-                }
-                if (ts.isXMLAttribute()) {
-                    /* Need to put the result in double quotes */
-                    expr = nf.createUnary(Token.ESCXMLATTR, expr);
-                    Node prepend = nf.createBinary(Token.ADD,
-                                                   nf.createString("\""),
-                                                   expr);
-                    expr = nf.createBinary(Token.ADD,
-                                           prepend,
-                                           nf.createString("\""));
-                } else {
-                    expr = nf.createUnary(Token.ESCXMLTEXT, expr);
-                }
-                pn = nf.createBinary(Token.ADD, pn, expr);
-                break;
-            case Token.XMLEND:
-                xml = ts.getString();
-                decompiler.addName(xml);
-                if (pn == null) {
-                    pn = nf.createString(xml);
-                } else {
-                    pn = nf.createBinary(Token.ADD, pn, nf.createString(xml));
-                }
-
-                nf.addChildToBack(pnXML, pn);
-                return pnXML;
-            default:
-                reportError("msg.syntax");
-                return null;
-            }
-        }
-    }
+//    private Node xmlInitializer() throws IOException
+//    {
+//        int tt = ts.getFirstXMLToken();
+//        if (tt != Token.XML && tt != Token.XMLEND) {
+//            reportError("msg.syntax");
+//            return null;
+//        }
+//
+//        /* Make a NEW node to append to. */
+//        Node pnXML = nf.createLeaf(Token.NEW);
+//
+//        String xml = ts.getString();
+//        boolean fAnonymous = xml.trim().startsWith("<>");
+//
+//        Node pn = nf.createName(ScriptRuntime.TOFILL, fAnonymous ? "XMLList" : "XML");
+//        nf.addChildToBack(pnXML, pn);
+//
+//        pn = null;
+//        Node expr;
+//        for (;;tt = ts.getNextXMLToken()) {
+//            switch (tt) {
+//            case Token.XML:
+//                xml = ts.getString();
+//                decompiler.addName(xml);
+//                mustMatchToken(Token.LC, "msg.syntax");
+//                decompiler.addToken(Token.LC);
+//                expr = (peekToken() == Token.RC)
+//                    ? nf.createString("")
+//                    : expr(false);
+//                mustMatchToken(Token.RC, "msg.syntax");
+//                decompiler.addToken(Token.RC);
+//                if (pn == null) {
+//                    pn = nf.createString(xml);
+//                } else {
+//                    pn = nf.createBinary(Token.ADD, pn, nf.createString(xml));
+//                }
+//                if (ts.isXMLAttribute()) {
+//                    /* Need to put the result in double quotes */
+//                    expr = nf.createUnary(Token.ESCXMLATTR, expr);
+//                    Node prepend = nf.createBinary(Token.ADD,
+//                                                   nf.createString("\""),
+//                                                   expr);
+//                    expr = nf.createBinary(Token.ADD,
+//                                           prepend,
+//                                           nf.createString("\""));
+//                } else {
+//                    expr = nf.createUnary(Token.ESCXMLTEXT, expr);
+//                }
+//                pn = nf.createBinary(Token.ADD, pn, expr);
+//                break;
+//            case Token.XMLEND:
+//                xml = ts.getString();
+//                decompiler.addName(xml);
+//                if (pn == null) {
+//                    pn = nf.createString(xml);
+//                } else {
+//                    pn = nf.createBinary(Token.ADD, pn, nf.createString(xml));
+//                }
+//
+//                nf.addChildToBack(pnXML, pn);
+//                return pnXML;
+//            default:
+//                reportError("msg.syntax");
+//                return null;
+//            }
+//        }
+//    }
 
     private void argumentList(JSNode listNode)
         throws IOException, ParserException
@@ -2811,11 +2814,10 @@ public class ParserToJS extends ParserErrorReportingBase
      * Xml attribute expression:
      *   '@attr', '@ns::attr', '@ns::*', '@ns::*', '@*', '@*::attr', '@*::*'
      */
-    private Node attributeAccess(Node pn, int memberTypeFlags)
-        throws IOException
-    {
-    	return null;
 // TODO: Fill this in    	
+//    private Node attributeAccess(Node pn, int memberTypeFlags)
+//        throws IOException
+//    {
 //        memberTypeFlags |= Node.ATTRIBUTE_FLAG;
 //        int tt = nextToken();
 //
@@ -2853,62 +2855,60 @@ public class ParserToJS extends ParserErrorReportingBase
 //        }
 //
 //        return pn;
-    }
+//    }
 
     /**
      * Check if :: follows name in which case it becomes qualified name
      */
-    private Node propertyName(Node pn, String name, int memberTypeFlags)
-        throws IOException, ParserException
-    {
-        String lang = lastPeekedLanguageString();
-        
-        String namespace = null;
-        if (matchToken(Token.COLONCOLON)) {
-            decompiler.addToken(Token.COLONCOLON);
-            namespace = name;
+//    private Node propertyName(Node pn, String name, int memberTypeFlags)
+//        throws IOException, ParserException
+//    {
+//        String lang = lastPeekedLanguageString();
+//        
+//        String namespace = null;
+//        if (matchToken(Token.COLONCOLON)) {
+//            decompiler.addToken(Token.COLONCOLON);
+//            namespace = name;
+//
+//            int tt = nextToken();
+//            switch (tt) {
+//              // handles name::name
+//              case Token.NAME:
+//                name = ts.getString();
+//                decompiler.addName(name);
+//                break;
+//
+//              // handles name::*
+//              case Token.MUL:
+//                decompiler.addName("*");
+//                name = "*";
+//                break;
+//
+//              // handles name::[expr]
+//              case Token.LB:
+//              {
+//                String sublang = lastPeekedLanguageString();
+//                decompiler.addToken(Token.LB);
+//                pn = nf.createElementGet(pn, sublang, namespace, expr(false),
+//                                         memberTypeFlags);
+//                mustMatchToken(Token.RB, "msg.no.bracket.index");
+//                decompiler.addToken(Token.RB);
+//                return pn;
+//              }
+//
+//              default:
+//                reportError("msg.no.name.after.coloncolon");
+//                name = "?";
+//            }
+//        }
+//
+//        pn = nf.createPropertyGet(pn, lang, namespace, name, memberTypeFlags);
+//        return pn;
+//    }
 
-            int tt = nextToken();
-            switch (tt) {
-              // handles name::name
-              case Token.NAME:
-                name = ts.getString();
-                decompiler.addName(name);
-                break;
-
-              // handles name::*
-              case Token.MUL:
-                decompiler.addName("*");
-                name = "*";
-                break;
-
-              // handles name::[expr]
-              case Token.LB:
-              {
-                String sublang = lastPeekedLanguageString();
-                decompiler.addToken(Token.LB);
-                pn = nf.createElementGet(pn, sublang, namespace, expr(false),
-                                         memberTypeFlags);
-                mustMatchToken(Token.RB, "msg.no.bracket.index");
-                decompiler.addToken(Token.RB);
-                return pn;
-              }
-
-              default:
-                reportError("msg.no.name.after.coloncolon");
-                name = "?";
-            }
-        }
-
-        pn = nf.createPropertyGet(pn, lang, namespace, name, memberTypeFlags);
-        return pn;
-    }
-
-    private Node arrayComprehension(String langArray, String arrayName, Node expr)
-        throws IOException, ParserException
-    {
-    	return null;
-// TODO: Fill this in
+//    private JSNode arrayComprehension(String langArray, String arrayName, Node expr)
+//        throws IOException, ParserException
+//    {
 //        if (nextToken() != Token.FOR)
 //            throw Kit.codeBug(); // shouldn't be here if next token isn't 'for'
 //        decompiler.addName(" "); // space after array literal expr
@@ -2986,7 +2986,7 @@ public class ParserToJS extends ParserErrorReportingBase
 //        } finally {
 //            exitLoop(false);
 //        }
-    }
+//    }
     
     private JSNode jsprimaryExpr()
             throws IOException, ParserException
@@ -2998,42 +2998,43 @@ public class ParserToJS extends ParserErrorReportingBase
 
         switch(tt) {
 
-//          case Token.FUNCTION:
-//            return function(FunctionNode.FUNCTION_EXPRESSION);
-//
-//          case Token.LB: {
-//            ObjArray elems = new ObjArray();
-//            int skipCount = 0;
-//            int destructuringLen = 0;
-//            decompiler.addToken(Token.LB);
-//            boolean after_lb_or_comma = true;
-//            for (;;) {
-//                tt = peekToken();
-//
-//                if (tt == Token.COMMA || tt == Token.SEMI) {
-//                    consumeToken();
-//                    decompiler.addToken(Token.COMMA);
-//                    if (!after_lb_or_comma) {
-//                        after_lb_or_comma = true;
-//                    } else {
-//                        elems.add(null);
-//                        ++skipCount;
-//                    }
-//                } else if (tt == Token.RB) {
-//                    consumeToken();
-//                    decompiler.addToken(Token.RB);
-//                    // for ([a,] in obj) is legal, but for ([a] in obj) is 
-//                    // not since we have both key and value supplied. The
-//                    // trick is that [a,] and [a] are equivalent in other
-//                    // array literal contexts. So we calculate a special
-//                    // length value just for destructuring assignment.
-//                    destructuringLen = elems.size() + 
-//                                       (after_lb_or_comma ? 1 : 0);
-//                    break;
+          case Token.FUNCTION:
+            return function(FunctionNode.FUNCTION_EXPRESSION);
+
+          case Token.LB: {
+            ArrayList<JSNode> elems = new ArrayList<JSNode>();
+            int skipCount = 0;
+            int destructuringLen = 0;
+            decompiler.addToken(Token.LB);
+            boolean after_lb_or_comma = true;
+            for (;;) {
+                tt = peekToken();
+
+                if (tt == Token.COMMA || tt == Token.SEMI) {
+                    consumeToken();
+                    decompiler.addToken(Token.COMMA);
+                    if (!after_lb_or_comma) {
+                        after_lb_or_comma = true;
+                    } else {
+                        elems.add(null);
+                        ++skipCount;
+                    }
+                } else if (tt == Token.RB) {
+                    consumeToken();
+                    decompiler.addToken(Token.RB);
+                    // for ([a,] in obj) is legal, but for ([a] in obj) is 
+                    // not since we have both key and value supplied. The
+                    // trick is that [a,] and [a] are equivalent in other
+                    // array literal contexts. So we calculate a special
+                    // length value just for destructuring assignment.
+                    destructuringLen = elems.size() + 
+                                       (after_lb_or_comma ? 1 : 0);
+                    break;
+// TODO: Fill this in                    
 //                } else if (skipCount == 0 && elems.size() == 1 &&
 //                           tt == Token.FOR)
 //                {
-//                    Node scopeNode = nf.createScopeNode(Token.ARRAYCOMP, 
+//                    JSNode scopeNode = nf.createScopeNode(Token.ARRAYCOMP, 
 //                                                        ts.getLineno());
 //                    String tempName = currentScriptOrFn.getNextTempName();
 //                    pushScope(scopeNode);
@@ -3055,113 +3056,140 @@ public class ParserToJS extends ParserErrorReportingBase
 //                    } finally {
 //                        popScope();
 //                    }
-//                } else {
-//                    if (!after_lb_or_comma) {
-//                        reportError("msg.no.bracket.arg");
-//                    }
-//                    elems.add(assignExpr(false));
-//                    after_lb_or_comma = false;
-//                }
-//            }
+                } else {
+                    if (!after_lb_or_comma) {
+                        reportError("msg.no.bracket.arg");
+                    }
+                    elems.add(jsassignExpr(false));
+                    after_lb_or_comma = false;
+                }
+            }
+            JSNode arr = jsFactory.createNode()
+            		.add("[");
+            boolean isFirst = true;
+            for (JSNode elem : elems)
+            {
+            	if (!isFirst) arr.add(",");
+            	isFirst = false;
+            	if (arr != null) arr.add(elem);
+            }
+            arr.add("]");
+            return arr;
 //            return nf.createArrayLiteral(elems, skipCount, destructuringLen);
-//          }
-//
-//          case Token.LC: {
-//            ObjArray elems = new ObjArray();
-//            decompiler.addToken(Token.LC);
-//            if (!matchToken(Token.RC)) {
-//
-//                boolean first = true;
-//            commaloop:
-//                do {
-//                    Object property;
-//
-//                    if (!first)
-//                        decompiler.addToken(Token.COMMA);
-//                    else
-//                        first = false;
-//
-//                    tt = peekToken();
-//                    switch(tt) {
-//                      case Token.NAME:
-//                      case Token.STRING:
-//                        consumeToken();
-//                        // map NAMEs to STRINGs in object literal context
-//                        // but tell the decompiler the proper type
-//                        String s = ts.getString();
-//                        if (tt == Token.NAME) {
-//                            if (s.equals("get") &&
-//                                peekToken() == Token.NAME) {
-//                                decompiler.addToken(Token.GET);
-//                                consumeToken();
-//                                s = ts.getString();
-//                                decompiler.addName(s);
+          }
+
+          case Token.LC: {
+            ObjArray elems = new ObjArray();
+            decompiler.addToken(Token.LC);
+            if (!matchToken(Token.RC)) {
+
+                boolean first = true;
+            commaloop:
+                do {
+                    String property;
+
+                    if (!first)
+                        decompiler.addToken(Token.COMMA);
+                    else
+                        first = false;
+
+                    tt = peekToken();
+                    switch(tt) {
+                      case Token.NAME:
+                      case Token.STRING:
+                        consumeToken();
+                        // map NAMEs to STRINGs in object literal context
+                        // but tell the decompiler the proper type
+                        String s = ts.getString();
+                        if (tt == Token.NAME) {
+                            if (s.equals("get") &&
+                                peekToken() == Token.NAME) {
+                                decompiler.addToken(Token.GET);
+                                consumeToken();
+                                s = ts.getString();
+                                decompiler.addName(s);
+                                property = s;
 //                                property = ScriptRuntime.getIndexObject(s);
-//                                if (!getterSetterProperty(elems, property,
-//                                                          true))
-//                                    break commaloop;
-//                                break;
-//                            } else if (s.equals("set") &&
-//                                       peekToken() == Token.NAME) {
-//                                decompiler.addToken(Token.SET);
-//                                consumeToken();
-//                                s = ts.getString();
-//                                decompiler.addName(s);
+                                if (!getterSetterProperty(elems, property,
+                                                          true))
+                                    break commaloop;
+                                break;
+                            } else if (s.equals("set") &&
+                                       peekToken() == Token.NAME) {
+                                decompiler.addToken(Token.SET);
+                                consumeToken();
+                                s = ts.getString();
+                                decompiler.addName(s);
+                                property = s;
 //                                property = ScriptRuntime.getIndexObject(s);
-//                                if (!getterSetterProperty(elems, property,
-//                                                          false))
-//                                    break commaloop;
-//                                break;
-//                            }
-//                            decompiler.addName(s);
-//                        } else {
-//                            decompiler.addString(s);
-//                        }
+                                if (!getterSetterProperty(elems, property,
+                                                          false))
+                                    break commaloop;
+                                break;
+                            }
+                            decompiler.addName(s);
+                        } else {
+                            decompiler.addString(s);
+                        }
+                        property = s;
 //                        property = ScriptRuntime.getIndexObject(s);
-//                        plainProperty(elems, property);
-//                        break;
-//
-//                      case Token.NUMBER:
-//                        consumeToken();
-//                        double n = ts.getNumber();
-//                        decompiler.addNumber(n);
+                        plainProperty(elems, property);
+                        break;
+
+                      case Token.NUMBER:
+                        consumeToken();
+                        double n = ts.getNumber();
+                        decompiler.addNumber(n);
+                        property = ts.getString();
 //                        property = ScriptRuntime.getIndexObject(n);
-//                        plainProperty(elems, property);
-//                        break;
-//
-//                      case Token.RC:
-//                        // trailing comma is OK.
-//                        break commaloop;
-//                    default:
-//                        reportError("msg.bad.prop");
-//                        break commaloop;
-//                    }
-//                } while (matchEitherToken(Token.COMMA, Token.SEMI));
-//
-//                mustMatchToken(Token.RC, "msg.no.brace.prop");
-//            }
-//            decompiler.addToken(Token.RC);
+                        plainProperty(elems, property);
+                        break;
+
+                      case Token.RC:
+                        // trailing comma is OK.
+                        break commaloop;
+                    default:
+                        reportError("msg.bad.prop");
+                        break commaloop;
+                    }
+                } while (matchEitherToken(Token.COMMA, Token.SEMI));
+
+                mustMatchToken(Token.RC, "msg.no.brace.prop");
+            }
+            decompiler.addToken(Token.RC);
+            JSNode obj = jsFactory.createNode();
+            obj.add("{");
+            for (int n = 0; n < elems.size(); n++)
+            {
+            	JSNode prop = (JSNode)elems.get(n);
+            	if (n != 0) obj.add(",");
+            	obj.add(prop);
+            }
+            obj.add("}");
+            return obj;
 //            return nf.createObjectLiteral(elems);
-//          }
-//          
+          }
+          
 //          case Token.LET:
 //            decompiler.addToken(Token.LET);
 //            return let(false);
-//
-//          case Token.LP:
-//
-//            /* Brendan's IR-jsparse.c makes a new node tagged with
-//             * TOK_LP here... I'm not sure I understand why.  Isn't
-//             * the grouping already implicit in the structure of the
-//             * parse tree?  also TOK_LP is already overloaded (I
-//             * think) in the C IR as 'function call.'  */
-//            decompiler.addToken(Token.LP);
-//            pn = expr(false);
+
+          case Token.LP:
+
+            /* Brendan's IR-jsparse.c makes a new node tagged with
+             * TOK_LP here... I'm not sure I understand why.  Isn't
+             * the grouping already implicit in the structure of the
+             * parse tree?  also TOK_LP is already overloaded (I
+             * think) in the C IR as 'function call.'  */
+            decompiler.addToken(Token.LP);
+            pn = jsFactory.createNode("(")
+            		.add(jsexpr(false))
+            		.add(")");
 //            pn.putProp(Node.PARENTHESIZED_PROP, Boolean.TRUE);
-//            decompiler.addToken(Token.RP);
-//            mustMatchToken(Token.RP, "msg.no.paren");
-//            return pn;
-//
+            decompiler.addToken(Token.RP);
+            mustMatchToken(Token.RP, "msg.no.paren");
+            return pn;
+
 //          case Token.XMLATTR:
 //            mustHaveXML();
 //            decompiler.addToken(Token.XMLATTR);
@@ -3242,37 +3270,48 @@ public class ParserToJS extends ParserErrorReportingBase
     }
 
 
-    private void plainProperty(ObjArray elems, Object property)
+    private void plainProperty(ObjArray elems, String property)
             throws IOException {
         mustMatchToken(Token.COLON, "msg.no.colon.prop");
 
         // OBJLIT is used as ':' in object literal for
         // decompilation to solve spacing ambiguity.
         decompiler.addToken(Token.OBJECTLIT);
-        elems.add(property);
-        elems.add(assignExpr(false));
+        elems.add(jsFactory.createNode()
+        		.add("'")
+        		.add(jsFactory.escapeJSString(property))
+        		.add("'")
+        		.add(":")
+        		.add(jsassignExpr(false)));
+//        elems.add(property);
+//        elems.add(jsassignExpr(false));
     }
 
-    private boolean getterSetterProperty(ObjArray elems, Object property,
+    private boolean getterSetterProperty(ObjArray elems, String property,
                                          boolean isGetter) throws IOException {
-// TODO: Fill this in    	
-//        JSNode f = function(FunctionNode.FUNCTION_EXPRESSION);
+        JSNode f = function(FunctionNode.FUNCTION_EXPRESSION, true);
+        if (!(f instanceof JSFunction)) {
 //        if (f.getType() != Token.FUNCTION) {
-//            reportError("msg.bad.prop");
-//            return false;
-//        }
+            reportError("msg.bad.prop");
+            return false;
+        }
 //        int fnIndex = f.getExistingIntProp(Node.FUNCTION_PROP);
 //        JSFunction fn = currentScriptOrFn.getFunctionNode(fnIndex);
 //        if (fn.getFunctionName().length() != 0) {
 //            reportError("msg.bad.prop");
 //            return false;
 //        }
-//        elems.add(property);
-//        if (isGetter) {
+        if (isGetter) {
+        	elems.add(jsFactory.createNode("get ")
+        			.add(property)
+        			.add(f));
 //            elems.add(nf.createUnary(Token.GET, f));
-//        } else {
+        } else {
+        	elems.add(jsFactory.createNode("set ")
+        			.add(property)
+        			.add(f));
 //            elems.add(nf.createUnary(Token.SET, f));
-//        }
+        }
         return true;
     }
     
