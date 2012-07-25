@@ -87,7 +87,7 @@ public class BabylscriptToJSTest
    @Test
    public void basic1() 
    {
-	   assertEquals("babylwrap(32);\n", compileToJSNoHeaders("32"));
+	   assertEquals("32;\n", compileToJSNoHeaders("32"));
    }
 
    @Test
@@ -99,7 +99,7 @@ public class BabylscriptToJSTest
    @Test
    public void basic3() 
    {
-	   assertEquals("babylwrap('hello');\n", compileToJSNoHeaders("'hello'"));
+	   assertEquals("'hello';\n", compileToJSNoHeaders("'hello'"));
    }
    
    @Test
@@ -165,7 +165,7 @@ public class BabylscriptToJSTest
    @Test
    public void variables6() 
    {
-	   assertEquals("babylroot[babyllookup(babylroot,'en','a')]=babylwrap(2),babylroot[babyllookup(babylroot,'en','b')];\n", compileToJSNoHeaders("var a=2, b;"));
+	   assertEquals("babylroot[babyllookup(babylroot,'en','a')]=2,babylroot[babyllookup(babylroot,'en','b')];\n", compileToJSNoHeaders("var a=2, b;"));
    }
 
    @Test
@@ -295,7 +295,7 @@ public class BabylscriptToJSTest
    @Test
    public void scoping3() 
    {
-	   assertEquals("3", compileToJSNoHeaders("var c = 1; function a() { if (!c) { var c = 1000; return 3;} return 5; } var result = a();"));
+	   assertEquals("3", evalStringToString("var c = 1; function a() { if (!c) { var c = 1000; return 3;} return 5; } var result = a();"));
    }
 
    

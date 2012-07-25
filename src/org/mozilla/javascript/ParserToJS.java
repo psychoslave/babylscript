@@ -95,20 +95,20 @@ public class ParserToJS extends ParserErrorReportingBase
 		JSNode createSimpleBinaryOperator(String operator, JSNode left, JSNode right)
 		{
             return createNode()
-            		.add("babylwrap(")
-            		.add("(").add(left).add(").obj")
+            		.add("(")
+            		.add("(").add(left).add(")")
             		.add(operator)
-            		.add("(").add(right).add(").obj")
+            		.add("(").add(right).add(")")
             		.add(")");
 			
 		}
 		JSNode createSimplePreUnaryOperator(String operator, JSNode val)
 		{
             return createNode()
-            		.add("babylwrap(")
+            		.add("(")
             		.add(operator)
             		.add("(")
-            		.add(val).add(").obj")
+            		.add(val).add(")")
             		.add(")");
 			
 		}
@@ -116,9 +116,9 @@ public class ParserToJS extends ParserErrorReportingBase
 		{
 			// TODO: This might not be quite right for postfix increments and stuff, but maybe it is
             return createNode()
-            		.add("babylwrap(")
             		.add("(")
-            		.add(val).add(").obj")
+            		.add("(")
+            		.add(val).add(")")
             		.add(operator)
             		.add(")");
 			
@@ -137,11 +137,11 @@ public class ParserToJS extends ParserErrorReportingBase
 	            return createNode()
 	            		.add("(")
 	            		.add(left)
-	            		.add(").obj")
+	            		.add(")")
 	            		.add(assignOp)
 	            		.add("(")
 	            		.add(right)
-	            		.add(").obj");
+	            		.add(")");
 		}
 		JSNode createLabel()
 		{
@@ -163,11 +163,11 @@ public class ParserToJS extends ParserErrorReportingBase
 		}
 		JSNode createNumber(String str)
 		{
-			return new JSNode("babylwrap(" + str + ")");
+			return new JSNode(str);
 		}
 		JSNode createSpecialConstant(String str)
 		{
-			return new JSNode("babylwrap(" + str + ")");
+			return new JSNode(str);
 		}
 		String escapeJSString(String str)
 		{
@@ -176,7 +176,7 @@ public class ParserToJS extends ParserErrorReportingBase
 		}
 		JSNode createString(String str)
 		{
-			return new JSNode("babylwrap('" + escapeJSString(str) + "')");
+			return new JSNode("'" + escapeJSString(str) + "'");
 		}
 		JSNode createError(String str)
 		{
@@ -229,7 +229,6 @@ public class ParserToJS extends ParserErrorReportingBase
 		public JSNode addCondition(JSNode node)
 		{
 			data.add(new JSNodePair(node));
-			add(".obj");
 			return this;
 		}
 		public void fillInNameScope(ArrayList<JSScope> currentScope)
