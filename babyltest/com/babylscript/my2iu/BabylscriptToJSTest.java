@@ -246,6 +246,24 @@ public class BabylscriptToJSTest
 	   assertEquals("15", evalStringToString("function a(b, c) { return b+b+c;} a(3,9);"));
    }
 
+   @Test
+   public void dot1() 
+   {
+	   assertEquals("5", evalStringToString("a = new Object(); a.b = 5; a.b;"));
+   }
+
+   @Test
+   public void dot2() 
+   {
+	   assertEquals("true", evalStringToString("a = new Object(); ---fr--- a.constructeur == Objet;"));
+   }
+
+   @Test
+   public void lookup1() 
+   {
+	   assertEquals("5", evalStringToString("a = new Object(); a.b = 5; a['b']"));
+   }
+
    // 
    // Some corner cases
    //

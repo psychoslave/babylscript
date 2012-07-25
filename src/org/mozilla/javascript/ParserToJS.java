@@ -2637,37 +2637,43 @@ public class ParserToJS extends ParserErrorReportingBase
 
         /* Check for new expressions. */
         tt = peekToken();
-// TODO: Fill this in        
-//        if (tt == Token.NEW) {
-//            /* Eat the NEW token. */
-//            consumeToken();
-//            decompiler.addToken(Token.NEW);
-//
-//            /* Make a NEW node to append to. */
+        if (tt == Token.NEW) {
+            /* Eat the NEW token. */
+            consumeToken();
+            decompiler.addToken(Token.NEW);
+
+            /* Make a NEW node to append to. */
+            pn = jsFactory.createNode()
+            		.add("babylwrap(new ")
+            		.add(memberExpr(false));
 //            pn = nf.createCallOrNew(Token.NEW, memberExpr(false));
-//
-//            if (matchToken(Token.LP)) {
-//                decompiler.addToken(Token.LP);
-//                /* Add the arguments to pn, if any are supplied. */
-//                argumentList(pn);
-//            }
-//
-//            /* XXX there's a check in the C source against
-//             * "too many constructor arguments" - how many
-//             * do we claim to support?
-//             */
-//
-//            /* Experimental syntax:  allow an object literal to follow a new expression,
-//             * which will mean a kind of anonymous class built with the JavaAdapter.
-//             * the object literal will be passed as an additional argument to the constructor.
-//             */
+
+            if (matchToken(Token.LP)) {
+            	pn.add("(");
+                decompiler.addToken(Token.LP);
+                /* Add the arguments to pn, if any are supplied. */
+                argumentList(pn);
+            	pn.add(")");
+            }
+            pn.add(")");
+
+            /* XXX there's a check in the C source against
+             * "too many constructor arguments" - how many
+             * do we claim to support?
+             */
+
+            /* Experimental syntax:  allow an object literal to follow a new expression,
+             * which will mean a kind of anonymous class built with the JavaAdapter.
+             * the object literal will be passed as an additional argument to the constructor.
+             */
+// TODO: Fill this in            
 //            tt = peekToken();
 //            if (tt == Token.LC) {
-//                nf.addChildToBack(pn, primaryExpr());
+//                nf.addChildToBack(pn, jsprimaryExpr());
 //            }
-//        } else {
+        } else {
             pn = jsprimaryExpr();
-//        }
+        }
 
         return memberExprTail(allowCallSyntax, pn);
     }
@@ -2680,26 +2686,32 @@ public class ParserToJS extends ParserErrorReportingBase
             int tt = peekToken();
             switch (tt) {
 
-//              case Token.DOT:
+              case Token.DOT:
 //              case Token.DOTDOT:
-//                {
-//                    int memberTypeFlags;
-//                    String s;
-//
-//                    consumeToken();
-//                    decompiler.addToken(tt);
-//                    memberTypeFlags = 0;
+                {
+                    int memberTypeFlags;
+                    String s;
+
+                    consumeToken();
+                    decompiler.addToken(tt);
+                    memberTypeFlags = 0;
 //                    if (tt == Token.DOTDOT) {
 //                        mustHaveXML();
 //                        memberTypeFlags = Node.DESCENDANTS_FLAG;
 //                    }
 //                    if (!compilerEnv.isXmlAvailable()) {
-//                        mustMatchToken(Token.NAME, "msg.no.name.after.dot");
-//                        s = ts.getString();
-//                        decompiler.addName(s);
-//                        String lang = lastPeekedLanguageString();
+                        mustMatchToken(Token.NAME, "msg.no.name.after.dot");
+                        s = ts.getString();
+                        decompiler.addName(s);
+                        String lang = lastPeekedLanguageString();
+                        pn = jsFactory.createNode()
+                        		.add(pn)
+                        		.add("[babyllookup(")
+                        		.add(pn)
+                        		.add(",'" + lang + "','" + s + "'")
+                        		.add(")]");
 //                        pn = nf.createPropertyGet(pn, lang, null, s, memberTypeFlags);
-//                        break;
+                        break;
 //                    }
 //
 //                    tt = nextToken();
@@ -2734,7 +2746,7 @@ public class ParserToJS extends ParserErrorReportingBase
 //                      default:
 //                        reportError("msg.no.name.after.dot");
 //                    }
-//                }
+                }
 //                break;
 //
 //              case Token.DOTQUERY:
@@ -2745,27 +2757,35 @@ public class ParserToJS extends ParserErrorReportingBase
 //                mustMatchToken(Token.RP, "msg.no.paren");
 //                decompiler.addToken(Token.RP);
 //                break;
-//
-//              case Token.LB:
-//              {
-//                String lang = lastPeekedLanguageString();
-//                consumeToken();
-//                decompiler.addToken(Token.LB);
-//                Node left = expr(false);
+
+              case Token.LB:
+              {
+                String lang = lastPeekedLanguageString();
+                consumeToken();
+                decompiler.addToken(Token.LB);
+                JSNode left = jsexpr(false);
+// TODO: Fill this in                
 //                if (peekToken() == Token.COLON)
 //                {
 //                    // Look for a reference to a translated name
 //                    consumeToken();
 //                    decompiler.addToken(Token.COLON);
-//                    Node right = expr(false);
+//                    JSNode right = jsexpr(false);
 //                    pn = nf.createTranslatedNameGet(pn, null, left, right, 0);
 //                }
 //                else
+                	pn = jsFactory.createNode()
+                		.add(pn)
+                		.add("[babyllookup(")
+                		.add(pn)
+                		.add(",'" + lang + "',")
+                		.add(left)
+                		.add(")]");
 //                    pn = nf.createElementGet(pn, lang, null, left, 0);
-//                mustMatchToken(Token.RB, "msg.no.bracket.index");
-//                decompiler.addToken(Token.RB);
-//                break;
-//              }
+                mustMatchToken(Token.RB, "msg.no.bracket.index");
+                decompiler.addToken(Token.RB);
+                break;
+              }
 
               case Token.LP:
                 if (!allowCallSyntax) {
