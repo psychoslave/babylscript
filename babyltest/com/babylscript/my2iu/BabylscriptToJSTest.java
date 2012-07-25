@@ -71,7 +71,19 @@ public class BabylscriptToJSTest
 		   Context.exit();
 	   }
    }
-   
+
+   String evalES5StringToString(String code)
+   {
+	   Context cx = Context.enter();
+	   cx.setLocale(Locale.ENGLISH);
+	   cx.setOptimizationLevel(-1);
+	   try {
+		   return Context.toString(cx.evaluateString(scope, code, "<test>", 0, null));
+	   } finally {
+		   Context.exit();
+	   }
+   }
+
    @Test
    public void basic1() 
    {
@@ -286,4 +298,22 @@ public class BabylscriptToJSTest
 	   assertEquals("3", compileToJSNoHeaders("var c = 1; function a() { if (!c) { var c = 1000; return 3;} return 5; } var result = a();"));
    }
 
+   
+   @Test
+   public void ES5Test1() 
+   {
+	   assertEquals("b", evalES5StringToString("var str = ''; Object.defineProperty(Object.prototype, 'babyltest', {value: {babyl:'hi'}}); a = { b: ''}; for (n in a) str += n; str;"));
+   }
+
+   @Test
+   public void ES5Test2() 
+   {
+	   assertEquals("false", evalES5StringToString("var str = ''; Object.defineProperty(Object.prototype, 'babyltest', {value: {babyl:'hi'}}); a = { b: ''}; a.hasOwnProperty('babyltest')"));
+   }
+
+   @Test
+   public void ES5Test3() 
+   {
+	   assertEquals("true", evalES5StringToString("var str = ''; Object.defineProperty(Object.prototype, 'babyltest', {value: {babyl:'hi'}}); Object.prototype.hasOwnProperty('babyltest')"));
+   }
 }
