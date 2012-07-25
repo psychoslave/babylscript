@@ -4,7 +4,6 @@ try {
 } catch (e) {}
 
 if (!babyltest) {
-	var babyl = {};
 	
 	// Insert a translation mapping into every JavaScript object
 	Object.defineProperty(Object.prototype, 'babylscript_translations', {value: {}});
@@ -12,8 +11,23 @@ if (!babyltest) {
 	// Wrap the global object so that we can localize them (NOTE: we use "this" as
 	// the global object, so it needs to change if we put this code in a function)
 	//
-	if (!this.window) window = this;
+	if (!this.window) window = this;   // Rhino has no window object
 	var babylroot = window;
+	babylroot.babylscript_translations = {};  // Can't defineProperty() on the root object for some reason
+
+	// Function thats adds a translation mapping to an object (and to 
+	// any objects along the prototype chain)
+	//
+	var babylwrap = function(obj) {
+		if (obj != null && !obj.hasOwnProperty('babylscript_translations'))
+		{
+			var objCreator = function() {};
+			objCreator.prototype = babylwrap(Object.getPrototypeOf(obj)).babylscript_translations;
+			var trans = new objCreator(); 
+			Object.defineProperty(obj, 'babylscript_translations', {value:trans});
+		} 
+		return obj;
+	};
 
 	// Code that does the lookup of translated names
 	//
@@ -21,15 +35,44 @@ if (!babyltest) {
 	{
 		return babylobj.babylscript_translations[lang + '->' + name] || name;
 	}
+	
+	// Various helper functions
+	//
+	var babyl = {};
+	(function() {
+		var langRemapTable = {
+$$LANG_REMAP$$
+		};
+		babyl.addTranslation = function(obj, lang, from, to) {
+			lang = babyl.langRemap(lang);
+			babylwrap(obj).babylscript_translations[lang + '->' + from] = to;
+			babylwrap(obj).babylscript_translations[lang + '<-' + to] = from;
+			return to;
+		};
+		babyl.delTranslation = function(obj, lang, from) {
+			lang = babyl.langRemap(lang);
+			var wrapped = babylwrap(obj);
+			if (wrapped.babylscript_translations.hasOwnProperty(lang + '->' + from)) {
+				var to = wrapped.babylscript_translations[lang + '->' + from];
+				delete wrapped.babylscript_translations[lang + '->' + from];
+				delete wrapped.babylscript_translations[lang + '<-' + to];
+			}
+		};
+		babyl.getTranslation = function(obj, lang, from) {
+			lang = babyl.langRemap(lang);
+			return babylwrap(obj).babylscript_translations[lang + '->' + from];
+		};
+		babyl.getReverseTranslation = function(obj, lang, to) {
+			lang = babyl.langRemap(lang);
+			return babylwrap(obj).babylscript_translations[lang + '<-' + to];
+		};
+		babyl.langRemap = function(lang) {
+			var newlang = langRemapTable[lang];
+			if (newlang) return newlang;
+			return lang;
+		};
+	})();
 
-	var babylwrap = function(obj) {
-		if (obj != null && !obj.hasOwnProperty('babylscript_translations'))
-		{
-			var objCreator = function() {};
-			objCreator.prototype = babylwrap(Object.getPrototypeOf(obj)).babylscript_translations;
-			var trans = new objCreator(); 
-			Object.defineProperty(obj, 'babylscript_translations', trans);
-		} 
-		return obj;
-	};
+	// The translation tables for the standard library
+$$TRANSLATIONS$$
 }

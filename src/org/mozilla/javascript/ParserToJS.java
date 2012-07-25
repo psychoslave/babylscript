@@ -55,10 +55,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 
 import org.mozilla.javascript.Node.Scope;
 import org.mozilla.javascript.Node.Symbol;
+import org.mozilla.javascript.babylscript.TranslatedNameBindings;
 
 /**
  * This class implements the JavaScript parser.
@@ -557,7 +559,60 @@ public class ParserToJS extends ParserErrorReportingBase
 			is.close();
 			byteStream.close();
 			babylscriptJSHeader = new String(byteStream.toByteArray(), "UTF-8");
+			
+			String languageRemap = "";
+			boolean isFirst = true;
+			for (String lang: TranslatedNameBindings.EquivalentLanguageNames.keySet())
+			{
+				if (!isFirst) languageRemap += ",\n";
+				isFirst = false;
+				languageRemap += "\'" + lang + "\' : \'" + TranslatedNameBindings.EquivalentLanguageNames.get(lang)[0] + "\'";
+			}
+			String translations = createStandardLibraryTranslations();
+			babylscriptJSHeader = babylscriptJSHeader.replace("$$LANG_REMAP$$", languageRemap);
+			babylscriptJSHeader = babylscriptJSHeader.replace("$$TRANSLATIONS$$", translations);
 		} catch(IOException e) {}
+	}
+	
+	public static String createTranslationsFor(String obj, String [] names)
+	{
+		String str = "";
+		str += "obj = " + obj + ";\n";
+		Set<String> langs= TranslatedNameBindings.langResourceMap.keySet();
+		for (String defaultName : names)
+		{
+			for (String lang: langs)
+			{
+				str += "babyl.addTranslation(obj,'" + lang + "','" + TranslatedNameBindings.langResourceMap.get(lang).get(defaultName) + "','" + defaultName + "');\n";
+			}
+		}
+		return str;
+	}
+	static String createStandardLibraryTranslations()
+	{
+		String str = "(function() {\n";
+		str += "var obj;\n";
+		str += createTranslationsFor("babylroot", TranslatedNameBindings.GlobalScopeNames);
+		str += createTranslationsFor("Function.prototype", TranslatedNameBindings.BaseFunctionPrototypeNames);
+		str += createTranslationsFor("Object.prototype", TranslatedNameBindings.ObjectPrototypeNames);
+		str += createTranslationsFor("Error.prototype", TranslatedNameBindings.ErrorPrototypeNames);
+		str += createTranslationsFor("Array", TranslatedNameBindings.ArrayConstructorNames);
+		str += createTranslationsFor("Array.prototype", TranslatedNameBindings.ArrayPrototypeNames);
+		str += createTranslationsFor("String", TranslatedNameBindings.StringConstructorNames);
+		str += createTranslationsFor("String.prototype", TranslatedNameBindings.StringPrototypeNames);
+		str += createTranslationsFor("Boolean.prototype", TranslatedNameBindings.BooleanPrototypeNames);
+		str += createTranslationsFor("Number", TranslatedNameBindings.NumberConstructorNames);
+		str += createTranslationsFor("Number.prototype", TranslatedNameBindings.NumberPrototypeNames);
+		str += createTranslationsFor("Date", TranslatedNameBindings.DateConstructorNames);
+		str += createTranslationsFor("Date.prototype", TranslatedNameBindings.DatePrototypeNames);
+		str += createTranslationsFor("Math", TranslatedNameBindings.MathNames);
+		//str += createTranslationsFor("Call.prototype", TranslatedNameBindings.CallPrototypeNames);
+		//str += createTranslationsFor("Script.prototype", TranslatedNameBindings.ScriptPrototypeNames);
+		//str += createTranslationsFor("Iterator.prototype", TranslatedNameBindings.IteratorPrototypeNames);
+		str += createTranslationsFor("RegExp.prototype", TranslatedNameBindings.RegExpPrototypeNames);
+		// regexp matches
+		str += "})();\n";
+		return str;
 	}
 	
     // TokenInformation flags : currentFlaggedToken stores them together

@@ -56,8 +56,8 @@ public class TranslatedNameBindings
         EquivalentLanguageNames = Collections.unmodifiableMap(EquivalentLanguageNames);
     }
 
-    static Map<String, Map<String, String>> keywordResourceMap = new HashMap<String, Map<String, String>>();
-    static Map<String, Map<String, String>> langResourceMap = new HashMap<String, Map<String, String>>();
+    public static Map<String, Map<String, String>> keywordResourceMap = new HashMap<String, Map<String, String>>();
+    public static Map<String, Map<String, String>> langResourceMap = new HashMap<String, Map<String, String>>();
     static {
         langResourceMap.put("en", arrayToMap(Objects.en));
         langResourceMap.put("fr", arrayToMap(Objects.fr));
@@ -186,402 +186,421 @@ public class TranslatedNameBindings
     // +length
     // +caller
 
+    public static String [] GlobalScopeNames = new String[] {
+            // TODO: arguments object needs special handling because the compiler 
+            // identifies it and treats it specially
+            "arguments",
+            
+            "Array",
+            "Boolean",
+            "Call",
+            "ConversionError",
+            "Date",
+            "decodeURI",
+            "decodeURIComponent",
+            "encodeURI",
+            "encodeURIComponent",
+            "Error",
+            "escape",
+            "eval",
+            "EvalError",
+            "Function",
+            "Infinity",
+            "InternalError",
+            "isFinite",
+            "isNaN",
+            "isXMLName",
+            "Iterator",
+            "JavaException",
+            "LIBRARY_SCOPE",
+            "Math",
+            "NaN",
+            "Number",
+            "Object",
+            "parseFloat",
+            "parseInt",
+            "RangeError",
+            "ReferenceError",
+            "RegExp",
+            "Script",
+            "StopIteration",
+            "String",
+            "SyntaxError",
+            "TypeError",
+            "undefined",
+            "unescape",
+            "uneval",
+            "URIError",
+            "With",
+    };
     protected static void configureGlobalScopeTranslations(Scriptable scope, String lang, Map<String, String> res)
     {
         Scriptable obj = scope;
-        String [] names = new String[] {
-                // TODO: arguments object needs special handling because the compiler 
-                // identifies it and treats it specially
-                "arguments",
-                
-                "Array",
-                "Boolean",
-                "Call",
-                "ConversionError",
-                "Date",
-                "decodeURI",
-                "decodeURIComponent",
-                "encodeURI",
-                "encodeURIComponent",
-                "Error",
-                "escape",
-                "eval",
-                "EvalError",
-                "Function",
-                "Infinity",
-                "InternalError",
-                "isFinite",
-                "isNaN",
-                "isXMLName",
-                "Iterator",
-                "JavaException",
-                "LIBRARY_SCOPE",
-                "Math",
-                "NaN",
-                "Number",
-                "Object",
-                "parseFloat",
-                "parseInt",
-                "RangeError",
-                "ReferenceError",
-                "RegExp",
-                "Script",
-                "StopIteration",
-                "String",
-                "SyntaxError",
-                "TypeError",
-                "undefined",
-                "unescape",
-                "uneval",
-                "URIError",
-                "With",
-        };
+        String [] names = GlobalScopeNames;
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
+    public static String [] BaseFunctionPrototypeNames = new String[] {
+            "name",
+            "arity",
+            "length",
+            "prototype",
+
+            // TODO: Things like arguments are usually handled specially
+            "arguments",
+    //      "constructor",
+            "toString",
+            "toSource",
+            "apply",
+            "call",
+    };
     protected static void configureBaseFunctionPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
-        String [] names = new String[] {
-                "name",
-                "arity",
-                "length",
-                "prototype",
-
-                // TODO: Things like arguments are usually handled specially
-                "arguments",
-        //      "constructor",
-                "toString",
-                "toSource",
-                "apply",
-                "call",
-        };
-
+    	String [] names = BaseFunctionPrototypeNames;
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
+    public static String [] ObjectPrototypeNames = new String[] {
+            "constructor",
+            "toString",
+            "toLocaleString",
+            "valueOf",
+            "hasOwnProperty",
+            "propertyIsEnumerable",
+            "isPrototypeOf",
+            "toSource",
+            "__defineGetter__",
+            "__defineSetter__",
+            "__lookupGetter__",
+            "__lookupSetter__",
+    }; 
     protected static void configureObjectPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
-        String [] names = new String[] {
-                "constructor",
-                "toString",
-                "toLocaleString",
-                "valueOf",
-                "hasOwnProperty",
-                "propertyIsEnumerable",
-                "isPrototypeOf",
-                "toSource",
-                "__defineGetter__",
-                "__defineSetter__",
-                "__lookupGetter__",
-                "__lookupSetter__",
-        }; 
+    	String [] names = ObjectPrototypeNames;
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
+    public static String [] ErrorPrototypeNames = new String[] {
+            "name",
+            "message",
+            "fileName",
+            "lineNumber",
+    };
     protected static void configureErrorPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
-        String [] names = new String[] {
-                "name",
-                "message",
-                "fileName",
-                "lineNumber",
-        };
+    	String [] names = ErrorPrototypeNames;
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
+    public static String [] ArrayConstructorNames = new String[] {
+            "join",
+            "reverse",
+            "sort",
+            "push",
+            "pop",
+            "shift",
+            "unshift",
+            "splice",
+            "concat",
+            "slice",
+            "indexOf",
+            "lastIndexOf",
+            "every",
+            "filter",
+            "forEach",
+            "map",
+            "some",
+    };
     protected static void configureArrayConstructorTranslations(Function obj, String lang, Map<String, String> res)
     {
-        String [] names = new String[] {
-                "join",
-                "reverse",
-                "sort",
-                "push",
-                "pop",
-                "shift",
-                "unshift",
-                "splice",
-                "concat",
-                "slice",
-                "indexOf",
-                "lastIndexOf",
-                "every",
-                "filter",
-                "forEach",
-                "map",
-                "some",
-        };
+    	String [] names = ArrayConstructorNames;
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
+    public static String [] ArrayPrototypeNames = new String[] {
+            "length",
+            "join",
+            "reverse",
+            "sort",
+            "push",
+            "pop",
+            "shift",
+            "unshift",
+            "splice",
+            "concat",
+            "slice",
+            "indexOf",
+            "lastIndexOf",
+            "every",
+            "filter",
+            "forEach",
+            "map",
+            "some",
+    };
     protected static void configureArrayPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
-        String [] names = new String[] {
-                "length",
-                "join",
-                "reverse",
-                "sort",
-                "push",
-                "pop",
-                "shift",
-                "unshift",
-                "splice",
-                "concat",
-                "slice",
-                "indexOf",
-                "lastIndexOf",
-                "every",
-                "filter",
-                "forEach",
-                "map",
-                "some",
-        };
+    	String [] names = ArrayPrototypeNames;
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
+
+    public static String [] StringConstructorNames = new String[] {
+            "fromCharCode",
+
+            // The methods below are defined for the constructor in Rhino, but they
+            // make no sense there, and they don't seem to be consistently defined,
+            // and I don't think they are defined any more in modern versions of
+            // JavaScript
+            "charAt",
+            "charCodeAt",
+            "indexOf",
+            "lastIndexOf",
+            "split",
+            "substring",
+            "toLowerCase",
+            "toUpperCase",
+            "substr",
+            "concat",
+            "slice",
+            "equalsIgnoreCase",
+            "match",
+            "search",
+            "replace",
+            "localeCompare",
+            "toLocaleLowerCase",
+    };
 
     protected static void configureStringConstructorTranslations(Function obj, String lang, Map<String, String> res)
     {
-        String [] names = new String[] {
-                "fromCharCode",
-
-                // The methods below are defined for the constructor in Rhino, but they
-                // make no sense there, and they don't seem to be consistently defined,
-                // and I don't think they are defined any more in modern versions of
-                // JavaScript
-                "charAt",
-                "charCodeAt",
-                "indexOf",
-                "lastIndexOf",
-                "split",
-                "substring",
-                "toLowerCase",
-                "toUpperCase",
-                "substr",
-                "concat",
-                "slice",
-                "equalsIgnoreCase",
-                "match",
-                "search",
-                "replace",
-                "localeCompare",
-                "toLocaleLowerCase",
-        };
+    	String [] names = StringConstructorNames;
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
+    public static String [] StringPrototypeNames = new String[] {
+            "length",
+            "valueOf",
+            "charAt",
+            "charCodeAt",
+            "indexOf",
+            "lastIndexOf",
+            "split",
+            "substring",
+            "toLowerCase",
+            "toUpperCase",
+            "substr",
+            "concat",
+            "slice",
+            "bold",
+            "italics",
+            "fixed",
+            "strike",
+            "small",
+            "big",
+            "blink",
+            "sup",
+            "sub",
+            "fontsize",
+            "fontcolor",
+            "link",
+            "anchor",
+            "equals",
+            "equalsIgnoreCase",
+            "match",
+            "search",
+            "replace",
+            "localeCompare",
+            "toLocaleLowerCase",
+            "toLocaleUpperCase",
+    };
     protected static void configureStringPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
-        String [] names = new String[] {
-                "length",
-                "valueOf",
-                "charAt",
-                "charCodeAt",
-                "indexOf",
-                "lastIndexOf",
-                "split",
-                "substring",
-                "toLowerCase",
-                "toUpperCase",
-                "substr",
-                "concat",
-                "slice",
-                "bold",
-                "italics",
-                "fixed",
-                "strike",
-                "small",
-                "big",
-                "blink",
-                "sup",
-                "sub",
-                "fontsize",
-                "fontcolor",
-                "link",
-                "anchor",
-                "equals",
-                "equalsIgnoreCase",
-                "match",
-                "search",
-                "replace",
-                "localeCompare",
-                "toLocaleLowerCase",
-                "toLocaleUpperCase",
-        };
+    	String [] names = StringPrototypeNames;
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
+    public static String [] BooleanPrototypeNames = new String[] {
+            "valueOf",
+    };
     protected static void configureBooleanPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
-        String [] names = new String[] {
-                "valueOf",
-        };
+    	String [] names = BooleanPrototypeNames;
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
+    public static String [] NumberConstructorNames = new String[] {
+            "NaN",
+            "POSITIVE_INFINITY",
+            "NEGATIVE_INFINITY",
+            "MAX_VALUE",
+            "MIN_VALUE",
+    };
     protected static void configureNumberConstructurTranslations(Function obj, String lang, Map<String, String> res)
     {
-        String [] names = new String[] {
-                "NaN",
-                "POSITIVE_INFINITY",
-                "NEGATIVE_INFINITY",
-                "MAX_VALUE",
-                "MIN_VALUE",
-        };
+    	String [] names = NumberConstructorNames;
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
+    public static String [] NumberPrototypeNames = new String[] {
+            "valueOf",
+            "toFixed",
+            "toExponential",
+            "toPrecision",
+    };
     protected static void configureNumberPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
-        String [] names = new String[] {
-                "valueOf",
-                "toFixed",
-                "toExponential",
-                "toPrecision",
-        };
+    	String [] names = NumberPrototypeNames;
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
+    public static String [] DateConstructorNames = new String[] {
+            "now",
+            "parse",
+            "UTC",
+    };
     protected static void configureDateConstructorTranslations(Function obj, String lang, Map<String, String> res)
     {
-        String [] names = new String[] {
-                "now",
-                "parse",
-                "UTC",
-        };
+    	String [] names = DateConstructorNames;
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
+    public static String [] DatePrototypeNames = new String[] {
+            "toTimeString",
+            "toDateString",
+            "toLocaleTimeString",
+            "toLocaleDateString",
+            "toUTCString",
+            "valueOf",
+            "getTime",
+            "getYear",
+            "getFullYear",
+            "getUTCFullYear",
+            "getMonth",
+            "getUTCMonth",
+            "getDate",
+            "getUTCDate",
+            "getDay",
+            "getUTCDay",
+            "getHours",
+            "getUTCHours",
+            "getMinutes",
+            "getUTCMinutes",
+            "getSeconds",
+            "getUTCSeconds",
+            "getMilliseconds",
+            "getUTCMilliseconds",
+            "getTimezoneOffset",
+            "setTime",
+            "setMilliseconds",
+            "setUTCMilliseconds",
+            "setSeconds",
+            "setUTCSeconds",
+            "setMinutes",
+            "setUTCMinutes",
+            "setHours",
+            "setUTCHours",
+            "setDate",
+            "setUTCDate",
+            "setMonth",
+            "setUTCMonth",
+            "setFullYear",
+            "setUTCFullYear",
+            "setYear",
+    };
     protected static void configureDatePrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
-        String [] names = new String[] {
-                "toTimeString",
-                "toDateString",
-                "toLocaleTimeString",
-                "toLocaleDateString",
-                "toUTCString",
-                "valueOf",
-                "getTime",
-                "getYear",
-                "getFullYear",
-                "getUTCFullYear",
-                "getMonth",
-                "getUTCMonth",
-                "getDate",
-                "getUTCDate",
-                "getDay",
-                "getUTCDay",
-                "getHours",
-                "getUTCHours",
-                "getMinutes",
-                "getUTCMinutes",
-                "getSeconds",
-                "getUTCSeconds",
-                "getMilliseconds",
-                "getUTCMilliseconds",
-                "getTimezoneOffset",
-                "setTime",
-                "setMilliseconds",
-                "setUTCMilliseconds",
-                "setSeconds",
-                "setUTCSeconds",
-                "setMinutes",
-                "setUTCMinutes",
-                "setHours",
-                "setUTCHours",
-                "setDate",
-                "setUTCDate",
-                "setMonth",
-                "setUTCMonth",
-                "setFullYear",
-                "setUTCFullYear",
-                "setYear",
-        };
+    	String [] names = DatePrototypeNames;
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
+    public static String [] MathNames = new String[] {
+            "abs",
+            "acos",
+            "asin",
+            "atan",
+            "atan2",
+            "ceil",
+            "cos",
+            "exp",
+            "floor",
+            "log",
+            "max",
+            "min",
+            "pow",
+            "random",
+            "round",
+            "sin",
+            "sqrt",
+            "tan",
+            "E",
+            "PI",
+            "LN10",
+            "LN2",
+            "LOG2E",
+            "LOG10E",
+            "SQRT1_2",
+            "SQRT2",
+    };
     protected static void configureMathTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
-        String [] names = new String[] {
-                "abs",
-                "acos",
-                "asin",
-                "atan",
-                "atan2",
-                "ceil",
-                "cos",
-                "exp",
-                "floor",
-                "log",
-                "max",
-                "min",
-                "pow",
-                "random",
-                "round",
-                "sin",
-                "sqrt",
-                "tan",
-                "E",
-                "PI",
-                "LN10",
-                "LN2",
-                "LOG2E",
-                "LOG10E",
-                "SQRT1_2",
-                "SQRT2",
-        };
+    	String [] names = MathNames;
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
+    // TODO: arguments are usually handled specially
+    public static String [] CallPrototypeNames = new String[] {
+            "arguments",
+    };
     protected static void configureCallPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
-        // TODO: arguments are usually handled specially
-        String [] names = new String[] {
-                "arguments",
-        };
+    	String [] names = CallPrototypeNames;
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
+    public static String [] ScriptPrototypeNames = new String[] {
+            "exec",
+            "compile",
+    };
     protected static void configureScriptPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
-        String [] names = new String[] {
-                "exec",
-                "compile",
-        };
+    	String [] names = ScriptPrototypeNames;
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
+    public static String [] IteratorPrototypeNames = new String[] {
+            "next",
+            "__iterator__",
+    };
     protected static void configureIteratorPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
-        String [] names = new String[] {
-                "next",
-                "__iterator__",
-        };
+    	String [] names = IteratorPrototypeNames;
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
+    public static String [] RegExpPrototypeNames = new String[] {
+            // TODO: Ignoring RegExp constructor translations for now
+            "lastIndex",
+            "source",
+            "global",
+            "ignoreCase",
+            "multiline",
+            "compile",
+            "exec",
+            "test",
+            "prefix",
+    };
     protected static void configureRegExpPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
-        String [] names = new String[] {
-                // TODO: Ignoring RegExp constructor translations for now
-                "lastIndex",
-                "source",
-                "global",
-                "ignoreCase",
-                "multiline",
-                "compile",
-                "exec",
-                "test",
-                "prefix",
-        };
+    	String [] names = RegExpPrototypeNames;
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
 
+    public static String [] RegExpMatchesNames = new String[] {
+            // TODO: JavaScript might not have a prototype for its match objects (uses Array objects)
+            "index",
+            "input",
+    };
     protected static void configureRegExpMatchesPrototypeTranslations(Scriptable obj, String lang, Map<String, String> res)
     {
-        String [] names = new String[] {
-                // TODO: JavaScript might not have a prototype for its match objects (uses Array objects)
-                "index",
-                "input",
-        };
+    	String [] names = RegExpMatchesNames;
         fillTranslationsFromResourceBundle(obj, lang, res, names);
     }
     
