@@ -36,7 +36,12 @@ if (!babyltest) {
 	//
 	function babyllookup(babylobj, lang, name)
 	{
-		return babylobj.babylscript_translations[lang + '->' + name] || name;
+		// Browser host objects might not inherit from Object, so they
+		// might not have translation mappings
+		if (babylobj.babylscript_translations)
+			return babylobj.babylscript_translations[lang + '->' + name] || name;
+		else
+			return name;
 	}
 	
 	// Various helper functions
