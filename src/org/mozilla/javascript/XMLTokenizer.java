@@ -46,7 +46,6 @@ package org.mozilla.javascript;
 
 import java.io.IOException;
 
-import org.mozilla.javascript.Parser;
 import org.mozilla.javascript.Token;
 
 /**
@@ -56,7 +55,7 @@ import org.mozilla.javascript.Token;
  */
 public class XMLTokenizer
 {
-    Parser parser;
+    ParserErrorReportingBase parser;
     TokenCharStream in;
     TokenStream ts;
 
@@ -84,7 +83,7 @@ public class XMLTokenizer
     private boolean xmlIsTagContent;
     private int xmlOpenTagsCount;
 
-    public XMLTokenizer(Parser parser, TokenCharStream in, TokenStream ts)
+    public XMLTokenizer(ParserErrorReportingBase parser, TokenCharStream in, TokenStream ts)
     {
         this.parser = parser;
         this.in = in;

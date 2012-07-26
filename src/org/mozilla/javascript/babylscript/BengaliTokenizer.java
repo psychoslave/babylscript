@@ -44,7 +44,6 @@
 
 package org.mozilla.javascript.babylscript;
 
-import java.io.IOException;
 import java.util.Locale;
 import java.util.ResourceBundle;
 
@@ -52,43 +51,16 @@ import org.mozilla.javascript.BabylTokenizer;
 import org.mozilla.javascript.ParserErrorReportingBase;
 import org.mozilla.javascript.TokenCharStream;
 import org.mozilla.javascript.TokenStream;
-import org.mozilla.javascript.babylscript.gen.Keywords;
 
-public class ChineseTokenizer extends BabylGenericTokenizer
+public class BengaliTokenizer extends BabylGenericTokenizer
 {
-    public ChineseTokenizer(ParserErrorReportingBase p, TokenCharStream in, TokenStream ts)
+    public BengaliTokenizer(ParserErrorReportingBase p, TokenCharStream in, TokenStream ts)
     {
         super(p, 
                 in, 
                 ts, 
-                new BabylTokenizer.DecimalNumberReader(),
-                TranslatedNameBindings.getKeywordMap("zh"));
+                new BabylTokenizer.DecimalNumberReader('.', '\u09E6', '.'),
+                TranslatedNameBindings.getKeywordMap("bn"));
     }
 
-    protected int matchSymbol(int c) throws IOException
-    {
-        // For single-character symbols, we'll substitute Chinese symbols with
-        // their English equivalents
-
-        if (c == '\u3002')
-            c = '.';
-        else if (c == '\u3001')
-            c = ',';
-        
-        return super.matchSymbol(c);
-    }
-    
-    protected boolean isStringDelimiter(int ch)
-    {
-        return (ch == '\'' || ch == '\"' || ch == '\u300c' 
-                || ch == '\ufe41' || ch == '\u300a');
-    }
-    protected int getMatchingStringDelimiter(int ch)
-    {
-        if (ch == '\'') return '\'';
-        if (ch == '\u300c') return '\u300d';
-        if (ch == '\ufe41') return '\ufe42';
-        if (ch == '\u300a') return '\u300b';
-        return '\"';
-    }
 }

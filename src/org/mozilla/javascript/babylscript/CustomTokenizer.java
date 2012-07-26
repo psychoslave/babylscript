@@ -48,7 +48,7 @@ import java.util.Enumeration;
 import java.util.Properties;
 import java.util.ResourceBundle;
 
-import org.mozilla.javascript.Parser;
+import org.mozilla.javascript.ParserErrorReportingBase;
 import org.mozilla.javascript.TokenCharStream;
 import org.mozilla.javascript.TokenStream;
 import org.mozilla.javascript.babylscript.gen.Keywords;
@@ -75,7 +75,7 @@ public class CustomTokenizer extends BabylGenericTokenizer
 //        }
 //    }
     
-    public CustomTokenizer(Parser p, TokenCharStream in, TokenStream ts, CustomTokenizerConfig config) 
+    public CustomTokenizer(ParserErrorReportingBase p, TokenCharStream in, TokenStream ts, CustomTokenizerConfig config) 
     {
         super(p, in, ts, new DecimalNumberReader('.'), TranslatedNameBindings.propertiesToMap(config.keywords, TranslatedNameBindings.getKeywordMap("en")));
     }

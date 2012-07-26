@@ -830,6 +830,7 @@ public class ScriptRuntime {
             str = str.replace((char)('\u0660'+n), (char)('0' + n));  // Eastern Arabic
             str = str.replace((char)('\u0966'+n), (char)('0' + n));  // Devanagari
             str = str.replace((char)('\uff10'+n), (char)('0' + n));  // full-width western
+            str = str.replace((char)('\u09E6'+n), (char)('0' + n));  // Bengali
         }
         return str;
     }

@@ -90,10 +90,10 @@ public class BabylTokenizer
     // Input stream management
     TokenCharStream in;
 
-    Parser parser;
+    ParserErrorReportingBase parser;
     TokenStream ts;
     DecimalNumberReader numberReader;
-    public BabylTokenizer(Parser p, TokenCharStream in, TokenStream ts, DecimalNumberReader numberReader)
+    public BabylTokenizer(ParserErrorReportingBase p, TokenCharStream in, TokenStream ts, DecimalNumberReader numberReader)
     {
         this.parser = p;
         this.ts = ts;
@@ -247,8 +247,11 @@ public class BabylTokenizer
             int match = numberReader.matchNumber(c, in, parser);
             if (match != Token.EMPTY)
             {
-                if (match == Token.NUMBER)
+                if (match == Token.NUMBER) 
+                {
+                	setString(numberReader.readString);
                     setNumber(numberReader.readValue);
+                }
                 return match;
             }
 
@@ -604,6 +607,11 @@ public class BabylTokenizer
         languageModeCodes.put("\u65e5\u672c\u8a9e", TokenStream.LanguageMode.ja);
         languageModeCodes.put("ru", TokenStream.LanguageMode.ru);
         languageModeCodes.put("\u0440\u0443", TokenStream.LanguageMode.ru);
+        languageModeCodes.put("bn", TokenStream.LanguageMode.bn);
+        languageModeCodes.put("\u09AC\u09BE\u0982", TokenStream.LanguageMode.bn);
+        languageModeCodes.put("ko", TokenStream.LanguageMode.ko);
+        languageModeCodes.put("\uD55C\uAD6D\uC5B4", TokenStream.LanguageMode.ko);
+        languageModeCodes.put("tr", TokenStream.LanguageMode.tr);
     }
     
     private int scanLanguageMode() throws IOException
@@ -644,6 +652,7 @@ public class BabylTokenizer
     public static class DecimalNumberReader
     {
         protected double readValue;
+        protected String readString;
         protected StringBuilder stringBuffer = new StringBuilder(128);
         protected char decimalSeparator;
         protected char tertiaryDecimalSeparator;
@@ -674,7 +683,7 @@ public class BabylTokenizer
         // character in the stream). Returns Token.EMPTY (for no match), Token.ERROR,
         // or Token.NUMBER. If it returns Token.EMPTY, then the state of the stream
         // will not be modified, but it will be modified in the other cases.
-        public int matchNumber(int c, TokenCharStream in, Parser parser) throws IOException {
+        public int matchNumber(int c, TokenCharStream in, ParserErrorReportingBase parser) throws IOException {
             // is it a number?
             if (!isDigit(c) && !(isDecimalSeparator(c) && isDigit(in.peekChar()))) 
                 return Token.EMPTY;
@@ -754,6 +763,7 @@ public class BabylTokenizer
             in.ungetChar(c);
             String numString = stringBuffer.toString();
 
+            readString = numString;
             double dval;
             if (base == 10 && !isInteger) {
                 try {

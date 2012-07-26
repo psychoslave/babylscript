@@ -66,7 +66,7 @@ public class PropertiesToArrayGenerator
         String destDir = "src/org/mozilla/javascript/babylscript/gen";
         String pkg = "org.mozilla.javascript.babylscript.gen";
         
-        String [] langs = {"ar", "de", "en", "es", "fr", "hi", "ja", "pt", "ro", "ru", "zh"};
+        String [] langs = {"ar", "de", "en", "es", "fr", "hi", "ja", "pt", "ro", "ru", "zh", "bn", "ko", "tr"};
         new PropertiesToArrayGenerator().doit("src/org/mozilla/javascript/babylscript/resources/Keywords",
                 langs, destDir, pkg, "Keywords");
         new PropertiesToArrayGenerator().doit("src/org/mozilla/javascript/babylscript/resources/Objects", 
