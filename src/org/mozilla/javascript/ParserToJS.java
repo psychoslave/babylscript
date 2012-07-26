@@ -1031,7 +1031,7 @@ public class ParserToJS extends ParserErrorReportingBase
         JSNode pn = new JSNode();
 //        Node pn = nf.createLeaf(Token.BLOCK);
 
-        try {
+//        try {
             for (;;) {
                 int tt = peekToken();
 
@@ -1057,12 +1057,12 @@ public class ParserToJS extends ParserErrorReportingBase
                 pn.add(n);
 //                nf.addChildToBack(pn, n);
             }
-        } catch (StackOverflowError ex) {
-            String msg = ScriptRuntime.getMessage0(
-                "msg.too.deep.parser.recursion");
-            throw Context.reportRuntimeError(msg, sourceURI,
-                                             ts.getLineno(), null, 0);
-        }
+//        } catch (StackOverflowError ex) {
+//            String msg = ScriptRuntime.getMessage0(
+//                "msg.too.deep.parser.recursion");
+//            throw Context.reportRuntimeError(msg, sourceURI,
+//                                             ts.getLineno(), null, 0);
+//        }
 
         if (this.syntaxErrorCount != 0) {
             String msg = String.valueOf(this.syntaxErrorCount);
