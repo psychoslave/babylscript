@@ -4,6 +4,9 @@ try {
 } catch (e) {}
 
 if (!babyltest) {
+	// Check for ES5 features needed for this implementation of Babylscript
+	if (!Object.getPrototypeOf || !Object.defineProperty)
+		alert('Your version of JavaScript is too old and does not support the ES5 features needed to run Babylscript.');
 	
 	// Insert a translation mapping into every JavaScript object
 	Object.defineProperty(Object.prototype, 'babylscript_translations', {value: {}});
@@ -46,6 +49,8 @@ $$LANG_REMAP$$
 		babyl.addTranslation = function(obj, lang, from, to) {
 			lang = babyl.langRemap(lang);
 			babylwrap(obj).babylscript_translations[lang + '->' + from] = to;
+			// It might be better to calculate the reverse translations
+			// lazily since they're rarely used?
 			babylwrap(obj).babylscript_translations[lang + '<-' + to] = from;
 			return to;
 		};

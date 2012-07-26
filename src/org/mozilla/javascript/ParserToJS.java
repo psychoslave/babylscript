@@ -134,10 +134,29 @@ public class ParserToJS extends ParserErrorReportingBase
 		JSNode createAssignment(String assignOp, JSNode left, JSNode right)
 		{
 			if (assignOp.equals("="))
-	            return createNode()
-	            		.add(left)
-	            		.add(assignOp)
-	            		.add(right);
+			{
+				if (left instanceof JSTranslationMapping)
+				{
+					JSTranslationMapping trans = (JSTranslationMapping)left;
+		            return createNode()
+		            		.add("(babyl.addTranslation(")
+		            		.add(trans.obj)
+		            		.add(",")
+		            		.add(trans.lang)
+		            		.add(",")
+		            		.add(trans.name)
+		            		.add(",")
+		            		.add(right)
+		            		.add("))");
+				}
+				else 
+				{
+		            return createNode()
+		            		.add(left)
+		            		.add(assignOp)
+		            		.add(right);
+				}
+			}
 			else
 				// TODO: This isn't quite correct because the type of the object may change, requiring a new
 				// translation mapping e.g. a=2; a += 'hello';
@@ -186,6 +205,10 @@ public class ParserToJS extends ParserErrorReportingBase
 		{
 			return new JSNode("'" + escapeJSString(str) + "'");
 		}
+		JSCatch createCatch(JSName name, JSNode expr, JSNode block)
+		{
+			return new JSCatch(name, expr, block);
+		}
 		JSNode createError(String str)
 		{
 			return new JSNode("error");
@@ -193,6 +216,10 @@ public class ParserToJS extends ParserErrorReportingBase
 		JSScope createBlock()
 		{
 			return new JSScope(); 
+		}
+		JSTranslationMapping createTranslationMapping(JSNode obj, JSNode lang, JSNode name)
+		{
+			return new JSTranslationMapping(obj, lang, name);
 		}
 	}
 	private static class JSNodePair
@@ -291,6 +318,37 @@ public class ParserToJS extends ParserErrorReportingBase
 			super.fillInNameScope(currentScope);
 		}
 	}
+	private static class JSTranslationMapping extends JSNode
+	{
+		JSNode obj;
+		JSNode lang;
+		JSNode name;
+		JSTranslationMapping(JSNode obj, JSNode lang, JSNode name)
+		{
+			super();
+			this.obj = obj;
+			this.lang = lang;
+			this.name = name;
+		}
+		public String toString() 
+		{
+			return "(babyl.getTranslation(" + obj + "," + lang + "," + name + "))";
+		}
+		public void fillInNameScope(ArrayList<JSScope> currentScope)
+		{
+			obj.fillInNameScope(currentScope);
+			lang.fillInNameScope(currentScope);
+			name.fillInNameScope(currentScope);
+			super.fillInNameScope(currentScope);
+		}
+		public void calculateVariableScope(ArrayList<JSScope> currentScope)
+		{
+			obj.calculateVariableScope(currentScope);
+			lang.calculateVariableScope(currentScope);
+			name.calculateVariableScope(currentScope);
+			super.calculateVariableScope(currentScope);
+		}
+	}
 	private static class JSVariables extends JSNode
 	{
 		boolean isGlobal = true;
@@ -381,6 +439,51 @@ public class ParserToJS extends ParserErrorReportingBase
 					s.calculateVariableScope(currentScope);
 			}
 			super.calculateVariableScope(currentScope);
+		}
+	}
+
+	private static class JSCatch extends JSScope
+	{
+		JSName name;
+		JSNode expr;
+		JSNode block;
+		
+		JSCatch(JSName name, JSNode expr, JSNode block)
+		{
+			this.name = name;
+			this.expr = expr;
+			this.block = block;
+		}
+		public String toString() 
+		{
+			String str = "";
+			str += "catch (" + name;
+			if (expr != null)
+				str += " if " + expr;
+			str += ") {\n";
+			str += block;
+			str += "}\n";
+			return str + super.toString();
+		}
+		public void fillInNameScope(ArrayList<JSScope> currentScope)
+		{
+			currentScope.add(this);
+			name.fillInNameScope(currentScope);
+			if (expr != null)
+				expr.fillInNameScope(currentScope);
+			block.fillInNameScope(currentScope);
+			super.fillInNameScope(currentScope);
+			currentScope.remove(currentScope.size()-1);
+		}
+		public void calculateVariableScope(ArrayList<JSScope> currentScope)
+		{
+			currentScope.add(this);
+			addNameToScope(name.name);
+			if (expr != null)
+				expr.calculateVariableScope(currentScope);
+			block.calculateVariableScope(currentScope);
+			super.calculateVariableScope(currentScope);
+			currentScope.remove(currentScope.size()-1);
 		}
 	}
 
@@ -1254,34 +1357,34 @@ public class ParserToJS extends ParserErrorReportingBase
         return label;
     }
 
-    private Node statement()
-        throws IOException
-    {
-        try {
-            Node pn = null;  // statementHelper(null);
-            if (pn != null) {
-                if (compilerEnv.isStrictMode() && !pn.hasSideEffects())
-                    addStrictWarning("msg.no.side.effects", "");
-                return pn;
-            }
-        } catch (ParserException e) { }
-
-        // skip to end of statement
-        int lineno = ts.getLineno();
-        guessingStatementEnd: for (;;) {
-            int tt = peekTokenOrEOL();
-            consumeToken();
-            switch (tt) {
-              case Token.ERROR:
-              case Token.EOF:
-              case Token.EOL:
-              case Token.SEMI:
-                break guessingStatementEnd;
-            }
-        }
-        return nf.createExprStatement(nf.createName(ScriptRuntime.TOFILL, "error"), lineno);
-    }
-
+//    private Node statement()
+//        throws IOException
+//    {
+//        try {
+//            Node pn = null;  // statementHelper(null);
+//            if (pn != null) {
+//                if (compilerEnv.isStrictMode() && !pn.hasSideEffects())
+//                    addStrictWarning("msg.no.side.effects", "");
+//                return pn;
+//            }
+//        } catch (ParserException e) { }
+//
+//        // skip to end of statement
+//        int lineno = ts.getLineno();
+//        guessingStatementEnd: for (;;) {
+//            int tt = peekTokenOrEOL();
+//            consumeToken();
+//            switch (tt) {
+//              case Token.ERROR:
+//              case Token.EOF:
+//              case Token.EOL:
+//              case Token.SEMI:
+//                break guessingStatementEnd;
+//            }
+//        }
+//        return nf.createExprStatement(nf.createName(ScriptRuntime.TOFILL, "error"), lineno);
+//    }
+//
     private JSNode jsstatement()
             throws IOException
         {
@@ -1350,70 +1453,84 @@ public class ParserToJS extends ParserErrorReportingBase
             return pn;
           }
 
-//          case Token.SWITCH: {
-//            consumeToken();
-//
-//            decompiler.addToken(Token.SWITCH);
-//            int lineno = ts.getLineno();
-//            mustMatchToken(Token.LP, "msg.no.paren.switch");
-//            decompiler.addToken(Token.LP);
+          case Token.SWITCH: {
+            consumeToken();
+
+            decompiler.addToken(Token.SWITCH);
+            int lineno = ts.getLineno();
+            mustMatchToken(Token.LP, "msg.no.paren.switch");
+            decompiler.addToken(Token.LP);
+            pn = jsFactory.createNode()
+            		.add("switch(")
+            		.add(jsexpr(false))
+            		.add(") {\n");
 //            pn = enterSwitch(expr(false), lineno);
-//            try {
-//                mustMatchToken(Token.RP, "msg.no.paren.after.switch");
-//                decompiler.addToken(Token.RP);
-//                mustMatchToken(Token.LC, "msg.no.brace.switch");
-//                decompiler.addEOL(Token.LC);
-//
-//                boolean hasDefault = false;
-//                switchLoop: for (;;) {
-//                    tt = nextToken();
-//                    Node caseExpression;
-//                    switch (tt) {
-//                      case Token.RC:
-//                        break switchLoop;
-//
-//                      case Token.CASE:
-//                        decompiler.addToken(Token.CASE);
-//                        caseExpression = expr(false);
-//                        mustMatchToken(Token.COLON, "msg.no.colon.case");
-//                        decompiler.addEOL(Token.COLON);
-//                        break;
-//
-//                      case Token.DEFAULT:
-//                        if (hasDefault) {
-//                            reportError("msg.double.switch.default");
-//                        }
-//                        decompiler.addToken(Token.DEFAULT);
-//                        hasDefault = true;
-//                        caseExpression = null;
-//                        mustMatchToken(Token.COLON, "msg.no.colon.case");
-//                        decompiler.addEOL(Token.COLON);
-//                        break;
-//
-//                      default:
-//                        reportError("msg.bad.switch");
-//                        break switchLoop;
-//                    }
-//
+            try {
+                mustMatchToken(Token.RP, "msg.no.paren.after.switch");
+                decompiler.addToken(Token.RP);
+                mustMatchToken(Token.LC, "msg.no.brace.switch");
+                decompiler.addEOL(Token.LC);
+
+                boolean hasDefault = false;
+                switchLoop: for (;;) {
+                    tt = nextToken();
+                    JSNode caseExpression;
+                    switch (tt) {
+                      case Token.RC:
+                        break switchLoop;
+
+                      case Token.CASE:
+                        decompiler.addToken(Token.CASE);
+                        caseExpression = jsFactory.createNode("case ")
+                        		.add(jsexpr(false))
+                        		.add(":\n");
+                        mustMatchToken(Token.COLON, "msg.no.colon.case");
+                        decompiler.addEOL(Token.COLON);
+                        break;
+
+                      case Token.DEFAULT:
+                        if (hasDefault) {
+                            reportError("msg.double.switch.default");
+                        }
+                        decompiler.addToken(Token.DEFAULT);
+                        hasDefault = true;
+                        caseExpression = null;
+                        mustMatchToken(Token.COLON, "msg.no.colon.case");
+                        decompiler.addEOL(Token.COLON);
+                        break;
+
+                      default:
+                        reportError("msg.bad.switch");
+                        break switchLoop;
+                    }
+
+                    JSNode block = jsFactory.createNode();
 //                    Node block = nf.createLeaf(Token.BLOCK);
-//                    while ((tt = peekToken()) != Token.RC
-//                           && tt != Token.CASE
-//                           && tt != Token.DEFAULT
-//                           && tt != Token.EOF)
-//                    {
+                    while ((tt = peekToken()) != Token.RC
+                           && tt != Token.CASE
+                           && tt != Token.DEFAULT
+                           && tt != Token.EOF)
+                    {
+                    	block.add(jsstatement());
 //                        nf.addChildToBack(block, statement());
-//                    }
-//
-//                    // caseExpression == null => add default label
+                    }
+
+                    // caseExpression == null => add default label
+                    if (caseExpression == null)
+                    	pn.add("default:\n");
+                    else
+                    	pn.add(caseExpression);
+                    pn.add(block);
 //                    nf.addSwitchCase(pn, caseExpression, block);
-//                }
-//                decompiler.addEOL(Token.RC);
+                }
+                decompiler.addEOL(Token.RC);
+                pn.add("}\n");
 //                nf.closeSwitch(pn);
-//            } finally {
+            } finally {
 //                exitSwitch();
-//            }
-//            return pn;
-//          }
+            }
+            return pn;
+          }
 
           case Token.WHILE: {
             consumeToken();
@@ -1540,9 +1657,16 @@ public class ParserToJS extends ParserErrorReportingBase
                 decompiler.addEOL(Token.RC);
 
                 if (incr == null) {
-// TODO: Fill this in                
-//                    // cond could be null if 'in obj' got eaten
-//                    // by the init node.
+                    // cond could be null if 'in obj' got eaten
+                    // by the init node.
+                	pn = jsFactory.createNode()
+                		.add("for (")
+                		.add(init)
+                		.add(" in ")
+                		.add(cond)
+                		.add(") {\n")
+                		.add(body)
+                		.add("}\n");
 //                    pn = nf.createForIn(declType, lang, loop, init, cond, body,
 //                                        isForEach);
                 } else {
@@ -1614,23 +1738,8 @@ public class ParserToJS extends ParserErrorReportingBase
                     decompiler.addEOL(Token.LC);
 
                     catchblocks.add(
-                    		catchCond == null ?
-                				jsFactory.createNode("catch (")
-// TODO: What is the scoping on this?
-                					.add(jsFactory.createName(lang, varName))  
-                					.add(") {\n")
-                					.add(statements(null))
-                					.add("}\n")
-                				:
-                				jsFactory.createNode("catch (")
-// TODO: What is the scoping on this?
-                					.add(jsFactory.createName(lang, varName))  
-                					.add(" if (")
-                					.addCondition(catchCond)
-                					.add(")) {\n")
-                					.add(statements(null))
-                					.add("}\n")
-                    		);
+                    		jsFactory.createCatch(jsFactory.createName(lang, varName), 
+                    				catchCond, statements(null)));
 //                    
 //                    nf.addChildToBack(catchblocks,
 //                        nf.createCatch(varName, catchCond,
@@ -2237,12 +2346,6 @@ public class ParserToJS extends ParserErrorReportingBase
             return pn;
         }
 
-//    private Node assignExpr(boolean inForInit)
-//        throws IOException, ParserException
-//    {
-//    	return null;
-//    }
-//
     private JSNode condExpr(boolean inForInit)
         throws IOException, ParserException
     {
@@ -2382,12 +2485,11 @@ public class ParserToJS extends ParserErrorReportingBase
         for (;;) {
             int tt = peekToken();
             switch (tt) {
-// TODO: Fill this in            
-//              case Token.IN:
-//                if (inForInit)
-//                    break;
-//                // fall through
-//              case Token.INSTANCEOF:
+              case Token.IN:
+                if (inForInit)
+                    break;
+                // fall through
+              case Token.INSTANCEOF:
               case Token.LE:
               case Token.LT:
               case Token.GE:
@@ -2473,8 +2575,7 @@ public class ParserToJS extends ParserErrorReportingBase
         tt = peekToken();
 
         switch(tt) {
-// TODO: Fill this in        
-//        case Token.TYPEOF:
+        case Token.TYPEOF:
         case Token.VOID:
         case Token.NOT:
       	case Token.BITNOT:
@@ -2501,12 +2602,28 @@ public class ParserToJS extends ParserErrorReportingBase
             decompiler.addToken(tt);
             return jsFactory.createSimplePreUnaryOperator(tokenToString(tt), memberExpr(true));
 
-// TODO: Fill this in        
-//        case Token.DELPROP:
-//            consumeToken();
-//            decompiler.addToken(Token.DELPROP);
+        case Token.DELPROP:
+        {
+            consumeToken();
+            decompiler.addToken(Token.DELPROP);
+            JSNode prop = unaryExpr();
+            if (prop instanceof JSTranslationMapping)
+            {
+            	JSTranslationMapping trans = (JSTranslationMapping)prop;
+            	return jsFactory.createNode()
+            			.add("(babyl.delTranslation(")
+            			.add(trans.obj)
+            			.add(",")
+            			.add(trans.lang)
+            			.add(",")
+            			.add(trans.name)
+            			.add("))");
+            }
+            else
+            	return jsFactory.createSimplePreUnaryOperator("delete ", prop);
 //            return nf.createUnary(Token.DELPROP, unaryExpr());
-
+        }
+        
         case Token.ERROR:
             consumeToken();
             break;
@@ -2767,16 +2884,16 @@ public class ParserToJS extends ParserErrorReportingBase
                 consumeToken();
                 decompiler.addToken(Token.LB);
                 JSNode left = jsexpr(false);
-// TODO: Fill this in                
-//                if (peekToken() == Token.COLON)
-//                {
-//                    // Look for a reference to a translated name
-//                    consumeToken();
-//                    decompiler.addToken(Token.COLON);
-//                    JSNode right = jsexpr(false);
+                if (peekToken() == Token.COLON)
+                {
+                    // Look for a reference to a translated name
+                    consumeToken();
+                    decompiler.addToken(Token.COLON);
+                    JSNode right = jsexpr(false);
+                    pn = jsFactory.createTranslationMapping(pn, left, right);
 //                    pn = nf.createTranslatedNameGet(pn, null, left, right, 0);
-//                }
-//                else
+                }
+                else
                 	pn = jsFactory.createNode()
                 		.add(pn)
                 		.add("[babyllookup(")
@@ -3231,17 +3348,22 @@ public class ParserToJS extends ParserErrorReportingBase
             return jsFactory.createString(s);
           }
 
-//          case Token.DIV:
-//          case Token.ASSIGN_DIV: {
-//            // Got / or /= which should be treated as regexp in fact
-//            ts.readRegExp(tt);
-//            String flags = ts.regExpFlags;
-//            ts.regExpFlags = null;
-//            String re = ts.getString();
-//            decompiler.addRegexp(re, flags);
-//            int index = currentScriptOrFn.addRegexp(re, flags);
+          case Token.DIV:
+          case Token.ASSIGN_DIV: {
+            // Got / or /= which should be treated as regexp in fact
+            ts.readRegExp(tt);
+            String flags = ts.regExpFlags;
+            ts.regExpFlags = null;
+            String re = ts.getString();
+            decompiler.addRegexp(re, flags);
+            int index = currentScriptOrFn.addRegexp(re, flags);
+            return jsFactory.createNode()
+            		.add(tt == Token.DIV ? "/" : "/=")
+            		.add(re)
+            		.add("/")
+            		.add(flags);
 //            return nf.createRegExp(index);
-//          }
+          }
 
           case Token.NULL:
           case Token.THIS:

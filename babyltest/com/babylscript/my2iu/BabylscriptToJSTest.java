@@ -225,7 +225,7 @@ public class BabylscriptToJSTest
    @Test
    public void statements9() 
    {
-	   assertEquals("5", compileToJSNoHeaders("b = 3; try { throw b; } catch(e) {b = 5;} b;"));
+	   assertEquals("8", evalStringToString("b = 3; try { throw b; } catch(e) {b = e+5;} b;"));
    }
 
    @Test
@@ -274,6 +274,42 @@ public class BabylscriptToJSTest
    public void objectliteral1() 
    {
 	   assertEquals("5", evalStringToString("a = { get b() { return 2;}, c:3};a.b+ a['c']"));
+   }
+
+   @Test
+   public void delete1() 
+   {
+	   assertEquals("5", evalStringToString("a = 3; delete a; b = 2; if (!a) b = 5; b;"));
+   }
+
+   @Test
+   public void forin1() 
+   {
+	   assertEquals("abc", evalStringToString("a = {a:1, b:2, c:3}; str=''; for (d in a) str += d; str;"));
+   }
+
+   @Test
+   public void switch1() 
+   {
+	   assertEquals("9", evalStringToString("a=3; switch(a) { case 0: b=2; break; case 3: b = 5; case 5: default: b = 9; break;} b;"));
+   }
+
+   @Test
+   public void trans1() 
+   {
+	   assertEquals("3", evalStringToString("a={b: 2, c:3}; a['fr':'b'] = 'c'; ---fr--- a.b;"));
+   }
+
+   @Test
+   public void trans2() 
+   {
+	   assertEquals("2", evalStringToString("a={b: 2, c:3}; a['fr':'b'] = 'c'; delete a['fr':'b']; ---fr--- a.b;"));
+   }
+
+   @Test
+   public void trans3() 
+   {
+	   assertEquals("3", evalStringToString("a={b: 2, c:3}; a['fr':'b'] = a['pt':'b'] = 'c'; ---fr--- a.b;"));
    }
 
    // 
