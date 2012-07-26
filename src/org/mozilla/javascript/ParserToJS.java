@@ -1066,9 +1066,11 @@ public class ParserToJS extends ParserErrorReportingBase
                 if (tt == Token.FUNCTION) {
                     consumeToken();
                     try {
-                        n = function(calledByCompileFunction
+                        n = jsFactory.createNode()
+                                .add(function(calledByCompileFunction
                                      ? FunctionNode.FUNCTION_EXPRESSION
-                                     : FunctionNode.FUNCTION_STATEMENT);
+                                     : FunctionNode.FUNCTION_STATEMENT))
+                                .add(";\n");
                     } catch (ParserException e) {
                         break;
                     }
@@ -1980,7 +1982,9 @@ public class ParserToJS extends ParserErrorReportingBase
 
           case Token.FUNCTION: {
             consumeToken();
-            pn = function(FunctionNode.FUNCTION_EXPRESSION_STATEMENT);
+            pn = jsFactory.createNode()
+                    .add(function(FunctionNode.FUNCTION_EXPRESSION_STATEMENT))
+                    .add(";");
             return pn;
           }
 
