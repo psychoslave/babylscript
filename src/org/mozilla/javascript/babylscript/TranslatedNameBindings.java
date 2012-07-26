@@ -72,6 +72,7 @@ public class TranslatedNameBindings
         langResourceMap.put("ru", arrayToMap(Objects.ru));
         langResourceMap.put("bn", arrayToMap(Objects.bn));
         langResourceMap.put("ko", arrayToMap(Objects.ko));
+        langResourceMap.put("tr", arrayToMap(Objects.tr));
 
         keywordResourceMap.put("en", arrayToMap(Keywords.en));
         keywordResourceMap.put("fr", arrayToMap(Keywords.fr));
@@ -86,6 +87,7 @@ public class TranslatedNameBindings
         keywordResourceMap.put("ru", arrayToMap(Keywords.ru));
         keywordResourceMap.put("bn", arrayToMap(Keywords.bn));
         keywordResourceMap.put("ko", arrayToMap(Keywords.ko));
+        keywordResourceMap.put("tr", arrayToMap(Keywords.tr));
     }
     
     private static void fillTranslationsFromResourceBundle(Scriptable obj, String lang, Map<String, String> res, String[] english)

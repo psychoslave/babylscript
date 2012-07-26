@@ -61,6 +61,7 @@ import org.mozilla.javascript.babylscript.PortugueseTokenizer;
 import org.mozilla.javascript.babylscript.RomanianTokenizer;
 import org.mozilla.javascript.babylscript.RussianTokenizer;
 import org.mozilla.javascript.babylscript.SpanishTokenizer;
+import org.mozilla.javascript.babylscript.TurkishTokenizer;
 
 
 /**
@@ -270,6 +271,7 @@ public class TokenStream
         test,
         ro,
         ru,
+        tr,
         zh
     }
     public static LanguageMode stringToLanguageMode(String str)
@@ -300,6 +302,8 @@ public class TokenStream
             return LanguageMode.ro;
         else if ("ru".equals(str))
             return LanguageMode.ru;
+        else if ("tr".equals(str))
+            return LanguageMode.tr;
         else if ("zh".equals(str))
             return LanguageMode.zh;
         else if ("test".equals(str))
@@ -334,6 +338,8 @@ public class TokenStream
             return "ro";
         case ru:
             return "ru";
+        case tr:
+            return "tr";
         case zh:
             return "zh";
         case test:
@@ -381,6 +387,9 @@ public class TokenStream
             break;
         case ru:
             currentTokenizer = new RussianTokenizer(parser, in, this);
+            break;
+        case tr:
+            currentTokenizer = new TurkishTokenizer(parser, in, this);
             break;
         case zh:
             currentTokenizer = new ChineseTokenizer(parser, in, this);
