@@ -76,6 +76,7 @@ import org.mozilla.javascript.babylscript.TranslatedNameBindings;
 
 public class ParserToJS extends ParserErrorReportingBase
 {
+	private static String BABYL_TEMP_PREFIX = "$$babyltmp";
 	private static class JSRecompilerNodeFactory
 	{
 		JSScript createScript()
@@ -281,6 +282,20 @@ public class ParserToJS extends ParserErrorReportingBase
 				if (pair.node != null)
 					pair.node.calculateVariableScope(currentScope);
 			}
+		}
+	}
+	private static class JSTemporary extends JSNode
+	{
+		int idx;
+		JSTemporary(int idx)
+		{
+			this.idx = idx;
+		}
+		public String toString() 
+		{
+			// TODO: Change the prefix so that there are no collisions
+			// with variables already used in the code
+			return BABYL_TEMP_PREFIX + idx;
 		}
 	}
 	private static class JSName extends JSNode
@@ -565,6 +580,36 @@ public class ParserToJS extends ParserErrorReportingBase
 	        regexps.add(flags);
 	        return regexps.size() / 2 - 1;
 	    }
+	    
+	    // Below is Babylscript-specific stuff for handling
+	    // temporaries (the above stuff is from the original
+	    // parser code, and might not even be needed)
+	    int tempCount = 0;
+	    HashSet<Integer> reservedTemps = new HashSet<Integer>();
+	    public JSTemporary getTemp()
+	    {
+	    	for (int n = 0;; n++)
+	    	{
+	    		if (!reservedTemps.contains(n))
+	    		{
+	    			if (n+1 > tempCount)
+	    				tempCount = n+1;
+	    			return new JSTemporary(n);
+	    		}
+	    	}
+	    }
+	    public void releaseTemp(JSTemporary temp)
+	    {
+	    	reservedTemps.remove(temp.idx);
+	    }
+		public String toString()
+		{
+			String str = "";
+			for (int n = 0; n < tempCount; n++)
+				str += "var " + BABYL_TEMP_PREFIX + n + ";\n";
+			str += super.toString();
+			return str;
+		}
 	}
 	private static class JSFunction extends JSScript
 	{
@@ -602,7 +647,10 @@ public class ParserToJS extends ParserErrorReportingBase
 					str += s.name;
 				}
 			}
-			str += ") {\n" + body.toString() + "}\n";
+			str += ") {\n";
+			for (int n = 0; n < tempCount; n++)
+				str += "var " + BABYL_TEMP_PREFIX + n + ";\n";
+			str += body.toString() + "}\n";
 			return str;
 		}
 		public void fillInNameScope(ArrayList<JSScope> currentScope)
@@ -2356,7 +2404,7 @@ public class ParserToJS extends ParserErrorReportingBase
             mustMatchToken(Token.COLON, "msg.no.colon.cond");
             decompiler.addToken(Token.COLON);
             JSNode ifFalse = jsassignExpr(inForInit);
-            jsFactory.createNode()
+            return jsFactory.createNode()
             	.add("(")
             	.addCondition(pn)
             	.add("?")
@@ -2824,12 +2872,21 @@ public class ParserToJS extends ParserErrorReportingBase
                         s = ts.getString();
                         decompiler.addName(s);
                         String lang = lastPeekedLanguageString();
-                        pn = jsFactory.createNode()
-                        		.add(pn)
-                        		.add("[babyllookup(")
-                        		.add(pn)
+
+                        JSTemporary temp = currentScriptOrFn.getTemp();
+                    	// Save the LHS
+                    	pn = jsFactory.createNode()
+                    			.add("(")
+                    			.add(temp)
+                    			.add("=(")
+                    			.add(pn)
+                    			.add("))");
+                    	// Now do the lookup 
+                    	pn.add("[babyllookup(")
+                        		.add(temp)
                         		.add(",'" + lang + "','" + s + "'")
                         		.add(")]");
+                    	currentScriptOrFn.releaseTemp(temp);
 //                        pn = nf.createPropertyGet(pn, lang, null, s, memberTypeFlags);
                         break;
 //                    }
@@ -2894,13 +2951,23 @@ public class ParserToJS extends ParserErrorReportingBase
 //                    pn = nf.createTranslatedNameGet(pn, null, left, right, 0);
                 }
                 else
+                {
+                	JSTemporary temp = currentScriptOrFn.getTemp();
+                	// Save the LHS
                 	pn = jsFactory.createNode()
-                		.add(pn)
-                		.add("[babyllookup(")
-                		.add(pn)
-                		.add(",'" + lang + "',")
-                		.add(left)
-                		.add(")]");
+                			.add("(")
+                			.add(temp)
+                			.add("=(")
+                			.add(pn)
+                			.add("))");
+                	// Now do the lookup 
+                	pn.add("[babyllookup(")
+                    		.add(temp)
+                    		.add(",'" + lang + "',")
+                    		.add(left)
+                    		.add(")]");
+                	currentScriptOrFn.releaseTemp(temp);
+                }
 //                    pn = nf.createElementGet(pn, lang, null, left, 0);
                 mustMatchToken(Token.RB, "msg.no.bracket.index");
                 decompiler.addToken(Token.RB);
