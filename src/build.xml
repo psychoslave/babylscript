@@ -62,6 +62,7 @@ Requires Ant version 1.2
     </javac>
     <copy todir="${classes}">
       <fileset dir="src" includes="org/**/*.properties" />
+      <fileset dir="src" includes="org/**/*.js" />
       <filterset>
       <filter token="IMPLEMENTATION.VERSION"
               value="${implementation.version}"/>
@@ -85,7 +86,7 @@ Requires Ant version 1.2
     <mkdir dir="${dist.dir}/src"/>
     <copy todir="${dist.dir}/src">
       <fileset dir="src"
-               includes="**/*.java,**/*.properties,**/*.xml,manifest"/>
+               includes="**/*.java,**/*.properties,**/*.js,**/*.xml,manifest"/>
     </copy>
   </target>
 

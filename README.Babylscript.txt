@@ -39,3 +39,26 @@ filled with UTF-8 encoded Babylscript code. A sample HelloWorld Babylscript
 program is provided called "sample.js". Run this program using
 
    java -jar build/babylscriptrun.jar babylrunner/sample.js
+
+
+BABYLSCRIPT TO JAVASCRIPT COMPILER
+==================================
+
+Using Babylscript as a scripting language for Java programs can be a bit
+limiting, so this source package also includes an experimental Babylscript
+to JavaScript compiler. You can take Babylscript code, translate it into
+regular JavaScript, and then run the result in a normal web browser.
+
+First you need to compile the Babylscript to JavaScript translator using
+the Ant build.xml script in the root directory:
+
+   ant babyl2js
+   
+It will create a babyl2js.jar file which you can use to translate files
+containing UTF-8 encoded Babylscript code. A sample HelloWorld Babylscript 
+program is provided called "sample.babyl2js.js". Translate this program 
+into JavaScript using
+
+   java -jar build/babyl2js.jar -html babylrunner/sample.babyl2js.js output.html
+
+ Then open the output.html file in a web browser to run the result.

@@ -153,6 +153,7 @@
       <include name="org/mozilla/javascript/debug/*.class"/>
       <include name="org/mozilla/javascript/babylscript/*.class"/>
       <include name="org/mozilla/javascript/babylscript/gen/*.class"/>
+      <include name="org/mozilla/javascript/*.js"/>
       <!--<include name="org/mozilla/javascript/babylscript/resources/*.properties"/>-->
       <include name="org/mozilla/javascript/resources/*.properties"/>
       <include name="org/mozilla/javascript/xml/*.class"/>
@@ -181,6 +182,27 @@
   	<copy file="${dist.dir}/${small-rhino-14.jar}" tofile="${dist.dir}/babylscript14.jar"/>
   </target>
 
+  <target name="babyl2js" depends="smalljar">
+    <javac srcdir="babylrunner"
+           destdir="${dist.dir}"
+           includes="*.java"
+           deprecation="on"
+           debug="${debug}"
+       target="${target-jvm}"
+       source="${source-level}"
+       includeantruntime="false"
+       >
+      <classpath location="${classes}"/>
+    </javac>
+    <jar destfile="${build.dir}/babyl2js.jar">
+  	  <zipfileset src="${dist.dir}/${small-rhino.jar}"/>
+	  <fileset dir="${dist.dir}" includes="Babyl2JS.class"/>
+   	  <manifest>
+	    <attribute name="Main-Class" value="Babyl2JS"/>
+	  </manifest>
+	</jar>
+  </target>
+
   <target name="babylscriptrun" depends="smalljar">
     <javac srcdir="babylrunner"
            destdir="${dist.dir}"
@@ -202,14 +224,16 @@
 	</jar>
   </target>
 
-  <target name="babylpkg" depends="babylscriptrun">
+  <target name="babylpkg" depends="babylscriptrun,babyl2js">
 	<tstamp>
 		<format property="DSTAMP" pattern="yyyy-MM-dd"/>
 	</tstamp>
 	<zip destfile="${dist.dir}/babylscript-bin-${DSTAMP}.zip">
 		<zipfileset file="${build.dir}/babylscriptrun.jar" fullpath="babylscriptrun.jar"/>
+		<zipfileset file="${build.dir}/babyl2js.jar" fullpath="babyl2js.jar"/>
 		<zipfileset file="babylrunner/README.bin.txt" fullpath="README.txt"/>
 		<zipfileset file="babylrunner/sample.js" fullpath="sample.js"/>
+		<zipfileset file="babylrunner/sample.babyl2js.js" fullpath="sample.babyl2js.js"/>
 	</zip>
     <zip destfile="${dist.dir}/babylscript-src-${DSTAMP}.zip">
       <fileset dir="." includes="examples/**,testsrc/**,src/**,toolsrc/**,xmlimplsrc/**"/>
@@ -354,6 +378,9 @@
 
 babylscriptrun  creates a simple command-line tool for running 
 	            Babylscript programs
+
+babyl2js     creates a simple command-line tool for translating 
+	         Babylscript code into regular JavaScript code
 
 babylgen     regenerates some internal java files of translations 
 	         for different languages from property files
