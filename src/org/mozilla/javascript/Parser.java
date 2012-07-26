@@ -63,7 +63,7 @@ import java.util.Map;
  * @author Brendan Eich
  */
 
-public class Parser
+public class Parser extends ParserErrorReportingBase
 {
     // TokenInformation flags : currentFlaggedToken stores them together
     // with token type
@@ -72,15 +72,9 @@ public class Parser
         TI_AFTER_EOL   = 1 << 16,  // first token of the source line
         TI_CHECK_LABEL = 1 << 17;  // indicates to check for label
 
-    CompilerEnvirons compilerEnv;
-    private ErrorReporter errorReporter;
-    private String sourceURI;
     boolean calledByCompileFunction;
 
-    private TokenStream ts;
     private int currentFlaggedToken;
-    private int syntaxErrorCount;
-
     private IRFactory nf;
 
     private int nestingOfFunction;
@@ -104,12 +98,6 @@ public class Parser
         return ts.getLineno();
     }
 
-    // Exception to unwind
-    private static class ParserException extends RuntimeException
-    {
-        static final long serialVersionUID = 5882582646773765630L;
-    }
-
     public Parser(CompilerEnvirons compilerEnv, ErrorReporter errorReporter)
     {
         this.compilerEnv = compilerEnv;
@@ -119,49 +107,6 @@ public class Parser
     protected Decompiler createDecompiler(CompilerEnvirons compilerEnv)
     {
         return new Decompiler();
-    }
-
-    void addStrictWarning(String messageId, String messageArg)
-    {
-        if (compilerEnv.isStrictMode())
-            addWarning(messageId, messageArg);
-    }
-
-    void addWarning(String messageId, String messageArg)
-    {
-        String message = ScriptRuntime.getMessage1(messageId, messageArg);
-        if (compilerEnv.reportWarningAsError()) {
-            ++syntaxErrorCount;
-            errorReporter.error(message, sourceURI, ts.getLineno(),
-                                ts.getLine(), ts.getOffset());
-        } else
-            errorReporter.warning(message, sourceURI, ts.getLineno(),
-                                  ts.getLine(), ts.getOffset());
-    }
-
-    void addError(String messageId)
-    {
-        ++syntaxErrorCount;
-        String message = ScriptRuntime.getMessage0(messageId);
-        errorReporter.error(message, sourceURI, ts.getLineno(),
-                            ts.getLine(), ts.getOffset());
-    }
-
-    void addError(String messageId, String messageArg)
-    {
-        ++syntaxErrorCount;
-        String message = ScriptRuntime.getMessage1(messageId, messageArg);
-        errorReporter.error(message, sourceURI, ts.getLineno(),
-                            ts.getLine(), ts.getOffset());
-    }
-
-    RuntimeException reportError(String messageId)
-    {
-        addError(messageId);
-
-        // Throw a ParserException exception to unwind the recursive descent
-        // parse.
-        throw new ParserException();
     }
 
     private String lastPeekedLanguageString()
