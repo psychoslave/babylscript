@@ -59,7 +59,6 @@ import org.mozilla.javascript.babylscript.TranslatedNameBindings;
 import org.apache.harmony.Locale;
 import org.apache.harmony.Character;
 
-import sun.org.mozilla.javascript.internal.regexp.NativeRegExp;
 
 /**
  * This is the class that implements the runtime.
