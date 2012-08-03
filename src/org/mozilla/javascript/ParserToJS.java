@@ -76,704 +76,708 @@ import org.mozilla.javascript.babylscript.TranslatedNameBindings;
 
 public class ParserToJS extends ParserErrorReportingBase
 {
-	private static String BABYL_TEMP_PREFIX = "$$babyltmp";
-	private static class JSRecompilerNodeFactory
-	{
-		JSScript createScript()
-		{
-			return new JSScript();
-		}
-		JSNode createNode() 
-		{
-			return new JSNode();
-		}
-		JSNode createNode(String str)
-		{
-			return new JSNode(str);
-		}
-		JSFunction createFunction(String lang, String name)
-		{
-			return new JSFunction(lang, name);
-		}
-		JSFunction createGetterSetterFunction(String lang, String name)
-		{
-			JSFunction f = new JSFunction(lang, name);
-			f.isShowFunctionKeyword = false;
-			return f;
-		}
-		JSNode createSimpleBinaryOperator(String operator, JSNode left, JSNode right)
-		{
+    private static String BABYL_TEMP_PREFIX = "$$babyltmp";
+    private static class JSRecompilerNodeFactory
+    {
+        JSScript createScript()
+        {
+            return new JSScript();
+        }
+        JSNode createNode() 
+        {
+            return new JSNode();
+        }
+        JSNode createNode(String str)
+        {
+            return new JSNode(str);
+        }
+        JSFunction createFunction(String lang, String name)
+        {
+            return new JSFunction(lang, name);
+        }
+        JSFunction createGetterSetterFunction(String lang, String name)
+        {
+            JSFunction f = new JSFunction(lang, name);
+            f.isShowFunctionKeyword = false;
+            return f;
+        }
+        JSNode createSimpleBinaryOperator(String operator, JSNode left, JSNode right)
+        {
             return createNode()
-            		.add("(")
-            		.add("(").add(left).add(")")
-            		.add(operator)
-            		.add("(").add(right).add(")")
-            		.add(")");
-			
-		}
-		JSNode createSimplePreUnaryOperator(String operator, JSNode val)
-		{
+                    .add("(")
+                    .add("(").add(left).add(")")
+                    .add(operator)
+                    .add("(").add(right).add(")")
+                    .add(")");
+            
+        }
+        JSNode createSimplePreUnaryOperator(String operator, JSNode val)
+        {
             return createNode()
-            		.add("(")
-            		.add(operator)
-            		.add("(")
-            		.add(val).add(")")
-            		.add(")");
-			
-		}
-		JSNode createSimplePostUnaryOperator(String operator, JSNode val)
-		{
-			// TODO: This might not be quite right for postfix increments and stuff, but maybe it is
+                    .add("(")
+                    .add(operator)
+                    .add("(")
+                    .add(val).add(")")
+                    .add(")");
+            
+        }
+        JSNode createSimplePostUnaryOperator(String operator, JSNode val)
+        {
+            // TODO: This might not be quite right for postfix increments and stuff, but maybe it is
             return createNode()
-            		.add("(")
-            		.add("(")
-            		.add(val).add(")")
-            		.add(operator)
-            		.add(")");
-			
-		}
-		JSNode createAssignment(String assignOp, JSNode left, JSNode right)
-		{
-			if (assignOp.equals("="))
-			{
-				if (left instanceof JSTranslationMapping)
-				{
-					JSTranslationMapping trans = (JSTranslationMapping)left;
-		            return createNode()
-		            		.add("(babyl.addTranslation(")
-		            		.add(trans.obj)
-		            		.add(",")
-		            		.add(trans.lang)
-		            		.add(",")
-		            		.add(trans.name)
-		            		.add(",")
-		            		.add(right)
-		            		.add("))");
-				}
-				else 
-				{
-		            return createNode()
-		            		.add(left)
-		            		.add(assignOp)
-		            		.add(right);
-				}
-			}
-			else
-				// TODO: This isn't quite correct because the type of the object may change, requiring a new
-				// translation mapping e.g. a=2; a += 'hello';
-				// TODO: This also isn't right because the result of the expression isn't a proper babylwrapped object
-	            return createNode()
-	            		.add("(")
-	            		.add(left)
-	            		.add(")")
-	            		.add(assignOp)
-	            		.add("(")
-	            		.add(right)
-	            		.add(")");
-		}
-		JSNode createLabel()
-		{
-			// This is just some strange thing that Rhino does that allows it to dive
-			// into the parser to confirm whether a name refers to a label or not, and if so, it 
-			// passes this special value back up out of the parser as confirmation that
-			// the name read previously was indeed confirmed to be a label
-			JSNode node = new JSNode();
-			node.type = Token.LABEL;
-			return node;
-		}
-		JSName createName(String lang, String name)
-		{
-			return new JSName(lang, name);
-		}
-		JSVariables createVariable(int declType)
-		{
-			return new JSVariables(declType);
-		}
-		JSNode createNumber(String str)
-		{
-			return new JSNode(str);
-		}
-		JSNode createSpecialConstant(String str)
-		{
-			return new JSNode(str);
-		}
-		String escapeJSString(String str)
-		{
-			return str.replace("\\", "\\\\").replace("\"", "\\\"").replace("'", "\\'")
-					.replace("\n", "\\\n").replace("\f", "\\\f").replace("\t", "\\\t").replace("\r", "\\\r");
-		}
-		JSNode createString(String str)
-		{
-			return new JSNode("'" + escapeJSString(str) + "'");
-		}
-		JSCatch createCatch(JSName name, JSNode expr, JSNode block)
-		{
-			return new JSCatch(name, expr, block);
-		}
-		JSNode createError(String str)
-		{
-			return new JSNode("error");
-		}
-		JSScope createBlock()
-		{
-			return new JSScope(); 
-		}
-		JSTranslationMapping createTranslationMapping(JSNode obj, JSNode lang, JSNode name)
-		{
-			return new JSTranslationMapping(obj, lang, name);
-		}
-	}
-	private static class JSNodePair
-	{
-		JSNodePair() {}
-		JSNodePair(JSNode node) { this.node = node; }
-		JSNode node = null;
-		String str = "";
-	}
-	private static class JSNode
-	{
-		JSNode()
-		{
-			data.add(new JSNodePair());
-		}
-		JSNode(String str) 
-		{
-			JSNodePair pair = new JSNodePair();
-			pair.str = str;
-			data.add(pair);
-		}
-		ArrayList<JSNodePair> data = new ArrayList<JSNodePair>();
-		public String toString() 
-		{ 
-			String str = ""; 
-			for (JSNodePair pair: data) 
-				str += (pair.node != null ? pair.node.toString() + pair.str : pair.str); 
-			return str;
-		}
-		int type;
-		public int getType() { return type; }
-		public JSNode add(String str)
-		{
-			data.get(data.size() -1).str += str;
-			return this;
-		}
-		public JSNode add(JSNode node)
-		{
-			data.add(new JSNodePair(node));
-			return this;
-		}
-		public JSNode addCondition(JSNode node)
-		{
-			data.add(new JSNodePair(node));
-			return this;
-		}
-		public void fillInNameScope(ArrayList<JSScope> currentScope)
-		{
-			for (JSNodePair pair: data)
-			{
-				if (pair.node != null)
-					pair.node.fillInNameScope(currentScope);
-			}
-		}
-		public void calculateVariableScope(ArrayList<JSScope> currentScope)
-		{
-			for (JSNodePair pair: data)
-			{
-				if (pair.node != null)
-					pair.node.calculateVariableScope(currentScope);
-			}
-		}
-	}
-	private static class JSTemporary extends JSNode
-	{
-		int idx;
-		JSTemporary(int idx)
-		{
-			this.idx = idx;
-		}
-		public String toString() 
-		{
-			// TODO: Change the prefix so that there are no collisions
-			// with variables already used in the code
-			return BABYL_TEMP_PREFIX + idx;
-		}
-	}
-	private static class JSName extends JSNode
-	{
-		boolean isGlobal = true;
-		String lang;
-		String name;
-		JSName(String lang, String str)
-		{
-			super();
-			this.lang = lang;
-			this.name = str;
-		}
-		public String toString() 
-		{
-			if (isGlobal)
-				return "babylroot[babyllookup(babylroot,'" + lang + "','" + name + "')]" + super.toString();
-			else
-				// Non-globals can't be translated
-				return name + super.toString();
-		}
-		public void fillInNameScope(ArrayList<JSScope> currentScope)
-		{
-			// go through the scope chain to see if it's a locally defined variable
-			boolean isNotGlobal = false;
-			for (int n = currentScope.size() - 1; n > 0; n--)
-			{
-				if (currentScope.get(n).symbols.contains(name))
-				{
-					isNotGlobal = true;
-					break;
-				}
-			}
-			isGlobal = !isNotGlobal;
-			super.fillInNameScope(currentScope);
-		}
-	}
-	private static class JSTranslationMapping extends JSNode
-	{
-		JSNode obj;
-		JSNode lang;
-		JSNode name;
-		JSTranslationMapping(JSNode obj, JSNode lang, JSNode name)
-		{
-			super();
-			this.obj = obj;
-			this.lang = lang;
-			this.name = name;
-		}
-		public String toString() 
-		{
-			return "(babyl.getTranslation(" + obj + "," + lang + "," + name + "))";
-		}
-		public void fillInNameScope(ArrayList<JSScope> currentScope)
-		{
-			obj.fillInNameScope(currentScope);
-			lang.fillInNameScope(currentScope);
-			name.fillInNameScope(currentScope);
-			super.fillInNameScope(currentScope);
-		}
-		public void calculateVariableScope(ArrayList<JSScope> currentScope)
-		{
-			obj.calculateVariableScope(currentScope);
-			lang.calculateVariableScope(currentScope);
-			name.calculateVariableScope(currentScope);
-			super.calculateVariableScope(currentScope);
-		}
-	}
-	private static class JSVariables extends JSNode
-	{
-		boolean isGlobal = true;
-		int declType;  // holds variable definitions of type Token.LET, Token.VAR, or Token.CONST
-		String declString;
-		ArrayList<JSName> names = new ArrayList<JSName>();
-		ArrayList<JSNode> assigns = new ArrayList<JSNode>();
-		public void addVar(JSName name, JSNode assign)
-		{
-			names.add(name);
-			assigns.add(assign);
-		}
-		JSVariables(int declType)
-		{
-			this.declType = declType;
-			switch (declType)
-			{
-			case Token.LET:
-				declString = "let ";
-				break;
-			case Token.CONST:
-				declString = "const ";
-				break;
-			case Token.VAR:
-				declString = "var ";
-				break;
-			default:
-				throw new RuntimeException("Unknown variable type");
-			}
-		}
-		public String toString() 
-		{
-			// Only handle global variables for now
-			String str = "";
-			if (declType != Token.VAR || !isGlobal)
-				str += declString;
-			for (int n = 0; n < names.size(); n++)
-			{
-				if (n != 0) str += ",";
-				str += names.get(n).toString();
-				if (assigns.get(n) != null)
-					str += "=" + assigns.get(n).toString();
-			}
-			return str + super.toString();
-		}
-		public void fillInNameScope(ArrayList<JSScope> currentScope)
-		{
-			for (JSName s: names)
-			{
-				s.fillInNameScope(currentScope);
-			}
-			for (JSNode s: assigns)
-			{
-				if (s != null)
-					s.fillInNameScope(currentScope);
-			}
-		}
-		public void calculateVariableScope(ArrayList<JSScope> currentScope)
-		{
-			for (JSName s: names)
-			{
-				String name = s.name;
-				if (declType != Token.VAR)
-				{
-					// TODO: Put this in the current scope or does it
-					// actually create its own scope?
-					currentScope.get(currentScope.size()-1).addNameToScope(name);
-					isGlobal = false;
-				}
-				else
-				{
-					// Traverse upwards until we get to a function or the
-					// top level
-					for (int n = currentScope.size() -1; n >= 0; n--)
-					{
-						if (n == 0 || currentScope.get(n) instanceof JSFunction)
-						{
-							currentScope.get(n).addNameToScope(name);
-							isGlobal = (n == 0); 
-							break;
-						}
-					}
-				}
-			}
-			for (JSNode s: assigns)
-			{
-				if (s != null)
-					s.calculateVariableScope(currentScope);
-			}
-			super.calculateVariableScope(currentScope);
-		}
-	}
+                    .add("(")
+                    .add("(")
+                    .add(val).add(")")
+                    .add(operator)
+                    .add(")");
+            
+        }
+        JSNode createAssignment(String assignOp, JSNode left, JSNode right)
+        {
+            if (assignOp.equals("="))
+            {
+                if (left instanceof JSTranslationMapping)
+                {
+                    JSTranslationMapping trans = (JSTranslationMapping)left;
+                    return createNode()
+                            .add("(babyl.addTranslation(")
+                            .add(trans.obj)
+                            .add(",")
+                            .add(trans.lang)
+                            .add(",")
+                            .add(trans.name)
+                            .add(",")
+                            .add(right)
+                            .add("))");
+                }
+                else 
+                {
+                    return createNode()
+                            .add(left)
+                            .add(assignOp)
+                            .add(right);
+                }
+            }
+            else
+                // TODO: This isn't quite correct because the type of the object may change, requiring a new
+                // translation mapping e.g. a=2; a += 'hello';
+                // TODO: This also isn't right because the result of the expression isn't a proper babylwrapped object
+                return createNode()
+                        .add("(")
+                        .add(left)
+                        .add(")")
+                        .add(assignOp)
+                        .add("(")
+                        .add(right)
+                        .add(")");
+        }
+        JSNode createLabel()
+        {
+            // This is just some strange thing that Rhino does that allows it to dive
+            // into the parser to confirm whether a name refers to a label or not, and if so, it 
+            // passes this special value back up out of the parser as confirmation that
+            // the name read previously was indeed confirmed to be a label
+            JSNode node = new JSNode();
+            node.type = Token.LABEL;
+            return node;
+        }
+        JSName createName(String lang, String name)
+        {
+            return new JSName(lang, name);
+        }
+        JSVariables createVariable(int declType)
+        {
+            return new JSVariables(declType);
+        }
+        JSNode createNumber(String str)
+        {
+            return new JSNode(str);
+        }
+        JSNode createSpecialConstant(String str)
+        {
+            return new JSNode(str);
+        }
+        String escapeJSString(String str)
+        {
+            return str.replace("\\", "\\\\").replace("\"", "\\\"").replace("'", "\\'")
+                    .replace("\n", "\\\n").replace("\f", "\\\f").replace("\t", "\\\t").replace("\r", "\\\r");
+        }
+        JSNode createString(String str)
+        {
+            return new JSNode("'" + escapeJSString(str) + "'");
+        }
+        JSCatch createCatch(JSName name, JSNode expr, JSNode block)
+        {
+            return new JSCatch(name, expr, block);
+        }
+        JSNode createError(String str)
+        {
+            return new JSNode("error");
+        }
+        JSScope createBlock()
+        {
+            return new JSScope(); 
+        }
+        JSTranslationMapping createTranslationMapping(JSNode obj, JSNode lang, JSNode name)
+        {
+            return new JSTranslationMapping(obj, lang, name);
+        }
+    }
+    private static class JSNodePair
+    {
+        JSNodePair() {}
+        JSNodePair(JSNode node) { this.node = node; }
+        JSNode node = null;
+        String str = "";
+    }
+    private static class JSNode
+    {
+        JSNode()
+        {
+            data.add(new JSNodePair());
+        }
+        JSNode(String str) 
+        {
+            JSNodePair pair = new JSNodePair();
+            pair.str = str;
+            data.add(pair);
+        }
+        ArrayList<JSNodePair> data = new ArrayList<JSNodePair>();
+        public String toString() 
+        { 
+            String str = ""; 
+            for (JSNodePair pair: data) 
+                str += (pair.node != null ? pair.node.toString() + pair.str : pair.str); 
+            return str;
+        }
+        int type;
+        public int getType() { return type; }
+        public JSNode add(String str)
+        {
+            data.get(data.size() -1).str += str;
+            return this;
+        }
+        public JSNode add(JSNode node)
+        {
+            data.add(new JSNodePair(node));
+            return this;
+        }
+        public JSNode addCondition(JSNode node)
+        {
+            data.add(new JSNodePair(node));
+            return this;
+        }
+        public void fillInNameScope(ArrayList<JSScope> currentScope)
+        {
+            for (JSNodePair pair: data)
+            {
+                if (pair.node != null)
+                    pair.node.fillInNameScope(currentScope);
+            }
+        }
+        public void calculateVariableScope(ArrayList<JSScope> currentScope)
+        {
+            for (JSNodePair pair: data)
+            {
+                if (pair.node != null)
+                    pair.node.calculateVariableScope(currentScope);
+            }
+        }
+    }
+    private static class JSTemporary extends JSNode
+    {
+        int idx;
+        JSTemporary(int idx)
+        {
+            this.idx = idx;
+        }
+        public String toString() 
+        {
+            // TODO: Change the prefix so that there are no collisions
+            // with variables already used in the code
+            return BABYL_TEMP_PREFIX + idx;
+        }
+    }
+    private static class JSName extends JSNode
+    {
+        boolean isGlobal = true;
+        String lang;
+        String name;
+        JSName(String lang, String str)
+        {
+            super();
+            this.lang = lang;
+            this.name = str;
+        }
+        public String toString() 
+        {
+            if (isGlobal)
+                return "babylroot[babyllookup(babylroot,'" + lang + "','" + name + "')]" + super.toString();
+            else
+                // Non-globals can't be translated
+                return name + super.toString();
+        }
+        public void fillInNameScope(ArrayList<JSScope> currentScope)
+        {
+            // go through the scope chain to see if it's a locally defined variable
+            boolean isNotGlobal = false;
+            for (int n = currentScope.size() - 1; n > 0; n--)
+            {
+                if (currentScope.get(n).symbols.contains(name))
+                {
+                    isNotGlobal = true;
+                    break;
+                }
+            }
+            isGlobal = !isNotGlobal;
+            super.fillInNameScope(currentScope);
+        }
+        public JSName copy()
+        {
+            return new JSName(lang, name);
+        }
+    }
+    private static class JSTranslationMapping extends JSNode
+    {
+        JSNode obj;
+        JSNode lang;
+        JSNode name;
+        JSTranslationMapping(JSNode obj, JSNode lang, JSNode name)
+        {
+            super();
+            this.obj = obj;
+            this.lang = lang;
+            this.name = name;
+        }
+        public String toString() 
+        {
+            return "(babyl.getTranslation(" + obj + "," + lang + "," + name + "))";
+        }
+        public void fillInNameScope(ArrayList<JSScope> currentScope)
+        {
+            obj.fillInNameScope(currentScope);
+            lang.fillInNameScope(currentScope);
+            name.fillInNameScope(currentScope);
+            super.fillInNameScope(currentScope);
+        }
+        public void calculateVariableScope(ArrayList<JSScope> currentScope)
+        {
+            obj.calculateVariableScope(currentScope);
+            lang.calculateVariableScope(currentScope);
+            name.calculateVariableScope(currentScope);
+            super.calculateVariableScope(currentScope);
+        }
+    }
+    private static class JSVariables extends JSNode
+    {
+        boolean isGlobal = true;
+        int declType;  // holds variable definitions of type Token.LET, Token.VAR, or Token.CONST
+        String declString;
+        ArrayList<JSName> names = new ArrayList<JSName>();
+        ArrayList<JSNode> assigns = new ArrayList<JSNode>();
+        public void addVar(JSName name, JSNode assign)
+        {
+            names.add(name);
+            assigns.add(assign);
+        }
+        JSVariables(int declType)
+        {
+            this.declType = declType;
+            switch (declType)
+            {
+            case Token.LET:
+                declString = "let ";
+                break;
+            case Token.CONST:
+                declString = "const ";
+                break;
+            case Token.VAR:
+                declString = "var ";
+                break;
+            default:
+                throw new RuntimeException("Unknown variable type");
+            }
+        }
+        public String toString() 
+        {
+            // Only handle global variables for now
+            String str = "";
+            if (declType != Token.VAR || !isGlobal)
+                str += declString;
+            for (int n = 0; n < names.size(); n++)
+            {
+                if (n != 0) str += ",";
+                str += names.get(n).toString();
+                if (assigns.get(n) != null)
+                    str += "=" + assigns.get(n).toString();
+            }
+            return str + super.toString();
+        }
+        public void fillInNameScope(ArrayList<JSScope> currentScope)
+        {
+            for (JSName s: names)
+            {
+                s.fillInNameScope(currentScope);
+            }
+            for (JSNode s: assigns)
+            {
+                if (s != null)
+                    s.fillInNameScope(currentScope);
+            }
+        }
+        public void calculateVariableScope(ArrayList<JSScope> currentScope)
+        {
+            for (JSName s: names)
+            {
+                String name = s.name;
+                if (declType != Token.VAR)
+                {
+                    // TODO: Put this in the current scope or does it
+                    // actually create its own scope?
+                    currentScope.get(currentScope.size()-1).addNameToScope(name);
+                    isGlobal = false;
+                }
+                else
+                {
+                    // Traverse upwards until we get to a function or the
+                    // top level
+                    for (int n = currentScope.size() -1; n >= 0; n--)
+                    {
+                        if (n == 0 || currentScope.get(n) instanceof JSFunction)
+                        {
+                            currentScope.get(n).addNameToScope(name);
+                            isGlobal = (n == 0); 
+                            break;
+                        }
+                    }
+                }
+            }
+            for (JSNode s: assigns)
+            {
+                if (s != null)
+                    s.calculateVariableScope(currentScope);
+            }
+            super.calculateVariableScope(currentScope);
+        }
+    }
 
-	private static class JSCatch extends JSScope
-	{
-		JSName name;
-		JSNode expr;
-		JSNode block;
-		
-		JSCatch(JSName name, JSNode expr, JSNode block)
-		{
-			this.name = name;
-			this.expr = expr;
-			this.block = block;
-		}
-		public String toString() 
-		{
-			String str = "";
-			str += "catch (" + name;
-			if (expr != null)
-				str += " if " + expr;
-			str += ") {\n";
-			str += block;
-			str += "}\n";
-			return str + super.toString();
-		}
-		public void fillInNameScope(ArrayList<JSScope> currentScope)
-		{
-			currentScope.add(this);
-			name.fillInNameScope(currentScope);
-			if (expr != null)
-				expr.fillInNameScope(currentScope);
-			block.fillInNameScope(currentScope);
-			super.fillInNameScope(currentScope);
-			currentScope.remove(currentScope.size()-1);
-		}
-		public void calculateVariableScope(ArrayList<JSScope> currentScope)
-		{
-			currentScope.add(this);
-			addNameToScope(name.name);
-			if (expr != null)
-				expr.calculateVariableScope(currentScope);
-			block.calculateVariableScope(currentScope);
-			super.calculateVariableScope(currentScope);
-			currentScope.remove(currentScope.size()-1);
-		}
-	}
+    private static class JSCatch extends JSScope
+    {
+        JSName name;
+        JSNode expr;
+        JSNode block;
+        
+        JSCatch(JSName name, JSNode expr, JSNode block)
+        {
+            this.name = name;
+            this.expr = expr;
+            this.block = block;
+        }
+        public String toString() 
+        {
+            String str = "";
+            str += "catch (" + name;
+            if (expr != null)
+                str += " if " + expr;
+            str += ") {\n";
+            str += block;
+            str += "}\n";
+            return str + super.toString();
+        }
+        public void fillInNameScope(ArrayList<JSScope> currentScope)
+        {
+            currentScope.add(this);
+            name.fillInNameScope(currentScope);
+            if (expr != null)
+                expr.fillInNameScope(currentScope);
+            block.fillInNameScope(currentScope);
+            super.fillInNameScope(currentScope);
+            currentScope.remove(currentScope.size()-1);
+        }
+        public void calculateVariableScope(ArrayList<JSScope> currentScope)
+        {
+            currentScope.add(this);
+            addNameToScope(name.name);
+            if (expr != null)
+                expr.calculateVariableScope(currentScope);
+            block.calculateVariableScope(currentScope);
+            super.calculateVariableScope(currentScope);
+            currentScope.remove(currentScope.size()-1);
+        }
+    }
 
-	private static class JSScope extends JSNode
-	{
-		// This symbol list is mainly used for tracking arguments for
-		// functions (it seems unreliable for other stuff)
-		ArrayList<Symbol> symbolList = new ArrayList<Symbol>();
-		
-		// This symbolTable and parentScope stuff doesn't seem to be reliably
-		// maintained, so we'll ignore these things and just manually calculate
-		// things from the post-parsed results
-		JSScope parent = null;
-		HashMap<String, Symbol> symbolTable = new HashMap<String, Symbol>();
-		public Symbol getSymbol(String name)
-		{
-			return symbolTable.get(name);
-		}
-		public void putSymbol(String name, Symbol symbol) 
-		{
-//			symbol.containingTable = this;
-			symbolTable.put(name, symbol);
-			symbolList.add(symbol);
-		}
-		public JSScope getDefiningScope(String name) {
-			if (symbolTable.containsKey(name)) return this;
-			if (parent != null) return parent.getDefiningScope(name);
-			return null;
-		}
-		public void setParent(JSScope parent) {
-			this.parent = parent;
-		}
-		public JSScope getParentScope() {
-			return parent;
-		}
-		
-		HashSet<String> symbols = new HashSet<String>();
-		public void addNameToScope(String name)
-		{
-			symbols.add(name);
-		}
-		
-		public void fillInNameScope(ArrayList<JSScope> currentScope)
-		{
-			currentScope.add(this);
-			super.fillInNameScope(currentScope);
-			currentScope.remove(currentScope.size()-1);
-		}
-		public void calculateVariableScope(ArrayList<JSScope> currentScope)
-		{
-			currentScope.add(this);
-			super.calculateVariableScope(currentScope);
-			currentScope.remove(currentScope.size()-1);
-		}
-	}
-	private static class JSScript extends JSScope
-	{
-		public void setSourceName(String sourceURI) {}
-		public void setBaseLineno(int baseLineno) {}
-		public void setEncodedSourceBounds(int sourceStartOffset,
-				int sourceEndOffset) {}
-		public String getNextTempName() {
-			tempNum++;
-			return "$" + tempNum;
-		}
-		private int tempNum = 0;
-		private ArrayList<JSFunction> functions = new ArrayList<JSFunction>();
-		private ArrayList<String> regexps = new ArrayList<String>();
-		public int addFunction(JSFunction fnNode) {
-			functions.add(fnNode);
-			return functions.size() - 1;
-		}
-		public JSFunction getFunctionNode(int fnIndex) {
-			return functions.get(fnIndex);
-		}
-	    public int addRegexp(String string, String flags) {
-	        if (string == null) Kit.codeBug();
-	        regexps.add(string);
-	        regexps.add(flags);
-	        return regexps.size() / 2 - 1;
-	    }
-	    
-	    // Below is Babylscript-specific stuff for handling
-	    // temporaries (the above stuff is from the original
-	    // parser code, and might not even be needed)
-	    int tempCount = 0;
-	    HashSet<Integer> reservedTemps = new HashSet<Integer>();
-	    public JSTemporary getTemp()
-	    {
-	    	for (int n = 0;; n++)
-	    	{
-	    		if (!reservedTemps.contains(n))
-	    		{
-	    			if (n+1 > tempCount)
-	    				tempCount = n+1;
-	    			return new JSTemporary(n);
-	    		}
-	    	}
-	    }
-	    public void releaseTemp(JSTemporary temp)
-	    {
-	    	reservedTemps.remove(temp.idx);
-	    }
-		public String toString()
-		{
-			String str = "";
-			for (int n = 0; n < tempCount; n++)
-				str += "var " + BABYL_TEMP_PREFIX + n + ";\n";
-			str += super.toString();
-			return str;
-		}
-	}
-	private static class JSFunction extends JSScript
-	{
-		boolean isGlobal = true;
-		boolean isShowFunctionKeyword = true;
-		JSName name = null;
-		public JSFunction(String lang, String name) {
-			super();
-			this.name = new JSName(lang, name);
-		}
-	    boolean itsIgnoreDynamicScope = false;
-	    private int syntheticType;
-		private JSNode body;
-		public String getFunctionName() { if (name != null) return name.name; return null; }
-		public void setEndLineno(int lineno) { }
-		public JSNode init(int functionIndex, JSNode body, int syntheticType) {
-			this.body = body;
-			this.syntheticType = syntheticType;
-			return this;
-		}
-		public String toString() 
-		{
-			String str = "";
-			if (syntheticType == FunctionNode.FUNCTION_STATEMENT || syntheticType == FunctionNode.FUNCTION_EXPRESSION_STATEMENT)
-				str += (isGlobal ? "" : "var ") + name + "=";
-			if (isShowFunctionKeyword) str += "function ";
-			str += "(";
-			boolean first = true;
-			for (Symbol s: symbolList)
-			{
-				if (s.declType == Token.LP)
-				{
-					if (!first) str += ",";
-					first = false;
-					str += s.name;
-				}
-			}
-			str += ") {\n";
-			for (int n = 0; n < tempCount; n++)
-				str += "var " + BABYL_TEMP_PREFIX + n + ";\n";
-			str += body.toString() + "}\n";
-			return str;
-		}
-		public void fillInNameScope(ArrayList<JSScope> currentScope)
-		{
-			// Figure out the name definition if it's a function statement 
-			if (name != null)
-			{
-				name.fillInNameScope(currentScope);
-			}
-			
-			currentScope.add(this);
-			body.fillInNameScope(currentScope);
-			currentScope.remove(currentScope.size()-1);
-			super.fillInNameScope(currentScope);
-		}
-		public void calculateVariableScope(ArrayList<JSScope> currentScope)
-		{
-			if (name != null)
-			{
-				if (syntheticType == FunctionNode.FUNCTION_STATEMENT)
-				{
-					// TODO: assume that function statements follow VAR scoping rules
-					// Traverse upwards until we get to a function or the
-					// top level
-					for (int n = currentScope.size() -1; n >= 0; n--)
-					{
-						if (n == 0 || currentScope.get(n) instanceof JSFunction)
-						{
-							currentScope.get(n).addNameToScope(name.name);
-							isGlobal = (n == 0); 
-							break;
-						}
-					}
-				}
-			}
-			// Add the function arguments to the known list of symbols
-			for (Symbol s: symbolList)
-			{
-				if (s.declType == Token.LP)
-				{
-					addNameToScope(s.name);
-				}
-			}
-			
-			// Recurse in
-			currentScope.add(this);
-			body.calculateVariableScope(currentScope);
-			currentScope.remove(currentScope.size()-1);
-			super.calculateVariableScope(currentScope);
-		}
-	}
+    private static class JSScope extends JSNode
+    {
+        // This symbol list is mainly used for tracking arguments for
+        // functions (it seems unreliable for other stuff)
+        ArrayList<Symbol> symbolList = new ArrayList<Symbol>();
+        
+        // This symbolTable and parentScope stuff doesn't seem to be reliably
+        // maintained, so we'll ignore these things and just manually calculate
+        // things from the post-parsed results
+        JSScope parent = null;
+        HashMap<String, Symbol> symbolTable = new HashMap<String, Symbol>();
+        public Symbol getSymbol(String name)
+        {
+            return symbolTable.get(name);
+        }
+        public void putSymbol(String name, Symbol symbol) 
+        {
+//            symbol.containingTable = this;
+            symbolTable.put(name, symbol);
+            symbolList.add(symbol);
+        }
+        public JSScope getDefiningScope(String name) {
+            if (symbolTable.containsKey(name)) return this;
+            if (parent != null) return parent.getDefiningScope(name);
+            return null;
+        }
+        public void setParent(JSScope parent) {
+            this.parent = parent;
+        }
+        public JSScope getParentScope() {
+            return parent;
+        }
+        
+        HashSet<String> symbols = new HashSet<String>();
+        public void addNameToScope(String name)
+        {
+            symbols.add(name);
+        }
+        
+        public void fillInNameScope(ArrayList<JSScope> currentScope)
+        {
+            currentScope.add(this);
+            super.fillInNameScope(currentScope);
+            currentScope.remove(currentScope.size()-1);
+        }
+        public void calculateVariableScope(ArrayList<JSScope> currentScope)
+        {
+            currentScope.add(this);
+            super.calculateVariableScope(currentScope);
+            currentScope.remove(currentScope.size()-1);
+        }
+    }
+    private static class JSScript extends JSScope
+    {
+        public void setSourceName(String sourceURI) {}
+        public void setBaseLineno(int baseLineno) {}
+        public void setEncodedSourceBounds(int sourceStartOffset,
+                int sourceEndOffset) {}
+        public String getNextTempName() {
+            tempNum++;
+            return "$" + tempNum;
+        }
+        private int tempNum = 0;
+        private ArrayList<JSFunction> functions = new ArrayList<JSFunction>();
+        private ArrayList<String> regexps = new ArrayList<String>();
+        public int addFunction(JSFunction fnNode) {
+            functions.add(fnNode);
+            return functions.size() - 1;
+        }
+        public JSFunction getFunctionNode(int fnIndex) {
+            return functions.get(fnIndex);
+        }
+        public int addRegexp(String string, String flags) {
+            if (string == null) Kit.codeBug();
+            regexps.add(string);
+            regexps.add(flags);
+            return regexps.size() / 2 - 1;
+        }
+        
+        // Below is Babylscript-specific stuff for handling
+        // temporaries (the above stuff is from the original
+        // parser code, and might not even be needed)
+        int tempCount = 0;
+        HashSet<Integer> reservedTemps = new HashSet<Integer>();
+        public JSTemporary getTemp()
+        {
+            for (int n = 0;; n++)
+            {
+                if (!reservedTemps.contains(n))
+                {
+                    if (n+1 > tempCount)
+                        tempCount = n+1;
+                    return new JSTemporary(n);
+                }
+            }
+        }
+        public void releaseTemp(JSTemporary temp)
+        {
+            reservedTemps.remove(temp.idx);
+        }
+        public String toString()
+        {
+            String str = "";
+            for (int n = 0; n < tempCount; n++)
+                str += "var " + BABYL_TEMP_PREFIX + n + ";\n";
+            str += super.toString();
+            return str;
+        }
+    }
+    private static class JSFunction extends JSScript
+    {
+        boolean isGlobal = true;
+        boolean isShowFunctionKeyword = true;
+        JSName name = null;
+        public JSFunction(String lang, String name) {
+            super();
+            this.name = new JSName(lang, name);
+        }
+        boolean itsIgnoreDynamicScope = false;
+        private int syntheticType;
+        private JSNode body;
+        public String getFunctionName() { if (name != null) return name.name; return null; }
+        public void setEndLineno(int lineno) { }
+        public JSNode init(int functionIndex, JSNode body, int syntheticType) {
+            this.body = body;
+            this.syntheticType = syntheticType;
+            return this;
+        }
+        public String toString() 
+        {
+            String str = "";
+            if (syntheticType == FunctionNode.FUNCTION_STATEMENT || syntheticType == FunctionNode.FUNCTION_EXPRESSION_STATEMENT)
+                str += (isGlobal ? "" : "var ") + name + "=";
+            if (isShowFunctionKeyword) str += "function ";
+            str += "(";
+            boolean first = true;
+            for (Symbol s: symbolList)
+            {
+                if (s.declType == Token.LP)
+                {
+                    if (!first) str += ",";
+                    first = false;
+                    str += s.name;
+                }
+            }
+            str += ") {\n";
+            for (int n = 0; n < tempCount; n++)
+                str += "var " + BABYL_TEMP_PREFIX + n + ";\n";
+            str += body.toString() + "}\n";
+            return str;
+        }
+        public void fillInNameScope(ArrayList<JSScope> currentScope)
+        {
+            // Figure out the name definition if it's a function statement 
+            if (name != null)
+            {
+                name.fillInNameScope(currentScope);
+            }
+            
+            currentScope.add(this);
+            body.fillInNameScope(currentScope);
+            currentScope.remove(currentScope.size()-1);
+            super.fillInNameScope(currentScope);
+        }
+        public void calculateVariableScope(ArrayList<JSScope> currentScope)
+        {
+            if (name != null)
+            {
+                if (syntheticType == FunctionNode.FUNCTION_STATEMENT)
+                {
+                    // TODO: assume that function statements follow VAR scoping rules
+                    // Traverse upwards until we get to a function or the
+                    // top level
+                    for (int n = currentScope.size() -1; n >= 0; n--)
+                    {
+                        if (n == 0 || currentScope.get(n) instanceof JSFunction)
+                        {
+                            currentScope.get(n).addNameToScope(name.name);
+                            isGlobal = (n == 0); 
+                            break;
+                        }
+                    }
+                }
+            }
+            // Add the function arguments to the known list of symbols
+            for (Symbol s: symbolList)
+            {
+                if (s.declType == Token.LP)
+                {
+                    addNameToScope(s.name);
+                }
+            }
+            
+            // Recurse in
+            currentScope.add(this);
+            body.calculateVariableScope(currentScope);
+            currentScope.remove(currentScope.size()-1);
+            super.calculateVariableScope(currentScope);
+        }
+    }
 
-	private static String babylscriptJSHeader; 
-	static {
-		InputStream is = ParserToJS.class.getResourceAsStream("/org/mozilla/javascript/babylscriptJSHeader.js");
-		ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-		byte []dataChunk = new byte[512];
-		try {
-			while(true)
-			{
-				int numBytes = is.read(dataChunk);
-				if (numBytes < 0) break;
-				byteStream.write(dataChunk, 0, numBytes);
-			}
-			is.close();
-			byteStream.close();
-			babylscriptJSHeader = new String(byteStream.toByteArray(), "UTF-8");
-			
-			String languageRemap = "";
-			boolean isFirst = true;
-			for (String lang: TranslatedNameBindings.EquivalentLanguageNames.keySet())
-			{
-				if (!isFirst) languageRemap += ",\n";
-				isFirst = false;
-				languageRemap += "\'" + lang + "\' : \'" + TranslatedNameBindings.EquivalentLanguageNames.get(lang)[0] + "\'";
-			}
-			String translations = createStandardLibraryTranslations();
-			babylscriptJSHeader = babylscriptJSHeader.replace("$$LANG_REMAP$$", languageRemap);
-			babylscriptJSHeader = babylscriptJSHeader.replace("$$TRANSLATIONS$$", translations);
-		} catch(IOException e) {}
-	}
-	
-	public static String createTranslationsFor(String obj, String [] names)
-	{
-		String str = "";
-		str += "obj = " + obj + ";\n";
-		Set<String> langs= TranslatedNameBindings.langResourceMap.keySet();
-		for (String defaultName : names)
-		{
-			for (String lang: langs)
-			{
-				str += "babyl.addTranslation(obj,'" + lang + "','" + TranslatedNameBindings.langResourceMap.get(lang).get(defaultName) + "','" + defaultName + "');\n";
-			}
-		}
-		return str;
-	}
-	static String createStandardLibraryTranslations()
-	{
-		String str = "(function() {\n";
-		str += "var obj;\n";
-		str += createTranslationsFor("babylroot", TranslatedNameBindings.GlobalScopeNames);
-		str += createTranslationsFor("Function.prototype", TranslatedNameBindings.BaseFunctionPrototypeNames);
-		str += createTranslationsFor("Object.prototype", TranslatedNameBindings.ObjectPrototypeNames);
-		str += createTranslationsFor("Error.prototype", TranslatedNameBindings.ErrorPrototypeNames);
-		str += createTranslationsFor("Array", TranslatedNameBindings.ArrayConstructorNames);
-		str += createTranslationsFor("Array.prototype", TranslatedNameBindings.ArrayPrototypeNames);
-		str += createTranslationsFor("String", TranslatedNameBindings.StringConstructorNames);
-		str += createTranslationsFor("String.prototype", TranslatedNameBindings.StringPrototypeNames);
-		str += createTranslationsFor("Boolean.prototype", TranslatedNameBindings.BooleanPrototypeNames);
-		str += createTranslationsFor("Number", TranslatedNameBindings.NumberConstructorNames);
-		str += createTranslationsFor("Number.prototype", TranslatedNameBindings.NumberPrototypeNames);
-		str += createTranslationsFor("Date", TranslatedNameBindings.DateConstructorNames);
-		str += createTranslationsFor("Date.prototype", TranslatedNameBindings.DatePrototypeNames);
-		str += createTranslationsFor("Math", TranslatedNameBindings.MathNames);
-		//str += createTranslationsFor("Call.prototype", TranslatedNameBindings.CallPrototypeNames);
-		//str += createTranslationsFor("Script.prototype", TranslatedNameBindings.ScriptPrototypeNames);
-		//str += createTranslationsFor("Iterator.prototype", TranslatedNameBindings.IteratorPrototypeNames);
-		str += createTranslationsFor("RegExp.prototype", TranslatedNameBindings.RegExpPrototypeNames);
-		// regexp matches
-		str += "})();\n";
-		return str;
-	}
-	
+    private static String babylscriptJSHeader; 
+    static {
+        InputStream is = ParserToJS.class.getResourceAsStream("/org/mozilla/javascript/babylscriptJSHeader.js");
+        ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
+        byte []dataChunk = new byte[512];
+        try {
+            while(true)
+            {
+                int numBytes = is.read(dataChunk);
+                if (numBytes < 0) break;
+                byteStream.write(dataChunk, 0, numBytes);
+            }
+            is.close();
+            byteStream.close();
+            babylscriptJSHeader = new String(byteStream.toByteArray(), "UTF-8");
+            
+            String languageRemap = "";
+            boolean isFirst = true;
+            for (String lang: TranslatedNameBindings.EquivalentLanguageNames.keySet())
+            {
+                if (!isFirst) languageRemap += ",\n";
+                isFirst = false;
+                languageRemap += "\'" + lang + "\' : \'" + TranslatedNameBindings.EquivalentLanguageNames.get(lang)[0] + "\'";
+            }
+            String translations = createStandardLibraryTranslations();
+            babylscriptJSHeader = babylscriptJSHeader.replace("$$LANG_REMAP$$", languageRemap);
+            babylscriptJSHeader = babylscriptJSHeader.replace("$$TRANSLATIONS$$", translations);
+        } catch(IOException e) {}
+    }
+    
+    public static String createTranslationsFor(String obj, String [] names)
+    {
+        String str = "";
+        str += "obj = " + obj + ";\n";
+        Set<String> langs= TranslatedNameBindings.langResourceMap.keySet();
+        for (String defaultName : names)
+        {
+            for (String lang: langs)
+            {
+                str += "babyl.addTranslation(obj,'" + lang + "','" + TranslatedNameBindings.langResourceMap.get(lang).get(defaultName) + "','" + defaultName + "');\n";
+            }
+        }
+        return str;
+    }
+    static String createStandardLibraryTranslations()
+    {
+        String str = "(function() {\n";
+        str += "var obj;\n";
+        str += createTranslationsFor("babylroot", TranslatedNameBindings.GlobalScopeNames);
+        str += createTranslationsFor("Function.prototype", TranslatedNameBindings.BaseFunctionPrototypeNames);
+        str += createTranslationsFor("Object.prototype", TranslatedNameBindings.ObjectPrototypeNames);
+        str += createTranslationsFor("Error.prototype", TranslatedNameBindings.ErrorPrototypeNames);
+        str += createTranslationsFor("Array", TranslatedNameBindings.ArrayConstructorNames);
+        str += createTranslationsFor("Array.prototype", TranslatedNameBindings.ArrayPrototypeNames);
+        str += createTranslationsFor("String", TranslatedNameBindings.StringConstructorNames);
+        str += createTranslationsFor("String.prototype", TranslatedNameBindings.StringPrototypeNames);
+        str += createTranslationsFor("Boolean.prototype", TranslatedNameBindings.BooleanPrototypeNames);
+        str += createTranslationsFor("Number", TranslatedNameBindings.NumberConstructorNames);
+        str += createTranslationsFor("Number.prototype", TranslatedNameBindings.NumberPrototypeNames);
+        str += createTranslationsFor("Date", TranslatedNameBindings.DateConstructorNames);
+        str += createTranslationsFor("Date.prototype", TranslatedNameBindings.DatePrototypeNames);
+        str += createTranslationsFor("Math", TranslatedNameBindings.MathNames);
+        //str += createTranslationsFor("Call.prototype", TranslatedNameBindings.CallPrototypeNames);
+        //str += createTranslationsFor("Script.prototype", TranslatedNameBindings.ScriptPrototypeNames);
+        //str += createTranslationsFor("Iterator.prototype", TranslatedNameBindings.IteratorPrototypeNames);
+        str += createTranslationsFor("RegExp.prototype", TranslatedNameBindings.RegExpPrototypeNames);
+        // regexp matches
+        str += "})();\n";
+        return str;
+    }
+    
     // TokenInformation flags : currentFlaggedToken stores them together
     // with token type
     final static int
@@ -962,7 +966,7 @@ public class ParserToJS extends ParserErrorReportingBase
 //        }
 //        loopSet.push(loop);
 //        loopAndSwitchSet.push(loop);
-    	JSScope loop = jsFactory.createBlock();
+        JSScope loop = jsFactory.createBlock();
         if (doPushScope) {
             pushScope(loop);
         }
@@ -1164,7 +1168,7 @@ public class ParserToJS extends ParserErrorReportingBase
     private JSNode function(int functionType)
             throws IOException, ParserException
     {
-    	return function(functionType, false);
+        return function(functionType, false);
     }
 
     private JSNode function(int functionType, boolean isGetterSetter)
@@ -1336,7 +1340,7 @@ public class ParserToJS extends ParserErrorReportingBase
         JSNode pn = fnNode.init(functionIndex, body, syntheticType);
 //        JSNode pn = nf.initFunction(fnNode, functionIndex, body, syntheticType);
         if (memberExprNode != null) {
-        	pn = jsFactory.createAssignment(tokenToString(Token.ASSIGN), memberExprNode, pn);
+            pn = jsFactory.createAssignment(tokenToString(Token.ASSIGN), memberExprNode, pn);
 //            pn = nf.createAssignment(Token.ASSIGN, memberExprNode, pn);
 // TODO: Fill this in later
 //            if (functionType != FunctionNode.FUNCTION_EXPRESSION) {
@@ -1355,7 +1359,7 @@ public class ParserToJS extends ParserErrorReportingBase
 
         int tt;
         while ((tt = peekToken()) > Token.EOF && tt != Token.RC) {
-        	pn.add(jsstatement());
+            pn.add(jsstatement());
 //            nf.addChildToBack(pn, statement());
         }
 
@@ -1441,7 +1445,7 @@ public class ParserToJS extends ParserErrorReportingBase
             try {
                 JSNode pn = statementHelper(null);
                 if (pn != null) {
-// TODO: Fix this up                	
+// TODO: Fix this up                    
 //                    if (compilerEnv.isStrictMode() && !pn.hasSideEffects())
 //                        addStrictWarning("msg.no.side.effects", "");
                     return pn;
@@ -1490,15 +1494,15 @@ public class ParserToJS extends ParserErrorReportingBase
             }
             decompiler.addEOL(Token.RC);
             pn = jsFactory.createNode()
-        			.add("if(")
-        			.addCondition(cond)
-            		.add(") {\n")
-            		.add(ifTrue)
-            		.add("}");
+                    .add("if(")
+                    .addCondition(cond)
+                    .add(") {\n")
+                    .add(ifTrue)
+                    .add("}");
             if (ifFalse != null)
-            	pn.add("else{\n")
-            		.add(ifFalse)
-            		.add("}\n");
+                pn.add("else{\n")
+                    .add(ifFalse)
+                    .add("}\n");
 //            pn = nf.createIf(cond, ifTrue, ifFalse, lineno);
             return pn;
           }
@@ -1511,9 +1515,9 @@ public class ParserToJS extends ParserErrorReportingBase
             mustMatchToken(Token.LP, "msg.no.paren.switch");
             decompiler.addToken(Token.LP);
             pn = jsFactory.createNode()
-            		.add("switch(")
-            		.add(jsexpr(false))
-            		.add(") {\n");
+                    .add("switch(")
+                    .add(jsexpr(false))
+                    .add(") {\n");
 //            pn = enterSwitch(expr(false), lineno);
             try {
                 mustMatchToken(Token.RP, "msg.no.paren.after.switch");
@@ -1532,8 +1536,8 @@ public class ParserToJS extends ParserErrorReportingBase
                       case Token.CASE:
                         decompiler.addToken(Token.CASE);
                         caseExpression = jsFactory.createNode("case ")
-                        		.add(jsexpr(false))
-                        		.add(":\n");
+                                .add(jsexpr(false))
+                                .add(":\n");
                         mustMatchToken(Token.COLON, "msg.no.colon.case");
                         decompiler.addEOL(Token.COLON);
                         break;
@@ -1561,15 +1565,15 @@ public class ParserToJS extends ParserErrorReportingBase
                            && tt != Token.DEFAULT
                            && tt != Token.EOF)
                     {
-                    	block.add(jsstatement());
+                        block.add(jsstatement());
 //                        nf.addChildToBack(block, statement());
                     }
 
                     // caseExpression == null => add default label
                     if (caseExpression == null)
-                    	pn.add("default:\n");
+                        pn.add("default:\n");
                     else
-                    	pn.add(caseExpression);
+                        pn.add(caseExpression);
                     pn.add(block);
 //                    nf.addSwitchCase(pn, caseExpression, block);
                 }
@@ -1593,11 +1597,11 @@ public class ParserToJS extends ParserErrorReportingBase
                 JSNode body = jsstatement();
                 decompiler.addEOL(Token.RC);
                 pn = jsFactory.createNode()
-                		.add("while(")
-                		.addCondition(cond)
-                		.add(") {\n")
-                		.add(body)
-                		.add("}\n");
+                        .add("while(")
+                        .addCondition(cond)
+                        .add(") {\n")
+                        .add(body)
+                        .add("}\n");
 //                pn = nf.createWhile(loop, cond, body);
             } finally {
                 exitLoop(true);
@@ -1618,11 +1622,11 @@ public class ParserToJS extends ParserErrorReportingBase
                 decompiler.addToken(Token.WHILE);
                 JSNode cond = condition();
                 pn = jsFactory.createNode()
-                		.add("do {\n")
-                		.add(body)
-                		.add("} while(")
-                		.addCondition(cond)
-                		.add(");\n");
+                        .add("do {\n")
+                        .add(body)
+                        .add("} while(")
+                        .addCondition(cond)
+                        .add(");\n");
 //                pn = nf.createDoWhile(loop, body, cond);
             } finally {
                 exitLoop(true);
@@ -1709,28 +1713,54 @@ public class ParserToJS extends ParserErrorReportingBase
                 if (incr == null) {
                     // cond could be null if 'in obj' got eaten
                     // by the init node.
-                	pn = jsFactory.createNode()
-                		.add("for (")
-                		.add(init)
-                		.add(" in ")
-                		.add(cond)
-                		.add(") {\n")
-                		.add(body)
-                		.add("}\n");
+                    JSTemporary temp = currentScriptOrFn.getTemp();
+                    pn = jsFactory.createNode()
+                        .add("for (")
+                        .add(init)
+                        .add(" in (")
+                        .add(temp)
+                        .add(" = (")
+                        .add(cond)
+                        .add("))) {\n");
+                    // Check to see if we can translate the names
+                    // being iterated over (we'll only handle the
+                    // common cases for now--so no using 
+                    // properties as iterators etc.)
+                    JSName iterated = null; 
+                    if (init instanceof JSVariables)
+                        iterated = ((JSVariables)init).names.get(0).copy();
+                    else if (init instanceof JSName)
+                        iterated = ((JSName)init).copy();
+                    if (iterated != null)
+                    {
+                        pn.add(jsFactory.createNode()
+                                .add(iterated)
+                                .add(" = ")
+                                .add("babylreverselookup(")
+                                .add(temp)
+                                .add(",'")
+                                .add(lang)
+                                .add("',")
+                                .add(iterated)
+                                .add(");\n"));
+                    }
+                    pn.add(body)
+                        .add("}\n");
+                    currentScriptOrFn.releaseTemp(temp);
 //                    pn = nf.createForIn(declType, lang, loop, init, cond, body,
 //                                        isForEach);
                 } else {
-                	pn = jsFactory.createNode()
-                			.add("for (")
-                			.add(init)
-                			.add(";");
-                	if (cond.toString().length() != 0)
-                		pn.addCondition(cond);
-                	pn.add(";")
-                			.add(incr)
-                			.add(") {\n")
-                			.add(body)
-                			.add("}\n");
+                    pn = jsFactory.createNode()
+                            .add("for (")
+                            .add(init)
+                            .add(";");
+                    if (cond.toString().length() != 0)
+                        pn.addCondition(cond);
+                    pn.add(";")
+                            .add(incr)
+                            .add(") {\n")
+                            .add(body)
+                            .add("}\n");
 //                    pn = nf.createFor(loop, init, cond, incr, body);
                 }
             } finally {
@@ -1788,8 +1818,8 @@ public class ParserToJS extends ParserErrorReportingBase
                     decompiler.addEOL(Token.LC);
 
                     catchblocks.add(
-                    		jsFactory.createCatch(jsFactory.createName(lang, varName), 
-                    				catchCond, statements(null)));
+                            jsFactory.createCatch(jsFactory.createName(lang, varName), 
+                                    catchCond, statements(null)));
 //                    
 //                    nf.addChildToBack(catchblocks,
 //                        nf.createCatch(varName, catchCond,
@@ -1810,12 +1840,12 @@ public class ParserToJS extends ParserErrorReportingBase
                 decompiler.addEOL(Token.RC);
             }
             pn = jsFactory.createNode("try ")
-            		.add(tryblock)
-            		.add(catchblocks);
+                    .add(tryblock)
+                    .add(catchblocks);
             if (finallyblock != null)
-            	pn.add("finally {\n")
-            		.add(finallyblock)
-            		.add("}\n");
+                pn.add("finally {\n")
+                    .add(finallyblock)
+                    .add("}\n");
 // TODO: Rhino rewrites the scoping of variables here            
 //            pn = nf.createTryCatchFinally(tryblock, catchblocks,
 //                                          finallyblock, lineno);
@@ -1856,7 +1886,7 @@ public class ParserToJS extends ParserErrorReportingBase
 //            }
             pn = jsFactory.createNode("break");
             if (breakStatement != null)
-            	pn.add(" ").add(breakStatement);
+                pn.add(" ").add(breakStatement);
 //            pn = nf.createBreak(breakStatement, lineno);
             break;
           }
@@ -2151,9 +2181,9 @@ public class ParserToJS extends ParserErrorReportingBase
                 endFlags |= Node.END_RETURNS_VALUE;
             }
             if (e == null)
-            	ret = jsFactory.createNode("return");
+                ret = jsFactory.createNode("return");
             else
-            	ret = jsFactory.createNode("return ").add(e);
+                ret = jsFactory.createNode("return ").add(e);
 //            ret = nf.createReturn(e, lineno);
             
             // see if we need a strict mode warning
@@ -2241,13 +2271,13 @@ public class ParserToJS extends ParserErrorReportingBase
 //                            destructuring, init));
 //                }
 //            } else {
-            	JSName name = jsFactory.createName(lang, s);
+                JSName name = jsFactory.createName(lang, s);
 //                JSNode name = nf.createName(lang, s);
                 if (init != null)
-                	result.addVar(name, init);
+                    result.addVar(name, init);
 //                    nf.addChildToBack(name, init);
                 else
-                	result.addVar(name, null);
+                    result.addVar(name, null);
 //                nf.addChildToBack(result, name);
 //            }
     
@@ -2261,7 +2291,7 @@ public class ParserToJS extends ParserErrorReportingBase
     private Node let(boolean isStatement)
         throws IOException, ParserException
     {
-    	return null;
+        return null;
 //TODO: Fill this in
 //        mustMatchToken(Token.LP, "msg.no.paren.after.let");
 //        decompiler.addToken(Token.LP);
@@ -2409,13 +2439,13 @@ public class ParserToJS extends ParserErrorReportingBase
             decompiler.addToken(Token.COLON);
             JSNode ifFalse = jsassignExpr(inForInit);
             return jsFactory.createNode()
-            	.add("(")
-            	.addCondition(pn)
-            	.add("?")
-            	.add(ifTrue)
-            	.add(":")
-            	.add(ifFalse)
-            	.add(")");
+                .add("(")
+                .addCondition(pn)
+                .add("?")
+                .add(ifTrue)
+                .add(":")
+                .add(ifFalse)
+                .add(")");
 //            return nf.createCondExpr(pn, ifTrue, ifFalse);
         }
 
@@ -2630,7 +2660,7 @@ public class ParserToJS extends ParserErrorReportingBase
         case Token.TYPEOF:
         case Token.VOID:
         case Token.NOT:
-      	case Token.BITNOT:
+          case Token.BITNOT:
             consumeToken();
             decompiler.addToken(tt);
             return jsFactory.createSimplePreUnaryOperator(tokenToString(tt) + " ", unaryExpr());
@@ -2661,18 +2691,18 @@ public class ParserToJS extends ParserErrorReportingBase
             JSNode prop = unaryExpr();
             if (prop instanceof JSTranslationMapping)
             {
-            	JSTranslationMapping trans = (JSTranslationMapping)prop;
-            	return jsFactory.createNode()
-            			.add("(babyl.delTranslation(")
-            			.add(trans.obj)
-            			.add(",")
-            			.add(trans.lang)
-            			.add(",")
-            			.add(trans.name)
-            			.add("))");
+                JSTranslationMapping trans = (JSTranslationMapping)prop;
+                return jsFactory.createNode()
+                        .add("(babyl.delTranslation(")
+                        .add(trans.obj)
+                        .add(",")
+                        .add(trans.lang)
+                        .add(",")
+                        .add(trans.name)
+                        .add("))");
             }
             else
-            	return jsFactory.createSimplePreUnaryOperator("delete ", prop);
+                return jsFactory.createSimplePreUnaryOperator("delete ", prop);
 //            return nf.createUnary(Token.DELPROP, unaryExpr());
         }
         
@@ -2786,7 +2816,7 @@ public class ParserToJS extends ParserErrorReportingBase
                 if (!first)
                     decompiler.addToken(Token.COMMA);
                 if (!first)
-                	listNode.add(",");
+                    listNode.add(",");
                 first = false;
                 if (peekToken() == Token.YIELD) {
                     reportError("msg.yield.parenthesized");
@@ -2816,16 +2846,16 @@ public class ParserToJS extends ParserErrorReportingBase
 
             /* Make a NEW node to append to. */
             pn = jsFactory.createNode()
-            		.add("babylwrap(new ")
-            		.add(memberExpr(false));
+                    .add("babylwrap(new ")
+                    .add(memberExpr(false));
 //            pn = nf.createCallOrNew(Token.NEW, memberExpr(false));
 
             if (matchToken(Token.LP)) {
-            	pn.add("(");
+                pn.add("(");
                 decompiler.addToken(Token.LP);
                 /* Add the arguments to pn, if any are supplied. */
                 argumentList(pn);
-            	pn.add(")");
+                pn.add(")");
             }
             pn.add(")");
 
@@ -2878,19 +2908,19 @@ public class ParserToJS extends ParserErrorReportingBase
                         String lang = lastPeekedLanguageString();
 
                         JSTemporary temp = currentScriptOrFn.getTemp();
-                    	// Save the LHS
-                    	pn = jsFactory.createNode()
-                    			.add("(")
-                    			.add(temp)
-                    			.add("=(")
-                    			.add(pn)
-                    			.add("))");
-                    	// Now do the lookup 
-                    	pn.add("[babyllookup(")
-                        		.add(temp)
-                        		.add(",'" + lang + "','" + s + "'")
-                        		.add(")]");
-                    	currentScriptOrFn.releaseTemp(temp);
+                        // Save the LHS
+                        pn = jsFactory.createNode()
+                                .add("(")
+                                .add(temp)
+                                .add("=(")
+                                .add(pn)
+                                .add("))");
+                        // Now do the lookup 
+                        pn.add("[babyllookup(")
+                                .add(temp)
+                                .add(",'" + lang + "','" + s + "'")
+                                .add(")]");
+                        currentScriptOrFn.releaseTemp(temp);
 //                        pn = nf.createPropertyGet(pn, lang, null, s, memberTypeFlags);
                         break;
 //                    }
@@ -2956,21 +2986,21 @@ public class ParserToJS extends ParserErrorReportingBase
                 }
                 else
                 {
-                	JSTemporary temp = currentScriptOrFn.getTemp();
-                	// Save the LHS
-                	pn = jsFactory.createNode()
-                			.add("(")
-                			.add(temp)
-                			.add("=(")
-                			.add(pn)
-                			.add("))");
-                	// Now do the lookup 
-                	pn.add("[babyllookup(")
-                    		.add(temp)
-                    		.add(",'" + lang + "',")
-                    		.add(left)
-                    		.add(")]");
-                	currentScriptOrFn.releaseTemp(temp);
+                    JSTemporary temp = currentScriptOrFn.getTemp();
+                    // Save the LHS
+                    pn = jsFactory.createNode()
+                            .add("(")
+                            .add(temp)
+                            .add("=(")
+                            .add(pn)
+                            .add("))");
+                    // Now do the lookup 
+                    pn.add("[babyllookup(")
+                            .add(temp)
+                            .add(",'" + lang + "',")
+                            .add(left)
+                            .add(")]");
+                    currentScriptOrFn.releaseTemp(temp);
                 }
 //                    pn = nf.createElementGet(pn, lang, null, left, 0);
                 mustMatchToken(Token.RB, "msg.no.bracket.index");
@@ -3002,7 +3032,7 @@ public class ParserToJS extends ParserErrorReportingBase
      * Xml attribute expression:
      *   '@attr', '@ns::attr', '@ns::*', '@ns::*', '@*', '@*::attr', '@*::*'
      */
-// TODO: Fill this in    	
+// TODO: Fill this in        
 //    private Node attributeAccess(Node pn, int memberTypeFlags)
 //        throws IOException
 //    {
@@ -3253,13 +3283,13 @@ public class ParserToJS extends ParserErrorReportingBase
                 }
             }
             JSNode arr = jsFactory.createNode()
-            		.add("[");
+                    .add("[");
             boolean isFirst = true;
             for (JSNode elem : elems)
             {
-            	if (!isFirst) arr.add(",");
-            	isFirst = false;
-            	if (arr != null) arr.add(elem);
+                if (!isFirst) arr.add(",");
+                isFirst = false;
+                if (arr != null) arr.add(elem);
             }
             arr.add("]");
             return arr;
@@ -3349,9 +3379,9 @@ public class ParserToJS extends ParserErrorReportingBase
             obj.add("{");
             for (int n = 0; n < elems.size(); n++)
             {
-            	JSNode prop = (JSNode)elems.get(n);
-            	if (n != 0) obj.add(",");
-            	obj.add(prop);
+                JSNode prop = (JSNode)elems.get(n);
+                if (n != 0) obj.add(",");
+                obj.add(prop);
             }
             obj.add("}");
             return obj;
@@ -3371,8 +3401,8 @@ public class ParserToJS extends ParserErrorReportingBase
              * think) in the C IR as 'function call.'  */
             decompiler.addToken(Token.LP);
             pn = jsFactory.createNode("(")
-            		.add(jsexpr(false))
-            		.add(")");
+                    .add(jsexpr(false))
+                    .add(")");
 //            pn.putProp(Node.PARENTHESIZED_PROP, Boolean.TRUE);
             decompiler.addToken(Token.RP);
             mustMatchToken(Token.RP, "msg.no.paren");
@@ -3429,10 +3459,10 @@ public class ParserToJS extends ParserErrorReportingBase
             decompiler.addRegexp(re, flags);
             int index = currentScriptOrFn.addRegexp(re, flags);
             return jsFactory.createNode()
-            		.add(tt == Token.DIV ? "/" : "/=")
-            		.add(re)
-            		.add("/")
-            		.add(flags);
+                    .add(tt == Token.DIV ? "/" : "/=")
+                    .add(re)
+                    .add("/")
+                    .add(flags);
 //            return nf.createRegExp(index);
           }
 
@@ -3471,11 +3501,11 @@ public class ParserToJS extends ParserErrorReportingBase
         // decompilation to solve spacing ambiguity.
         decompiler.addToken(Token.OBJECTLIT);
         elems.add(jsFactory.createNode()
-        		.add("'")
-        		.add(jsFactory.escapeJSString(property))
-        		.add("'")
-        		.add(":")
-        		.add(jsassignExpr(false)));
+                .add("'")
+                .add(jsFactory.escapeJSString(property))
+                .add("'")
+                .add(":")
+                .add(jsassignExpr(false)));
 //        elems.add(property);
 //        elems.add(jsassignExpr(false));
     }
@@ -3495,14 +3525,14 @@ public class ParserToJS extends ParserErrorReportingBase
 //            return false;
 //        }
         if (isGetter) {
-        	elems.add(jsFactory.createNode("get ")
-        			.add(property)
-        			.add(f));
+            elems.add(jsFactory.createNode("get ")
+                    .add(property)
+                    .add(f));
 //            elems.add(nf.createUnary(Token.GET, f));
         } else {
-        	elems.add(jsFactory.createNode("set ")
-        			.add(property)
-        			.add(f));
+            elems.add(jsFactory.createNode("set ")
+                    .add(property)
+                    .add(f));
 //            elems.add(nf.createUnary(Token.SET, f));
         }
         return true;
@@ -3602,7 +3632,7 @@ public class ParserToJS extends ParserErrorReportingBase
         case Token.XMLATTR: return "@";
 
         default:
-        	throw new RuntimeException("Looking for a string representation for a token that shouldn't be looked up");
+            throw new RuntimeException("Looking for a string representation for a token that shouldn't be looked up");
         }
     }
 }
