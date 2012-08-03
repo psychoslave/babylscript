@@ -303,7 +303,7 @@ public final static String [] fr = {
 "abstract", "abstrait",
 "export", "exporter",
 "with", "avec",
-"let", "let",
+"let", "soit",
 "return", "retourner",
 "void", "vide",
 "true", "vrai",

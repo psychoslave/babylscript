@@ -333,7 +333,11 @@ public class ParserToJS extends ParserErrorReportingBase
 			isGlobal = !isNotGlobal;
 			super.fillInNameScope(currentScope);
 		}
+        public JSName copy()
+        {
+            return new JSName(lang, name);
 	}
+    }
 	private static class JSTranslationMapping extends JSNode
 	{
 		JSNode obj;
@@ -1686,14 +1690,40 @@ public class ParserToJS extends ParserErrorReportingBase
                 if (incr == null) {
                     // cond could be null if 'in obj' got eaten
                     // by the init node.
+                    JSTemporary temp = currentScriptOrFn.getTemp();
                 	pn = jsFactory.createNode()
                 		.add("for (")
                 		.add(init)
-                		.add(" in ")
+                        .add(" in (")
+                        .add(temp)
+                        .add(" = (")
                 		.add(cond)
-                		.add(") {\n")
-                		.add(body)
+                        .add("))) {\n");
+                    // Check to see if we can translate the names
+                    // being iterated over (we'll only handle the
+                    // common cases for now--so no using 
+                    // properties as iterators etc.)
+                    JSName iterated = null; 
+                    if (init instanceof JSVariables)
+                        iterated = ((JSVariables)init).names.get(0).copy();
+                    else if (init instanceof JSName)
+                        iterated = ((JSName)init).copy();
+                    if (iterated != null)
+                    {
+                        pn.add(jsFactory.createNode()
+                                .add(iterated)
+                                .add(" = ")
+                                .add("babylreverselookup(")
+                                .add(temp)
+                                .add(",'")
+                                .add(lang)
+                                .add("',")
+                                .add(iterated)
+                                .add(");\n"));
+                    }
+                    pn.add(body)
                 		.add("}\n");
+                    currentScriptOrFn.releaseTemp(temp);
 //                    pn = nf.createForIn(declType, lang, loop, init, cond, body,
 //                                        isForEach);
                 } else {
