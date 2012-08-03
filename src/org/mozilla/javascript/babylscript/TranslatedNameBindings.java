@@ -193,6 +193,7 @@ public class TranslatedNameBindings
             // identifies it and treats it specially
             "arguments",
             
+            "alert",
             "Array",
             "Boolean",
             "Call",
