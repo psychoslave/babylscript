@@ -38,7 +38,7 @@ if (!babyltest) {
 	{
 		// Browser host objects might not inherit from Object, so they
 		// might not have translation mappings
-		if (babylobj.babylscript_translations)
+		if (babylobj && babylobj.babylscript_translations)
 			return babylobj.babylscript_translations[lang + '->' + name] || name;
 		else
 			return name;

@@ -247,6 +247,18 @@ public class BabylscriptToJSTest
    }
 
    @Test
+   public void function4() 
+   {
+      assertEquals("5", evalStringToString("function a() { function b() {}; b.c = 5; return b;} a().c;"));
+   }
+
+   @Test
+   public void function5() 
+   {
+      assertEquals("5", evalStringToString("function a() { return arguments[0];} a(5);"));
+   }
+
+   @Test
    public void dot1() 
    {
       assertEquals("5", evalStringToString("a = new Object(); a.b = 5; a.b;"));
@@ -419,5 +431,11 @@ public class BabylscriptToJSTest
    public void ES5Test5() 
    {
       assertEquals("true", evalES5StringToString("Object.getPrototypeOf({}) == Object.prototype"));
+   }
+   
+   @Test
+   public void HexNumbersTest1() 
+   {
+      assertEquals("5", evalES5StringToString("0x7f5 - 0x7f0;"));
    }
 }
