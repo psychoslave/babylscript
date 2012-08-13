@@ -330,6 +330,11 @@ public class ParserToJS extends ParserErrorReportingBase
                 }
             }
             isGlobal = !isNotGlobal;
+
+            // Hack for handling the arguments variable
+            if ("en".equals(lang) && "arguments".equals(name))
+                isGlobal = false;
+
             super.fillInNameScope(currentScope);
         }
         public JSName copy()
@@ -1147,7 +1152,9 @@ public class ParserToJS extends ParserErrorReportingBase
 
                   case Token.FUNCTION:
                     consumeToken();
-                    n = function(FunctionNode.FUNCTION_STATEMENT);
+                    n = jsFactory.createNode()
+                            .add(function(FunctionNode.FUNCTION_STATEMENT))
+                            .add(";");
                     break;
                   default:
                     n = jsstatement();

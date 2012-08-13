@@ -249,7 +249,7 @@ public class BabylTokenizer
             {
                 if (match == Token.NUMBER) 
                 {
-                	setString(numberReader.readString);
+                	setString(numberReader.readString.toString());
                     setNumber(numberReader.readValue);
                 }
                 return match;
@@ -652,7 +652,7 @@ public class BabylTokenizer
     public static class DecimalNumberReader
     {
         protected double readValue;
-        protected String readString;
+        protected StringBuilder readString = new StringBuilder(128);
         protected StringBuilder stringBuffer = new StringBuilder(128);
         protected char decimalSeparator;
         protected char tertiaryDecimalSeparator;
@@ -689,12 +689,15 @@ public class BabylTokenizer
                 return Token.EMPTY;
 
             stringBuffer.setLength(0);
+            readString.setLength(0);
             int base = 10;
 
             c = toJSNumberChar(c);
             if (c == '0') {
+                readString.append((char)c);
                 c = in.getChar();
                 if (c == 'x' || c == 'X') {
+                    readString.append((char)c);
                     base = 16;
                     c = in.getChar();
                 } else if (isDigit(c)) {
@@ -707,6 +710,7 @@ public class BabylTokenizer
             if (base == 16) {
                 while (0 <= Kit.xDigitToInt(c, 0)) {
                     stringBuffer.append((char)c);
+                    readString.append((char)c);
                     c = in.getChar();
                 }
             } else {
@@ -722,6 +726,7 @@ public class BabylTokenizer
                                 c == '8' ? "8" : "9");
                         base = 10;
                     }
+                    readString.append((char)c);
                     stringBuffer.append((char)c);
                     c = in.getChar();
                     c = toJSNumberChar(c);
@@ -733,19 +738,23 @@ public class BabylTokenizer
             if (base == 10 && (isDecimalSeparator(c) || c == 'e' || c == 'E')) {
                 isInteger = false;
                 if (isDecimalSeparator(c)) {
+                    readString.append((char)'.');
                     stringBuffer.append((char)'.');
                     c = in.getChar();
                     while (isDigit(c)) {
                         c = toJSNumberChar(c);
+                        readString.append((char)c);
                         stringBuffer.append((char)c);
                         c = in.getChar();
                     } ;
                 }
                 if (c == 'e' || c == 'E') {
                     c = toJSNumberChar(c);
+                    readString.append((char)c);
                     stringBuffer.append((char)c);
                     c = in.getChar();
                     if (c == '+' || c == '-') {
+                        readString.append((char)c);
                         stringBuffer.append((char)c);
                         c = in.getChar();
                     }
@@ -755,6 +764,7 @@ public class BabylTokenizer
                     }
                     do {
                         c = toJSNumberChar(c);
+                        readString.append((char)c);
                         stringBuffer.append((char)c);
                         c = in.getChar();
                     } while (isDigit(c));
@@ -763,7 +773,6 @@ public class BabylTokenizer
             in.ungetChar(c);
             String numString = stringBuffer.toString();
 
-            readString = numString;
             double dval;
             if (base == 10 && !isInteger) {
                 try {
