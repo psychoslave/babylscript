@@ -122,4 +122,116 @@ public class BabylGenericTokenizer extends BabylTokenizer
         keywordLookup.put(keywords.get("instanceof"), Id_instanceof);
         keywordLookup.put(keywords.get("synchronized"), Id_synchronized);    
     }
+    
+    public static BabylTokenizer createEnglishTokenizer(ParserErrorReportingBase p, TokenCharStream in, TokenStream ts)
+    {
+        return new BabylGenericTokenizer(p, 
+                in, 
+                ts, 
+                new BabylTokenizer.DecimalNumberReader(),
+                TranslatedNameBindings.getKeywordMap("en"));
+    }
+    public static BabylTokenizer createBengaliTokenizer(ParserErrorReportingBase p, TokenCharStream in, TokenStream ts)
+    {
+        return new BabylGenericTokenizer(p, 
+                in, 
+                ts, 
+                new BabylTokenizer.DecimalNumberReader('.', '\u09E6', '.'),
+                TranslatedNameBindings.getKeywordMap("bn"));
+    }
+    public static BabylTokenizer createHindiTokenizer(ParserErrorReportingBase p, TokenCharStream in, TokenStream ts)
+    {
+        return new BabylGenericTokenizer(p, 
+                in, 
+                ts, 
+                new BabylTokenizer.DecimalNumberReader('.', '\u0966', '.'),
+                TranslatedNameBindings.getKeywordMap("hi"));
+    }
+    public static BabylTokenizer createItalianTokenizer(ParserErrorReportingBase p, TokenCharStream in, TokenStream ts)
+    {
+        return new BabylGenericTokenizer(p, 
+                    in, 
+                    ts, 
+                    new BabylTokenizer.DecimalNumberReader(','),
+                    TranslatedNameBindings.getKeywordMap("it")) {
+                protected boolean isStringDelimiter(int ch)
+                {
+                    return (ch == '\'' || ch == '\"' || ch == '\u00AB');
+                }
+                protected int getMatchingStringDelimiter(int ch)
+                {
+                    if (ch == '\'') return '\'';
+                    if (ch == '\u00AB') return '\u00BB';
+                    return '\"';
+                }
+            };
+    }
+    public static BabylTokenizer createDutchTokenizer(ParserErrorReportingBase p, TokenCharStream in, TokenStream ts)
+    {
+        return new BabylGenericTokenizer(p, 
+                    in, 
+                    ts, 
+                    new BabylTokenizer.DecimalNumberReader(','),
+                    TranslatedNameBindings.getKeywordMap("nl")) {
+                protected boolean isStringDelimiter(int ch)
+                {
+                    return (ch == '\'' || ch == '\"'
+                            || ch == '\u201a' || ch == '\u201e'
+                            || ch == '\u2039' || ch == '\u203a');
+                }
+                protected int getMatchingStringDelimiter(int ch)
+                {
+                    if (ch == '\'') return '\'';
+                    if (ch == '\u2039') return '\u203a';
+                    if (ch == '\u203a') return '\u2039';
+                    if (ch == '\u201a') return '\u2018';
+                    if (ch == '\u201e') return '\u201c';
+                    return '\"';
+                }
+            };
+    }
+    public static BabylTokenizer createPolishTokenizer(ParserErrorReportingBase p, TokenCharStream in, TokenStream ts)
+    {
+        return new BabylGenericTokenizer(p, 
+                    in, 
+                    ts, 
+                    new BabylTokenizer.DecimalNumberReader(','),
+                    TranslatedNameBindings.getKeywordMap("pl")) {
+                protected boolean isStringDelimiter(int ch)
+                {
+                    return (ch == '\'' || ch == '\"'
+                            || ch == '\u201a' || ch == '\u201e'
+                            || ch == '\u00AB' || ch == '\u00BB'
+                            || ch == '\u2039' || ch == '\u203a');
+                }
+                protected int getMatchingStringDelimiter(int ch)
+                {
+                    if (ch == '\'') return '\'';
+                    if (ch == '\u00AB') return '\u00BB';
+                    if (ch == '\u00BB') return '\u00AB';
+                    if (ch == '\u2039') return '\u203a';
+                    if (ch == '\u203a') return '\u2039';
+                    if (ch == '\u201a') return '\u2018';
+                    if (ch == '\u201e') return '\u201c';
+                    return '\"';
+                }
+            };
+    }
+    public static BabylTokenizer createSwahiliTokenizer(ParserErrorReportingBase p, TokenCharStream in, TokenStream ts)
+    {
+        return new BabylGenericTokenizer(p, 
+                    in, 
+                    ts, 
+                    new BabylTokenizer.DecimalNumberReader('.'),
+                    TranslatedNameBindings.getKeywordMap("sw"));
+    }
+    public static BabylTokenizer createMalayIndonesianTokenizer(ParserErrorReportingBase p, TokenCharStream in, TokenStream ts)
+    {
+        return new BabylGenericTokenizer(p, 
+                    in, 
+                    ts, 
+                    new BabylTokenizer.DecimalNumberReader(',', '0', '.'),
+                    TranslatedNameBindings.getKeywordMap("id"));
+    }
+
 }

@@ -47,14 +47,12 @@ package org.mozilla.javascript;
 import java.io.*;
 
 import org.mozilla.javascript.babylscript.ArabicTokenizer;
-import org.mozilla.javascript.babylscript.BengaliTokenizer;
+import org.mozilla.javascript.babylscript.BabylGenericTokenizer;
 import org.mozilla.javascript.babylscript.ChineseTokenizer;
 import org.mozilla.javascript.babylscript.CustomTokenizer;
 import org.mozilla.javascript.babylscript.CustomTokenizerConfig;
-import org.mozilla.javascript.babylscript.EnglishTokenizer;
 import org.mozilla.javascript.babylscript.FrenchTokenizer;
 import org.mozilla.javascript.babylscript.GermanTokenizer;
-import org.mozilla.javascript.babylscript.HindiTokenizer;
 import org.mozilla.javascript.babylscript.JapaneseTokenizer;
 import org.mozilla.javascript.babylscript.KoreanTokenizer;
 import org.mozilla.javascript.babylscript.PortugueseTokenizer;
@@ -84,7 +82,7 @@ public class TokenStream
     {
         this.parser = parser;
         this.in = new TokenCharStream(sourceString, lineno);
-        this.englishTokenizer = new EnglishTokenizer(parser, in, this);
+        this.englishTokenizer = BabylGenericTokenizer.createEnglishTokenizer(parser, in, this);
         this.customLanguageConfig = customLanguageConfig; 
         xmlTokenizer = new XMLTokenizer(parser, in, this);
         if (startLanguageMode == null) startLanguageMode = LanguageMode.en;
@@ -265,13 +263,18 @@ public class TokenStream
         en,
         es,
         fr,
-        ja,
         hi,
+        id,
+        it,
+        ja,
         ko,
+        nl,
+        pl,
         pt,
         test,
         ro,
         ru,
+        sw,
         tr,
         zh
     }
@@ -293,16 +296,26 @@ public class TokenStream
             return LanguageMode.fr;
         else if ("hi".equals(str))
             return LanguageMode.hi;
+        else if ("id".equals(str))
+            return LanguageMode.id;
+        else if ("it".equals(str))
+            return LanguageMode.it;
         else if ("ja".equals(str))
             return LanguageMode.ja;
         else if ("ko".equals(str))
             return LanguageMode.ko;
+        else if ("nl".equals(str))
+            return LanguageMode.nl;
+        else if ("pl".equals(str))
+            return LanguageMode.pl;
         else if ("pt".equals(str))
             return LanguageMode.pt;
         else if ("ro".equals(str))
             return LanguageMode.ro;
         else if ("ru".equals(str))
             return LanguageMode.ru;
+        else if ("sw".equals(str))
+            return LanguageMode.sw;
         else if ("tr".equals(str))
             return LanguageMode.tr;
         else if ("zh".equals(str))
@@ -329,16 +342,26 @@ public class TokenStream
             return "fr";
         case hi:
             return "hi";
+        case id:
+            return "id";
+        case it:
+            return "it";
         case ja:
             return "ja";
         case ko:
             return "ko";
+        case nl:
+            return "nl";
+        case pl:
+            return "pl";
         case pt:
             return "pt";
         case ro:
             return "ro";
         case ru:
             return "ru";
+        case sw:
+            return "sw";
         case tr:
             return "tr";
         case zh:
@@ -357,7 +380,7 @@ public class TokenStream
             currentTokenizer = new ArabicTokenizer(parser, in, this);
             break;
         case bn:
-            currentTokenizer = new BengaliTokenizer(parser, in, this);
+            currentTokenizer = BabylGenericTokenizer.createBengaliTokenizer(parser, in, this);
             break;
         case de:
             currentTokenizer = new GermanTokenizer(parser, in, this);
@@ -372,13 +395,25 @@ public class TokenStream
             currentTokenizer = new FrenchTokenizer(parser, in, this);
             break;
         case hi:
-            currentTokenizer = new HindiTokenizer(parser, in, this);
+            currentTokenizer = BabylGenericTokenizer.createHindiTokenizer(parser, in, this);
+            break;
+        case id:
+            currentTokenizer = BabylGenericTokenizer.createMalayIndonesianTokenizer(parser, in, this);
+            break;
+        case it:
+            currentTokenizer = BabylGenericTokenizer.createItalianTokenizer(parser, in, this);
             break;
         case ja:
             currentTokenizer = new JapaneseTokenizer(parser, in, this);
             break;
         case ko:
             currentTokenizer = new KoreanTokenizer(parser, in, this);
+            break;
+        case nl:
+            currentTokenizer = BabylGenericTokenizer.createDutchTokenizer(parser, in, this);
+            break;
+        case pl:
+            currentTokenizer = BabylGenericTokenizer.createPolishTokenizer(parser, in, this);
             break;
         case pt:
             currentTokenizer = new PortugueseTokenizer(parser, in, this);
@@ -388,6 +423,9 @@ public class TokenStream
             break;
         case ru:
             currentTokenizer = new RussianTokenizer(parser, in, this);
+            break;
+        case sw:
+            currentTokenizer = BabylGenericTokenizer.createSwahiliTokenizer(parser, in, this);
             break;
         case tr:
             currentTokenizer = new TurkishTokenizer(parser, in, this);
