@@ -42,7 +42,7 @@
     support JDK 1.4.
 -->
 
-<project name="Rhino" default="help" basedir=".">
+<project name="RhinoGWT" default="help" basedir=".">
 
   <target name="properties">
     <!-- Allow user to override default settings from build.properties -->
