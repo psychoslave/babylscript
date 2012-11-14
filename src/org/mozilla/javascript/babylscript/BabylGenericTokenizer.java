@@ -175,14 +175,11 @@ public class BabylGenericTokenizer extends BabylTokenizer
                 protected boolean isStringDelimiter(int ch)
                 {
                     return (ch == '\'' || ch == '\"'
-                            || ch == '\u201a' || ch == '\u201e'
-                            || ch == '\u2039' || ch == '\u203a');
+                            || ch == '\u201a' || ch == '\u201e');
                 }
                 protected int getMatchingStringDelimiter(int ch)
                 {
                     if (ch == '\'') return '\'';
-                    if (ch == '\u2039') return '\u203a';
-                    if (ch == '\u203a') return '\u2039';
                     if (ch == '\u201a') return '\u2018';
                     if (ch == '\u201e') return '\u201c';
                     return '\"';
