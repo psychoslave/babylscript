@@ -130,7 +130,7 @@ public class TranslatedNameBindings
         }
     }
 
-    public static void initCustomTranslation(Scriptable scope, Properties translations)
+    public static void initCustomTranslation(Scriptable scope, Map<String, String> translations)
     {
         String lang = "test";
         Map<String, String> map = propertiesToMap(translations, langResourceMap.get("en"));
@@ -626,19 +626,18 @@ public class TranslatedNameBindings
             return keywordResourceMap.get("en");
     }
 
-    static Map<String, String> propertiesToMap(Properties translations, Map<String, String> base)
+    static Map<String, String> propertiesToMap(Map<String, String> translations, Map<String, String> base)
     {
         Map<String, String> map = new HashMap<String, String>();
         for (String key: base.keySet())
         {
             if (translations.containsKey(key))
-                map.put(key, translations.getProperty(key));
+                map.put(key, translations.get(key));
             else
                 map.put(key, key);
         }
         return map;
     }
-
     
     static Map<String, String> arrayToMap(String [] arr)
     {

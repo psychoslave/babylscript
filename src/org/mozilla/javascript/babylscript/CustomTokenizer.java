@@ -45,6 +45,7 @@
 package org.mozilla.javascript.babylscript;
 
 import java.util.Enumeration;
+import java.util.Map;
 import java.util.Properties;
 import java.util.ResourceBundle;
 
@@ -56,8 +57,8 @@ public class CustomTokenizer extends BabylGenericTokenizer
 {
     static class CustomPropertyResourceBundle extends ResourceBundle
     {
-        Properties translations;
-        CustomPropertyResourceBundle(Properties translations)  
+        Map<String, String> translations;
+        CustomPropertyResourceBundle(Map<String, String> translations)  
         {
             this.translations = translations;
         }
@@ -70,7 +71,7 @@ public class CustomTokenizer extends BabylGenericTokenizer
         }
         public Enumeration<String> getKeys() 
         {
-            return (Enumeration<String>)translations.propertyNames();
+            return (Enumeration<String>)translations.keySet();
         }
     }
     

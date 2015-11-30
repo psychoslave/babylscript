@@ -54,6 +54,7 @@ import java.lang.reflect.*;
 import java.text.DecimalFormatSymbols;
 import java.text.MessageFormat;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Properties;
 import java.util.ResourceBundle;
 
@@ -202,7 +203,7 @@ public class ScriptRuntime {
         }
     }
 
-    public static void initCustomLanguageObjectTranslations(Context cx, Scriptable scope, Properties translations)
+    public static void initCustomLanguageObjectTranslations(Context cx, Scriptable scope, Map<String, String> translations)
     {
         if (translations == null) return;
         TranslatedNameBindings.initCustomTranslation(scope, translations);

@@ -1072,7 +1072,7 @@ public class Context
     }
 
     // I'm pretty sure it's ok to call this multiple times with different translations
-    public void initCustomLanguageObjectTranslations(Scriptable scope, Properties translations)
+    public void initCustomLanguageObjectTranslations(Scriptable scope, Map<String, String> translations)
     {
         ScriptRuntime.initCustomLanguageObjectTranslations(this, scope, translations);
     }
