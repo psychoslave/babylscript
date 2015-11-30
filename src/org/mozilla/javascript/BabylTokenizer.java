@@ -825,8 +825,8 @@ public class BabylTokenizer
     private final static int[] DOUBLE_QUOTE_MATCH = new int[] {'\"'};
     private final static int[] LEFT_GUILLEMET_MATCH = new int[] {'\u00BB'};
     private final static int[] RIGHT_GUILLEMET_MATCH = new int[] {'\u00AB'};
-    private final static int[] LEFTRIGHT_SINGLE_QUOTE_MATCH = new int[] {'\u2018', '\u2019'};
-    private final static int[] LEFTRIGHT_DOUBLE_QUOTE_MATCH = new int[] {'\u201c', '\u201d'};
+    private final static int[] LEFTRIGHT_SINGLE_QUOTE_MATCH = new int[] {'\u2018', '\u2019', '\''};
+    private final static int[] LEFTRIGHT_DOUBLE_QUOTE_MATCH = new int[] {'\u201c', '\u201d', '\"'};
     private final static int[] LOW_SINGLE_QUOTE_MATCH = new int[] {'\u201a', '\u201b'};
     private final static int[] LOW_DOUBLE_QUOTE_MATCH = new int[] {'\u201c', '\u201d'};
     private final static int[] LEFT_SINGLE_ARROW_MATCH = new int[] {'\u2039'};
