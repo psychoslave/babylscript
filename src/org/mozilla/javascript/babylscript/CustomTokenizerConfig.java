@@ -7,7 +7,7 @@ public class CustomTokenizerConfig
 {
     public CustomTokenizerConfig()
     {
-        keywords = new HashMap<>();
+        keywords = new HashMap<String, String>();
     }
     public Map<String, String> keywords;    
 }
