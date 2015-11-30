@@ -3,6 +3,8 @@ package com.babylscript.my2iu;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 import org.junit.After;
@@ -55,8 +57,8 @@ public class CustomLanguageTest
     public void changeAKeywordInTestLanguage() 
     {
         CustomTokenizerConfig config = new CustomTokenizerConfig();
-        config.keywords.setProperty("if", "si");
-        config.keywords.setProperty("else", "sinon");
+        config.keywords.put("if", "si");
+        config.keywords.put("else", "sinon");
         Context cx = Context.enter();
         cx.setCustomTokenizerConfig(config);
         cx.setOptimizationLevel(-1);
@@ -71,8 +73,8 @@ public class CustomLanguageTest
     @Test
     public void runWithCustomObjectTranslations() 
     {
-        Properties objects = new Properties();
-        objects.setProperty("indexOf", "blahblah");
+        Map<String, String> objects = new HashMap<>();
+        objects.put("indexOf", "blahblah");
         Context cx = Context.enter();
         cx.setLanguageMode("test");
         cx.setOptimizationLevel(-1);
@@ -103,8 +105,8 @@ public class CustomLanguageTest
     public void startInTestLanguage2() 
     {
         CustomTokenizerConfig config = new CustomTokenizerConfig();
-        config.keywords.setProperty("if", "si");
-        config.keywords.setProperty("else", "sinon");
+        config.keywords.put("if", "si");
+        config.keywords.put("else", "sinon");
         Context cx = Context.enter();
         cx.setLanguageMode("test");
         cx.setCustomTokenizerConfig(config);

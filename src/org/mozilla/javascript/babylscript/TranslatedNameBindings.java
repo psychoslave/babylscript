@@ -626,7 +626,6 @@ public class TranslatedNameBindings
         }
         return map;
     }
-
     
     static Map<String, String> arrayToMap(String [] arr)
     {

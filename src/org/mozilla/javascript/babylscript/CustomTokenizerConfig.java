@@ -1,14 +1,13 @@
 package org.mozilla.javascript.babylscript;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 
 public class CustomTokenizerConfig 
 {
     public CustomTokenizerConfig()
     {
-//        keywords = new Properties();
+        keywords = new HashMap<String, String>();
     }
-    public Map<String, String> keywords;
-//    public Properties keywords;    
+    public Map<String, String> keywords;    
 }
