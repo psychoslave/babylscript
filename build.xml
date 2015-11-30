@@ -225,6 +225,7 @@
   </target>
 
   <target name="babylgwt" depends="init">
+  	<echo message="${gwtdir}"/>
   	<mkdir dir="${build.dir}/gwtclasses"/>
   	<javac destdir="${build.dir}/gwtclasses" srcdir="src"
   		encoding="UTF-8">
