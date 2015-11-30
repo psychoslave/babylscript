@@ -6,7 +6,6 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.PropertyResourceBundle;
@@ -15,7 +14,6 @@ import java.util.ResourceBundle;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
-import org.mozilla.javascript.TokenStream;
 import org.mozilla.javascript.babylscript.gen.Keywords;
 import org.mozilla.javascript.babylscript.gen.Objects;
 

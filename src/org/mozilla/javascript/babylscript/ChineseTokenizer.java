@@ -45,8 +45,6 @@
 package org.mozilla.javascript.babylscript;
 
 import java.io.IOException;
-import java.util.Locale;
-import java.util.ResourceBundle;
 
 import org.mozilla.javascript.BabylTokenizer;
 import org.mozilla.javascript.ParserErrorReportingBase;
@@ -80,14 +78,7 @@ public class ChineseTokenizer extends BabylGenericTokenizer
     protected boolean isStringDelimiter(int ch)
     {
         return (ch == '\'' || ch == '\"' || ch == '\u300c' 
-                || ch == '\ufe41' || ch == '\u300a');
-    }
-    protected int getMatchingStringDelimiter(int ch)
-    {
-        if (ch == '\'') return '\'';
-        if (ch == '\u300c') return '\u300d';
-        if (ch == '\ufe41') return '\ufe42';
-        if (ch == '\u300a') return '\u300b';
-        return '\"';
+                || ch == '\ufe41' || ch == '\u300a'
+                || ch == '\u2018' || ch == '\u2019' || ch == '\u201c' || ch == '\u201d');
     }
 }

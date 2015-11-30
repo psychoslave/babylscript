@@ -44,9 +44,6 @@
 
 package org.mozilla.javascript.babylscript;
 
-import java.util.Locale;
-import java.util.ResourceBundle;
-
 import org.mozilla.javascript.BabylTokenizer;
 import org.mozilla.javascript.ParserErrorReportingBase;
 import org.mozilla.javascript.TokenCharStream;

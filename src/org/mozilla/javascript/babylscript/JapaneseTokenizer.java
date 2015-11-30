@@ -45,8 +45,6 @@
 package org.mozilla.javascript.babylscript;
 
 import java.io.IOException;
-import java.util.Locale;
-import java.util.ResourceBundle;
 
 import org.mozilla.javascript.BabylTokenizer;
 import org.mozilla.javascript.ParserErrorReportingBase;
@@ -80,13 +78,7 @@ public class JapaneseTokenizer extends BabylGenericTokenizer
     protected boolean isStringDelimiter(int ch)
     {
         return (ch == '\'' || ch == '\"' || ch == '\u300c' 
-                || ch == '\u300e');
-    }
-    protected int getMatchingStringDelimiter(int ch)
-    {
-        if (ch == '\'') return '\'';
-        if (ch == '\u300c') return '\u300d';
-        if (ch == '\u300e') return '\u300f';
-        return '\"';
+                || ch == '\u300e'
+                || ch == '\u2018' || ch == '\u2019' || ch == '\u201c' || ch == '\u201d');
     }
 }

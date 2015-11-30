@@ -44,9 +44,6 @@
 
 package org.mozilla.javascript.babylscript;
 
-import java.util.Locale;
-import java.util.ResourceBundle;
-
 import org.mozilla.javascript.BabylTokenizer;
 import org.mozilla.javascript.ParserErrorReportingBase;
 import org.mozilla.javascript.TokenCharStream;
@@ -66,12 +63,6 @@ public class SpanishTokenizer extends BabylGenericTokenizer
 
     protected boolean isStringDelimiter(int ch)
     {
-        return (ch == '\'' || ch == '\"' || ch == '\u00AB');
-    }
-    protected int getMatchingStringDelimiter(int ch)
-    {
-        if (ch == '\'') return '\'';
-        if (ch == '\u00AB') return '\u00BB';
-        return '\"';
+        return (ch == '\'' || ch == '\"' || ch == '\u00AB' || ch == '\u2018' || ch == '\u2019' || ch == '\u201c' || ch == '\u201d');
     }
 }

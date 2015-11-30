@@ -44,9 +44,6 @@
 
 package org.mozilla.javascript.babylscript;
 
-import java.util.Locale;
-import java.util.ResourceBundle;
-
 import org.mozilla.javascript.BabylTokenizer;
 import org.mozilla.javascript.ParserErrorReportingBase;
 import org.mozilla.javascript.TokenCharStream;
@@ -68,17 +65,7 @@ public class GermanTokenizer extends BabylGenericTokenizer
         return (ch == '\'' || ch == '\"'
                 || ch == '\u201a' || ch == '\u201e'
                 || ch == '\u00AB' || ch == '\u00BB'
-                || ch == '\u2039' || ch == '\u203a');
-    }
-    protected int getMatchingStringDelimiter(int ch)
-    {
-        if (ch == '\'') return '\'';
-        if (ch == '\u00AB') return '\u00BB';
-        if (ch == '\u00BB') return '\u00AB';
-        if (ch == '\u2039') return '\u203a';
-        if (ch == '\u203a') return '\u2039';
-        if (ch == '\u201a') return '\u2018';
-        if (ch == '\u201e') return '\u201c';
-        return '\"';
+                || ch == '\u2039' || ch == '\u203a'
+                || ch == '\u2018' || ch == '\u2019' || ch == '\u201c' || ch == '\u201d');
     }
 }
