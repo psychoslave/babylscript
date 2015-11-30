@@ -262,14 +262,14 @@ public class BabylTokenizer
                 // are any escaped characters in the string, we revert to
                 // building it out of a StringBuffer.
 
-                int quoteChar = getMatchingStringDelimiter(c);
+                int [] quoteChars = getMatchingStringDelimiter(c);
                 setStringBufferTop(0);
 
                 // Turn of normalization so we can put the raw character stream into the string
                 in.setIsNormalizeChars(false);  
                 
                 c = in.getChar();
-            strLoop: while (c != quoteChar && TokenCharStream.normalizeChar(c) != quoteChar) {
+            strLoop: while (!intArrayContains(quoteChars, c) && !intArrayContains(quoteChars, TokenCharStream.normalizeChar(c))) {
                     if (c == '\n' || c == TokenCharStream.EOF_CHAR) {
                         in.ungetChar(c);
                         parser.addError("msg.unterminated.string.lit");
@@ -818,12 +818,50 @@ public class BabylTokenizer
  
     protected boolean isStringDelimiter(int ch)
     {
-        return (ch == '\'' || ch == '\"');
+        return (ch == '\'' || ch == '\"' || ch == '\u2018' || ch == '\u2019' || ch == '\u201c' || ch == '\u201d');
     }
-    protected int getMatchingStringDelimiter(int ch)
+    
+    private final static int[] SINGLE_QUOTE_MATCH = new int[] {'\''};
+    private final static int[] DOUBLE_QUOTE_MATCH = new int[] {'\"'};
+    private final static int[] LEFT_GUILLEMET_MATCH = new int[] {'\u00BB'};
+    private final static int[] RIGHT_GUILLEMET_MATCH = new int[] {'\u00AB'};
+    private final static int[] LEFTRIGHT_SINGLE_QUOTE_MATCH = new int[] {'\u2018', '\u2019'};
+    private final static int[] LEFTRIGHT_DOUBLE_QUOTE_MATCH = new int[] {'\u201c', '\u201d'};
+    private final static int[] LOW_SINGLE_QUOTE_MATCH = new int[] {'\u201a', '\u201b'};
+    private final static int[] LOW_DOUBLE_QUOTE_MATCH = new int[] {'\u201c', '\u201d'};
+    private final static int[] LEFT_SINGLE_ARROW_MATCH = new int[] {'\u2039'};
+    private final static int[] RIGHT_SINGLE_ARROW_MATCH = new int[] {'\u203a'};
+    private final static int[] LEFT_CJK_DOUBLE_ARROW_MATCH = new int[] {'\u300b'};
+    private final static int[] LEFT_CORNER_MATCH = new int[] {'\u300d'};
+    private final static int[] LEFT_WHITE_CORNER_MATCH = new int[] {'\u300f'};
+    private final static int[] LEFT_VERTICAL_CORNER_MATCH = new int[] {'\ufe42'};
+    private static boolean intArrayContains(int[] array, int val)
     {
-        if (ch == '\'') return '\'';
-        return '\"';
+        for (int n: array)
+            if (val == n)
+                return true;
+        return false;
+    }
+    
+    protected int[] getMatchingStringDelimiter(int ch)
+    {
+        if (ch == '\'') return SINGLE_QUOTE_MATCH;
+        else if (ch == '\"') return DOUBLE_QUOTE_MATCH;
+        else if (ch == '\u00AB') return LEFT_GUILLEMET_MATCH;  // double angle
+        else if (ch == '\u00BB') return RIGHT_GUILLEMET_MATCH;
+        else if (ch == '\u2018') return LEFTRIGHT_SINGLE_QUOTE_MATCH;  // left-right single quotation
+        else if (ch == '\u2019') return LEFTRIGHT_SINGLE_QUOTE_MATCH;
+        else if (ch == '\u201c') return LEFTRIGHT_DOUBLE_QUOTE_MATCH;  // left-right double quotation
+        else if (ch == '\u201d') return LEFTRIGHT_DOUBLE_QUOTE_MATCH;
+        else if (ch == '\u201a') return LOW_SINGLE_QUOTE_MATCH;  // low single quotation
+        else if (ch == '\u201e') return LOW_DOUBLE_QUOTE_MATCH;  // low double quotation
+        else if (ch == '\u203a') return LEFT_SINGLE_ARROW_MATCH;  // single angle
+        else if (ch == '\u2039') return RIGHT_SINGLE_ARROW_MATCH;  
+        else if (ch == '\u300a') return LEFT_CJK_DOUBLE_ARROW_MATCH;  // double angle
+        else if (ch == '\u300c') return LEFT_CORNER_MATCH;  // corner
+        else if (ch == '\u300e') return LEFT_WHITE_CORNER_MATCH;  // white corner
+        else if (ch == '\ufe41') return LEFT_VERTICAL_CORNER_MATCH;  // vertical corner
+        return DOUBLE_QUOTE_MATCH;
     }
     protected boolean isIdentifierStart(int ch)
     {

@@ -139,4 +139,13 @@ public class BabylscriptScannerTest
    {
       assertEquals("1.25", evalStringToString("---ar--- \u0661\u066B\u0662\u0665"));
    }
+   
+   @Test
+   public void inconsistentQuotations()
+   {
+      assertEquals("hi", evalStringToString("\u2018hi\u2019"));
+      assertEquals("hi", evalStringToString("\u201Dhi\u201C"));
+      assertEquals("hi", evalStringToString("\u201Chi\u201D"));
+      assertEquals(" hi", evalStringToString("\u2019 hi\u2018"));
+   }
 }
