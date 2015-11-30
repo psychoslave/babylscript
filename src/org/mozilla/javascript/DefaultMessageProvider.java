@@ -3,7 +3,7 @@ package org.mozilla.javascript;
 import java.text.MessageFormat;
 import java.util.ResourceBundle;
 
-import org.apache.harmony.Locale;
+import java.util.Locale;
 import org.mozilla.javascript.ScriptRuntime.MessageProvider;
 import org.mozilla.javascript.resources.Messages;
 

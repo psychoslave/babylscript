@@ -40,8 +40,11 @@
 package org.mozilla.javascript;
 
 import java.lang.reflect.AccessibleObject;
+import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.util.Iterator;
+
+import com.google.gwt.core.shared.GwtIncompatible;
 
 
 public class VMBridge
@@ -200,15 +203,15 @@ public class VMBridge
      * @param proxyHelper The result of the previous call to
      *        {@link #getInterfaceProxyHelper(ContextFactory, Class[])}.
      */
-//    protected Object newInterfaceProxy(Object proxyHelper,
-//                                       ContextFactory cf,
-//                                       InterfaceAdapter adapter,
-//                                       Object target,
-//                                       Scriptable topScope)
-//    {
-//        throw Context.reportRuntimeError(
-//            "VMBridge.newInterfaceProxy is not supported");
-//    }
+    @GwtIncompatible protected Object newInterfaceProxy(Object proxyHelper,
+                                       ContextFactory cf,
+                                       InterfaceAdapter adapter,
+                                       Object target,
+                                       Scriptable topScope)
+    {
+        throw Context.reportRuntimeError(
+            "VMBridge.newInterfaceProxy is not supported");
+    }
 //  From Java 1.5 version
 //================
 //  @Override
@@ -243,6 +246,16 @@ public class VMBridge
 //      return proxy;
 //  }
 
+    /**
+     * Returns whether or not a given member (method or constructor)
+     * has variable arguments.
+     * Variable argument methods have only been supported in Java since
+     * JDK 1.5.
+     */
+    @GwtIncompatible protected boolean isVarArgs(Member member)
+    {
+       return false;
+    }
 
     /**
      * If "obj" is a java.util.Iterator or a java.lang.Iterable, return a

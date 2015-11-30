@@ -25,4 +25,5 @@
   <source path='mozilla/javascript/babylscript/resources'/>
   <source path='apache/harmony'/>    
 
+  <super-source path="gwt" />
 </module>

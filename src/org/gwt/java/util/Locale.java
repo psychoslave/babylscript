@@ -15,7 +15,7 @@
  *  limitations under the License.
  */
 
-package org.apache.harmony;
+package java.util;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;

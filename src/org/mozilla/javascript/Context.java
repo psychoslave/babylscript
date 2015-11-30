@@ -60,7 +60,9 @@ import org.mozilla.javascript.babylscript.CustomTokenizerConfig;
 import org.mozilla.javascript.debug.DebuggableScript;
 import org.mozilla.javascript.debug.Debugger;
 import org.mozilla.javascript.regexp.RegExpImpl;
-import org.apache.harmony.Locale;
+import java.util.Locale;
+
+import com.google.gwt.core.shared.GwtIncompatible;
 
 /**
  * This class represents the runtime context of an executing script.
@@ -1072,10 +1074,10 @@ public class Context
     }
 
     // I'm pretty sure it's ok to call this multiple times with different translations
-//    public void initCustomLanguageObjectTranslations(Scriptable scope, Properties translations)
-//    {
-//        ScriptRuntime.initCustomLanguageObjectTranslations(this, scope, translations);
-//    }
+    public void initCustomLanguageObjectTranslations(Scriptable scope, Map<String, String> translations)
+    {
+        ScriptRuntime.initCustomLanguageObjectTranslations(this, scope, translations);
+    }
     
     /**
      * Get the singleton object that represents the JavaScript Undefined value.
@@ -1739,11 +1741,11 @@ public class Context
      * @return the converted value
      * @throws EvaluatorException if the conversion cannot be performed
      */
-//    public static Object jsToJava(Object value, Class<?> desiredType)
-//        throws EvaluatorException
-//    {
-//        return NativeJavaObject.coerceTypeImpl(desiredType, value);
-//    }
+    @GwtIncompatible public static Object jsToJava(Object value, Class<?> desiredType)
+        throws EvaluatorException
+    {
+        return NativeJavaObject.coerceTypeImpl(desiredType, value);
+    }
 
     /**
      * @deprecated

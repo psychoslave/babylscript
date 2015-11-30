@@ -45,14 +45,16 @@ package org.mozilla.javascript;
 import java.util.Date;
 import java.text.DateFormat;
 
-import com.google.gwt.core.shared.GwtIncompatible;
+import com.google.gwt.i18n.client.DateTimeFormat;
+import com.google.gwt.i18n.client.DateTimeFormat.PredefinedFormat;
+import com.google.gwt.i18n.client.TimeZone;
 
 /**
  * This class implements the Date native object.
  * See ECMA 15.9.
  * @author Mike McCabe
  */
-@GwtIncompatible final class NativeDate extends IdScriptableObject
+final class NativeDate extends IdScriptableObject
 {
     static final long serialVersionUID = -8307438915861678966L;
 
@@ -73,11 +75,19 @@ import com.google.gwt.core.shared.GwtIncompatible;
         if (thisTimeZone == null) {
             // j.u.TimeZone is synchronized, so setting class statics from it
             // should be OK.
-            thisTimeZone = java.util.TimeZone.getDefault();
-            LocalTZA = thisTimeZone.getRawOffset();
+            thisTimeZone = TimeZone.createTimeZone(JSNI_tz());
+            LocalTZA = thisTimeZone.getStandardOffset() * 60 * 1000;
         }
     }
 
+    // GWT has local timezone information, so we'll just grab it out from
+    // JavaScript (this is still not quite right because the JS timezone info
+    // factors in daylight savings, but the Java one doesn't)
+    public native int JSNI_tz() /*-{
+        return new Date().getTimezoneOffset();  
+    }-*/;
+
+    
     @Override
     public String getClassName()
     {
@@ -579,7 +589,7 @@ import com.google.gwt.core.shared.GwtIncompatible;
         }
         if (!TZO_WORKAROUND) {
             Date date = new Date((long) t);
-            if (thisTimeZone.inDaylightTime(date))
+            if (thisTimeZone.isDaylightTime(date))
                 return msPerHour;
             else
                 return 0;
@@ -596,12 +606,8 @@ import com.google.gwt.core.shared.GwtIncompatible;
             t += LocalTZA + (HourFromTime(t) <= 2 ? msPerHour : 0);
 
             int year = YearFromTime(t);
-            double offset = thisTimeZone.getOffset(year > 0 ? 1 : 0,
-                                                   year,
-                                                   MonthFromTime(t),
-                                                   DateFromTime(t),
-                                                   WeekDay(t),
-                                                   (int)TimeWithinDay(t));
+            Date date = new Date((long) t);
+            double offset = thisTimeZone.getOffset(date);
 
             if ((offset - LocalTZA) != 0)
                 return msPerHour;
@@ -1048,7 +1054,7 @@ import com.google.gwt.core.shared.GwtIncompatible;
             append0PaddedUint(result, offset, 4);
 
             if (timeZoneFormatter == null)
-                timeZoneFormatter = new java.text.SimpleDateFormat("zzz");
+                timeZoneFormatter = DateTimeFormat.getFormat("zzz");
 
             // Find an equivalent year before getting the timezone
             // comment.  See DaylightSavingTA.
@@ -1108,27 +1114,26 @@ import com.google.gwt.core.shared.GwtIncompatible;
 
     private static String toLocale_helper(double t, int methodId)
     {
-        java.text.DateFormat formatter;
+        DateTimeFormat formatter;
         switch (methodId) {
           case Id_toLocaleString:
             if (localeDateTimeFormatter == null) {
                 localeDateTimeFormatter
-                    = DateFormat.getDateTimeInstance(DateFormat.LONG,
-                                                     DateFormat.LONG);
+                    = DateTimeFormat.getFormat(PredefinedFormat.DATE_TIME_LONG);
             }
             formatter = localeDateTimeFormatter;
             break;
           case Id_toLocaleTimeString:
             if (localeTimeFormatter == null) {
                 localeTimeFormatter
-                    = DateFormat.getTimeInstance(DateFormat.LONG);
+                    = DateTimeFormat.getFormat(PredefinedFormat.TIME_LONG);
             }
             formatter = localeTimeFormatter;
             break;
           case Id_toLocaleDateString:
             if (localeDateFormatter == null) {
                 localeDateFormatter
-                    = DateFormat.getDateInstance(DateFormat.LONG);
+                    = DateTimeFormat.getFormat(PredefinedFormat.DATE_LONG);
             }
             formatter = localeDateFormatter;
             break;
@@ -1599,13 +1604,14 @@ import com.google.gwt.core.shared.GwtIncompatible;
 // #/string_id_map#
 
     /* cached values */
-    private static java.util.TimeZone thisTimeZone;
+    private static TimeZone thisTimeZone;
     private static double LocalTZA;
-    private static java.text.DateFormat timeZoneFormatter;
-    private static java.text.DateFormat localeDateTimeFormatter;
-    private static java.text.DateFormat localeDateFormatter;
-    private static java.text.DateFormat localeTimeFormatter;
+    private static DateTimeFormat timeZoneFormatter;
+    private static DateTimeFormat localeDateTimeFormatter;
+    private static DateTimeFormat localeDateFormatter;
+    private static DateTimeFormat localeTimeFormatter;
 
     private double date;
 }
+
 

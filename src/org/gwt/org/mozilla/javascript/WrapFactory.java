@@ -55,7 +55,7 @@ import com.google.gwt.core.shared.GwtIncompatible;
  * @see org.mozilla.javascript.Context#setWrapFactory(WrapFactory)
  * @since 1.5 Release 4
  */
-@GwtIncompatible public class WrapFactory
+public class WrapFactory
 {
     /**
      * Wrap the object.
@@ -85,10 +85,10 @@ import com.google.gwt.core.shared.GwtIncompatible;
             return obj;
         }
         if (staticType != null && staticType.isPrimitive()) {
-            if (staticType == Void.TYPE)
-                return Undefined.instance;
-            if (staticType == Character.TYPE)
-                return new Integer(((Character) obj).charValue());
+//            if (staticType == Void.TYPE)
+//                return Undefined.instance;
+//            if (staticType == Character.TYPE)
+//                return new Integer(((Character) obj).charValue());
             return obj;
         }
         if (!isJavaPrimitiveWrap()) {
@@ -100,11 +100,12 @@ import com.google.gwt.core.shared.GwtIncompatible;
                 return String.valueOf(((Character)obj).charValue());
             }
         }
-        Class<?> cls = obj.getClass();
-        if (cls.isArray()) {
-            return NativeJavaArray.wrap(scope, obj);
-        }
-        return wrapAsJavaObject(cx, scope, obj, staticType);
+//        Class<?> cls = obj.getClass();
+//        if (cls.isArray()) {
+//            return NativeJavaArray.wrap(scope, obj);
+//        }
+        return null;
+//        return wrapAsJavaObject(cx, scope, obj, staticType);
     }
 
     /**
@@ -114,7 +115,7 @@ import com.google.gwt.core.shared.GwtIncompatible;
      * @param obj the object to be wrapped
      * @return the wrapped value.
      */
-    public Scriptable wrapNewObject(Context cx, Scriptable scope, Object obj)
+    @GwtIncompatible public Scriptable wrapNewObject(Context cx, Scriptable scope, Object obj)
     {
         if (obj instanceof Scriptable) {
             return (Scriptable)obj;
@@ -144,7 +145,7 @@ import com.google.gwt.core.shared.GwtIncompatible;
                 object based on its class, staticType will be used instead.
      * @return the wrapped value which shall not be null
      */
-    public Scriptable wrapAsJavaObject(Context cx, Scriptable scope,
+    @GwtIncompatible public Scriptable wrapAsJavaObject(Context cx, Scriptable scope,
                                        Object javaObject, Class<?> staticType)
     {
         Scriptable wrap;
@@ -171,15 +172,15 @@ import com.google.gwt.core.shared.GwtIncompatible;
     /**
      * @see #isJavaPrimitiveWrap()
      */
-    public final void setJavaPrimitiveWrap(boolean value)
-    {
-        Context cx = Context.getCurrentContext();
-        if (cx != null && cx.isSealed()) {
-            Context.onSealedMutation();
-        }
-        javaPrimitiveWrap = value;
-    }
-
+//    public final void setJavaPrimitiveWrap(boolean value)
+//    {
+//        Context cx = Context.getCurrentContext();
+//        if (cx != null && cx.isSealed()) {
+//            Context.onSealedMutation();
+//        }
+//        javaPrimitiveWrap = value;
+//    }
+//
     private boolean javaPrimitiveWrap = true;
 
 }

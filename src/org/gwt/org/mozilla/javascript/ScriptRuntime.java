@@ -52,13 +52,13 @@ package org.mozilla.javascript;
 import java.io.Serializable;
 import java.lang.reflect.*;
 import java.text.DecimalFormatSymbols;
-import java.text.MessageFormat;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
-import java.util.ResourceBundle;
 
 import org.mozilla.javascript.babylscript.TranslatedNameBindings;
+import java.util.Locale;
+import org.apache.harmony.Character;
+
 
 /**
  * This is the class that implements the runtime.
@@ -140,45 +140,45 @@ public class ScriptRuntime {
      */
 
     public final static Class<?>
-        BooleanClass      = Kit.classOrNull("java.lang.Boolean"),
-        ByteClass         = Kit.classOrNull("java.lang.Byte"),
-        CharacterClass    = Kit.classOrNull("java.lang.Character"),
-        ClassClass        = Kit.classOrNull("java.lang.Class"),
-        DoubleClass       = Kit.classOrNull("java.lang.Double"),
-        FloatClass        = Kit.classOrNull("java.lang.Float"),
-        IntegerClass      = Kit.classOrNull("java.lang.Integer"),
-        LongClass         = Kit.classOrNull("java.lang.Long"),
-        NumberClass       = Kit.classOrNull("java.lang.Number"),
-        ObjectClass       = Kit.classOrNull("java.lang.Object"),
-        ShortClass        = Kit.classOrNull("java.lang.Short"),
-        StringClass       = Kit.classOrNull("java.lang.String"),
-        DateClass         = Kit.classOrNull("java.util.Date");
+        BooleanClass      = Boolean.class,//Kit.classOrNull("java.lang.Boolean"),
+        ByteClass         = Byte.class,//Kit.classOrNull("java.lang.Byte"),
+        CharacterClass    = java.lang.Character.class,//Kit.classOrNull("java.lang.Character"),
+        ClassClass        = Class.class,//Kit.classOrNull("java.lang.Class"),
+        DoubleClass       = Double.class,//Kit.classOrNull("java.lang.Double"),
+        FloatClass        = Float.class,//Kit.classOrNull("java.lang.Float"),
+        IntegerClass      = Integer.class,//Kit.classOrNull("java.lang.Integer"),
+        LongClass         = Long.class,//Kit.classOrNull("java.lang.Long"),
+        NumberClass       = Number.class,//Kit.classOrNull("java.lang.Number"),
+        ObjectClass       = Object.class,//Kit.classOrNull("java.lang.Object"),
+        ShortClass        = Short.class,//Kit.classOrNull("java.lang.Short"),
+        StringClass       = String.class,//Kit.classOrNull("java.lang.String"),
+        DateClass         = java.util.Date.class;//Kit.classOrNull("java.util.Date");
 
     public final static Class<?>
         ContextClass
-            = Kit.classOrNull("org.mozilla.javascript.Context"),
+            = Context.class,//Kit.classOrNull("org.mozilla.javascript.Context"),
         ContextFactoryClass
-            = Kit.classOrNull("org.mozilla.javascript.ContextFactory"),
+            = ContextFactory.class,//Kit.classOrNull("org.mozilla.javascript.ContextFactory"),
         FunctionClass
-            = Kit.classOrNull("org.mozilla.javascript.Function"),
+            = org.mozilla.javascript.Function.class,//Kit.classOrNull("org.mozilla.javascript.Function"),
         ScriptableObjectClass
-            = Kit.classOrNull("org.mozilla.javascript.ScriptableObject");
+            = ScriptableObject.class;//Kit.classOrNull("org.mozilla.javascript.ScriptableObject");
     public static final Class<Scriptable> ScriptableClass =
         Scriptable.class;
 
 
     private static final String[] lazilyNames = {
         "RegExp",        "org.mozilla.javascript.regexp.NativeRegExp",
-        "Packages",      "org.mozilla.javascript.NativeJavaTopPackage",
-        "java",          "org.mozilla.javascript.NativeJavaTopPackage",
-        "javax",         "org.mozilla.javascript.NativeJavaTopPackage",
-        "org",           "org.mozilla.javascript.NativeJavaTopPackage",
-        "com",           "org.mozilla.javascript.NativeJavaTopPackage",
-        "edu",           "org.mozilla.javascript.NativeJavaTopPackage",
-        "net",           "org.mozilla.javascript.NativeJavaTopPackage",
-        "getClass",      "org.mozilla.javascript.NativeJavaTopPackage",
-        "JavaAdapter",   "org.mozilla.javascript.JavaAdapter",
-        "JavaImporter",  "org.mozilla.javascript.ImporterTopLevel",
+//        "Packages",      "org.mozilla.javascript.NativeJavaTopPackage",
+//        "java",          "org.mozilla.javascript.NativeJavaTopPackage",
+//        "javax",         "org.mozilla.javascript.NativeJavaTopPackage",
+//        "org",           "org.mozilla.javascript.NativeJavaTopPackage",
+//        "com",           "org.mozilla.javascript.NativeJavaTopPackage",
+//        "edu",           "org.mozilla.javascript.NativeJavaTopPackage",
+//        "net",           "org.mozilla.javascript.NativeJavaTopPackage",
+//        "getClass",      "org.mozilla.javascript.NativeJavaTopPackage",
+//        "JavaAdapter",   "org.mozilla.javascript.JavaAdapter",
+//        "JavaImporter",  "org.mozilla.javascript.ImporterTopLevel",
         "Continuation",  "org.mozilla.javascript.NativeContinuation",
         //	TODO	Grotesque hack using literal string (xml) just to minimize
 		//			changes for now
@@ -269,6 +269,8 @@ public class ScriptRuntime {
 //        "RegExp",        "org.mozilla.javascript.regexp.NativeRegExp",
 //      "Continuation",  "org.mozilla.javascript.NativeContinuation",
 
+        
+        
         TranslatedNameBindings.initStandardTranslations(scope);
         
         return scope;
@@ -388,11 +390,12 @@ public class ScriptRuntime {
     // Double.NaN to be converted to 1.0.
     // So we use ScriptRuntime.NaN instead of Double.NaN.
     public static final double
-        NaN = Double.longBitsToDouble(0x7ff8000000000000L);
+        NaN = Double.NaN;
 
     // A similar problem exists for negative zero.
+    // TODO: Not really negative zero
     public static final double
-        negativeZero = Double.longBitsToDouble(0x8000000000000000L);
+        negativeZero = -0.0;//Double.longBitsToDouble(0x8000000000000000L);
 
     public static final Double NaNobj = new Double(NaN);
 
@@ -841,10 +844,17 @@ public class ScriptRuntime {
     public static String localizeNumberString(String number, Locale locale)
     {
         if (locale == null) locale = Locale.ENGLISH;
-        DecimalFormatSymbols symbols = new DecimalFormatSymbols(locale);
-        String str = number.replace('.', symbols.getDecimalSeparator());
+        char decimalSeparator = '.';
+        char zeroDigit = '0';
+        if (locale.getCountry().equals("fr")) decimalSeparator = ',';
+        else if (locale.getCountry().equals("pt")) decimalSeparator = ',';
+        else if (locale.getCountry().equals("es")) decimalSeparator = ',';
+        else if (locale.getCountry().equals("de")) decimalSeparator = ',';
+        else if (locale.getCountry().equals("ro")) decimalSeparator = ',';
+        
+        String str = number.replace('.', decimalSeparator);
         for (int n = 0; n < 10; n++)
-            str = str.replace((char)('0' + n), (char)(symbols.getZeroDigit() + n));
+            str = str.replace((char)('0' + n), (char)(zeroDigit + n));
         return str;
     }
     
@@ -868,13 +878,19 @@ public class ScriptRuntime {
         }
 
         if (base != 10) {
-            return localizeNumberString(DToA.JS_dtobasestr(base, d), locale);
+            return localizeNumberString(JSNI_numToStringBase(d, base), locale);
         } else {
-            StringBuffer result = new StringBuffer();
-            DToA.JS_dtostr(result, DToA.DTOSTR_STANDARD, 0, d);
-            return localizeNumberString(result.toString(), locale);
+            return localizeNumberString(JSNI_numToString(d), locale);
         }
     }
+    
+    public static native String JSNI_numToString(double x) /*-{
+        return x.toString();
+    }-*/;
+    public static native String JSNI_numToStringBase(double x, int base) /*-{
+        return x.toString(base);
+    }-*/;
+
 
     static String uneval(Context cx, Scriptable scope, Object value)
     {
@@ -1166,7 +1182,7 @@ public class ScriptRuntime {
         d = (d >= 0) ? Math.floor(d) : Math.ceil(d);
 
         double two32 = 4294967296.0;
-        d = Math.IEEEremainder(d, two32);
+        d = (d% two32);
         // (double)(long)d == d should hold here
 
         long l = (long)d;
@@ -1197,7 +1213,7 @@ public class ScriptRuntime {
 
         // 0x100000000 gives me a numeric overflow...
         double two32 = 4294967296.0;
-        l = (long)Math.IEEEremainder(d, two32);
+        l = (long)(d% two32);
 
         return l & 0xffffffffL;
     }
@@ -3685,39 +3701,6 @@ public class ScriptRuntime {
     public static String getMessage(String messageId, Object[] arguments)
     {
         return messageProvider.getMessage(messageId, arguments);
-    }
-
-    /* OPT there's a noticable delay for the first error!  Maybe it'd
-     * make sense to use a ListResourceBundle instead of a properties
-     * file to avoid (synchronized) text parsing.
-     */
-    private static class DefaultMessageProvider implements MessageProvider {
-        public String getMessage(String messageId, Object[] arguments) {
-            final String defaultResource
-                = "org.mozilla.javascript.resources.Messages";
-
-            Context cx = Context.getCurrentContext();
-            Locale locale = cx != null ? cx.getLocale() : Locale.getDefault();
-
-            // ResourceBundle does caching.
-            ResourceBundle rb = ResourceBundle.getBundle(defaultResource, locale);
-
-            String formatString;
-            try {
-                formatString = rb.getString(messageId);
-            } catch (java.util.MissingResourceException mre) {
-                throw new RuntimeException
-                    ("no message resource found for message property "+ messageId);
-            }
-
-            /*
-             * It's OK to format the string, even if 'arguments' is null;
-             * we need to format it anyway, to make double ''s collapse to
-             * single 's.
-             */
-            MessageFormat formatter = new MessageFormat(formatString);
-            return formatter.format(arguments);
-        }
     }
 
     public static EcmaError constructError(String error, String message)

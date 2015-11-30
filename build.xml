@@ -233,7 +233,8 @@
   	    <path path="${gwtdir}/gwt-user.jar"/>
   	    <path path="${gwtdir}/gwt-dev.jar"/>
 	  </classpath>
-  	  <include name="org/**/*.java"/>
+  	  <include name="org/**/*.java" />
+  	  <exclude name="org/gwt/**"/>
   	</javac>
     <jar destfile="${dist.dir}/babylscriptgwt.jar">
 	  <zipfileset dir="src" >
