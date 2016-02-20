@@ -13,22 +13,13 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * The Original Code is Rhino code, released
- * May 6, 1999.
- *
  * The Initial Developer of the Original Code is
- * Netscape Communications Corporation.
- * Portions created by the Initial Developer are Copyright (C) 1997-1999
+ * Mathieu Stumpf Guntz
+ * Portions created by the Initial Developer are Copyright (C) 2016
  * the Initial Developer. All Rights Reserved.
  *
  * Contributor(s):
- *   Roger Lawrence
- *   Mike McCabe
- *   Igor Bukanov
- *   Ethan Hugg
- *   Bob Jervis
- *   Terry Lucas
- *   Milen Nankov
+ *   Mathieu Stumpf Guntz
  *
  * Alternatively, the contents of this file may be used under the terms of
  * the GNU General Public License Version 2 or later (the "GPL"), in which

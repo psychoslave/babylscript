@@ -261,7 +261,7 @@ public class TokenStream
         bn,
         de,
         en,
-	eo,
+        eo,
         es,
         fr,
         hi,
@@ -392,6 +392,9 @@ public class TokenStream
             break;
         case en:
             currentTokenizer = this.englishTokenizer;
+        case eo:
+            currentTokenizer = new EsperantoTokenizer(parser, in, this);
+            break;
         case eo:
             currentTokenizer = new EsperantoTokenizer(parser, in, this);
             break;
