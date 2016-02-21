@@ -395,9 +395,6 @@ public class TokenStream
         case eo:
             currentTokenizer = new EsperantoTokenizer(parser, in, this);
             break;
-        case eo:
-            currentTokenizer = new EsperantoTokenizer(parser, in, this);
-            break;
         case es:
             currentTokenizer = new SpanishTokenizer(parser, in, this);
             break;
